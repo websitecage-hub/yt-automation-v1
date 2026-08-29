@@ -1,0 +1,16 @@
+@font-face{font-family:'ScaledDisplay';src:url('../assets/fonts/display.woff2') format('woff2');font-weight:900;font-style:normal}
+@font-face{font-family:'ScaledMono';src:url('../assets/fonts/mono.woff2') format('woff2');font-weight:400;font-style:normal}
+:root{
+  --bg:#0A0F0C; --ink:#F2EDE2; --dim:#7E8C84;
+  --lime:#A6FF3D; --amber:#E8B04B; --red:#D64027;
+  --croc:#4A7C3F; --croc-dark:#3A6330; --croc-belly:#9CBF74;
+}
+#stage{position:relative;width:1920px;height:1080px;overflow:hidden;background:var(--bg);
+  font-family:'ScaledDisplay','Arial Black',sans-serif;color:var(--ink)}
+.cap-line{font:900 46px/1.25 'ScaledDisplay','Arial Black',sans-serif;color:var(--ink);
+  text-shadow:0 3px 0 #000,0 0 14px rgba(0,0,0,.65);letter-spacing:.5px}
+.cap-line span{color:var(--dim)} .cap-line span.hot{color:var(--lime)}
+.statcard{background:rgba(10,15,12,.88);border:2px solid var(--lime);border-radius:14px;
+  font-family:'ScaledMono',monospace}
+.verdict-stamp{border:8px double var(--amber);color:var(--amber);font:900 180px 'ScaledDisplay',sans-serif;
+  letter-spacing:.06em;transform:rotate(-8deg)}
