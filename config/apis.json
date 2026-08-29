@@ -1,0 +1,30 @@
+{
+  "voice": {
+    "base": "https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev",
+    "path": "/api/tts",
+    "payload": {
+      "text": "[narration] {text}",
+      "ttsSteps": 2,
+      "emotionExaggeration": 0.35,
+      "ttsSeed": 7,
+      "threads": 2
+    },
+    "returns": "json-url",
+    "url_field": "url",
+    "voice_id": "",
+    "no_proxy": true,
+    "_note": "Chatterbox TTS. Two-step: POST /api/tts returns {url:'/outputs/<id>.wav'}, then GET base+url for the WAV, which auto-deletes on download. emotionExaggeration is deliberately low (0.35) because Professor Croc is deadpan; 0 is flat, 1 is theatrical. The [narration] tag in the text template selects Chatterbox's narration delivery. run.py transcodes the WAV to mp3 with ffmpeg."
+  },
+  "image": {
+    "base": "https://media-gen-mcp.onrender.com",
+    "path": "/api/image",
+    "payload": {
+      "prompt": "{prompt}",
+      "mode": "instant"
+    },
+    "returns": "json-url",
+    "url_field": "urls.0",
+    "no_proxy": true,
+    "_note": "Media Gen MCP (Meta AI images). Two-step: POST /api/image returns {urls:[cdn-webp-url]}, then GET that URL. No key required; if you mint one, set it as the SERVICE_KEY secret and it is sent as a Bearer header. Returns WebP at whatever aspect Meta chooses, so run.py scales+crops to 1920x1080 jpg. mode 'thinking' is higher quality and slower than 'instant'."
+  }
+}
