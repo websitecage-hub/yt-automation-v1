@@ -4,6 +4,7 @@ Every test that would otherwise reach an API monkeypatches requests.post /
 requests.get, so `pytest tests/ -q` is safe to run anywhere, including CI.
 """
 import json
+import subprocess
 import os
 import sys
 import types
@@ -11,6 +12,18 @@ import types
 import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def _committed_json(path):
+    """The HEAD blob for `path`, parsed. Skips while the placeholder is still there."""
+    out = subprocess.run(["git", "show", "HEAD:%s" % path], cwd=ROOT,
+                         capture_output=True, text=True)
+    if out.returncode != 0 or not out.stdout.strip():
+        pytest.skip("%s not committed with content yet" % path)
+    try:
+        return json.loads(out.stdout)
+    except json.JSONDecodeError:
+        pytest.skip("%s at HEAD is not JSON yet" % path)
+
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
@@ -473,3 +486,251 @@ class TestAdapters:
         for kind in ("voice", "image"):
             assert cfg[kind]["base"].startswith("https://"), kind
             assert cfg[kind]["returns"] in ("json-url", "mp3-bytes", "jpeg-bytes")
+
+
+# ==========================================================================
+# TASK 7 — pipeline/topics.py
+# ==========================================================================
+def bank(*specs):
+    return [{"topic": t, "lane": l, "why": "because", "score": s, "used": u}
+            for t, l, s, u in specs]
+
+
+@pytest.fixture
+def tf(tmp_path):
+    """A throwaway bank file; returns (path, write, read)."""
+    p = tmp_path / "topics.json"
+
+    def write(entries):
+        p.write_text(json.dumps(entries), encoding="utf-8")
+        return str(p)
+
+    def read():
+        return json.loads(p.read_text(encoding="utf-8"))
+
+    return str(p), write, read
+
+
+class TestTopics:
+    def test_live_bank_holds_the_20_launch_entries_and_stays_valid(self):
+        """Structural invariants only -- the live bank grows and gets used-flagged."""
+        from pipeline import topics
+        b = topics.load()
+        assert len(b) >= 20
+        assert all(set(t) == {"topic", "lane", "why", "score", "used"} for t in b)
+        assert all(t["lane"] in topics.LANES for t in b)
+        assert all(1 <= t["score"] <= 10 for t in b)
+        assert len({t["topic"] for t in b}) == len(b)
+
+    def test_shipped_bank_file_is_the_20_i_committed(self):
+        """Guards the seed file itself against edits, reading the committed blob
+        so a production run flipping used/score cannot fail this."""
+        seed = _committed_json("data/topics.json")
+        assert len(seed) == 20
+        assert not any(t["used"] for t in seed)
+        assert all(t["why"] for t in seed)
+        assert len({t["topic"] for t in seed}) == 20
+
+    def test_bank_contains_the_five_required_seeds(self):
+        from pipeline import topics
+        got = {t["topic"]: t["lane"] for t in topics.load()}
+        for topic, lane in [
+            ("Your Brain Seals Your True Strength (Here's the Key)", "HUMAN"),
+            ("The Animal That Refuses to Die", "WEIRD_ANIMAL"),
+            ("You Were Built to Run Prey to Death", "HUMAN"),
+            ("The Punch That Breaks Physics", "VERSUS"),
+            ("Why My Family Doesn't Age", "PROFESSOR"),
+        ]:
+            assert got.get(topic) == lane, topic
+
+    def test_lesson_001_is_the_launch_topic(self):
+        """The shipped bank scores the brain episode highest, so LESSON #001 is it."""
+        seed = sorted(_committed_json("data/topics.json"), key=lambda t: -t["score"])
+        assert seed[0]["topic"].startswith("Your Brain Seals")
+
+    def test_all_four_lanes_are_represented(self):
+        from pipeline import topics
+        assert {t["lane"] for t in topics.load()} == set(topics.LANES)
+
+    def test_pick_takes_highest_score_and_marks_used_on_disk(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("low", "HUMAN", 3, False), ("high", "VERSUS", 9, False),
+                   ("mid", "PROFESSOR", 6, False)))
+        assert topics.pick(p)["topic"] == "high"
+        assert [t["used"] for t in read()] == [False, True, False]
+        assert topics.pick(p)["topic"] == "mid"
+        assert topics.pick(p)["topic"] == "low"
+        assert topics.pick(p) is None
+
+    def test_pick_ignores_used_even_when_they_score_higher(self, tf):
+        from pipeline import topics
+        p, write, _ = tf
+        write(bank(("spent", "HUMAN", 10, True), ("fresh", "HUMAN", 2, False)))
+        assert topics.pick(p)["topic"] == "fresh"
+
+    def test_pick_breaks_ties_in_bank_order(self, tf):
+        from pipeline import topics
+        p, write, _ = tf
+        write(bank(("first", "HUMAN", 7, False), ("second", "HUMAN", 7, False)))
+        assert topics.pick(p)["topic"] == "first"
+
+    def test_pick_returns_a_copy_not_the_live_row(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("a", "HUMAN", 5, False)))
+        got = topics.pick(p)
+        got["topic"] = "mutated"
+        assert read()[0]["topic"] == "a"
+
+    def test_top_unused_orders_and_truncates(self, tf):
+        from pipeline import topics
+        p, write, _ = tf
+        write(bank(("a", "HUMAN", 4, False), ("b", "HUMAN", 9, False),
+                   ("c", "HUMAN", 7, True), ("d", "HUMAN", 6, False)))
+        assert [t["topic"] for t in topics.top_unused(2, p)] == ["b", "d"]
+        assert [t["topic"] for t in topics.top_unused(99, p)] == ["b", "d", "a"]
+        assert topics.top_unused(0, p) == []
+
+    def test_reweight_moves_scores_one_step(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("h", "HUMAN", 5, False), ("v", "VERSUS", 5, False),
+                   ("p", "PROFESSOR", 5, False)))
+        topics.reweight(["HUMAN"], ["VERSUS"], p)
+        assert {t["topic"]: t["score"] for t in read()} == {"h": 6, "v": 4, "p": 5}
+
+    def test_reweight_clamps_at_both_ends(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("top", "HUMAN", 10, False), ("bottom", "VERSUS", 1, False)))
+        topics.reweight(["HUMAN"], ["VERSUS"], p)
+        assert {t["topic"]: t["score"] for t in read()} == {"top": 10, "bottom": 1}
+        topics.reweight(["HUMAN"], ["VERSUS"], p)
+        assert {t["topic"]: t["score"] for t in read()} == {"top": 10, "bottom": 1}
+
+    def test_reweight_lane_in_both_lists_nets_zero(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("x", "HUMAN", 5, False)))
+        topics.reweight(["HUMAN"], ["HUMAN"], p)
+        assert read()[0]["score"] == 5
+
+    def test_reweight_also_touches_used_rows_and_accepts_empty_lists(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("spent", "HUMAN", 5, True)))
+        topics.reweight(["human"], [], p)
+        assert read()[0]["score"] == 6
+        topics.reweight([], None, p)
+        assert read()[0]["score"] == 6
+
+    def test_refill_is_a_noop_while_15_unused_remain(self, tf):
+        from pipeline import topics
+        p, write, _ = tf
+        write(bank(*[("t%d" % i, "HUMAN", 5, False) for i in range(15)]))
+        assert topics.refill(lambda s, u: pytest.fail("must not call the LLM"), p) == 0
+
+    def test_refill_appends_ten_from_mocked_llm(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("old", "HUMAN", 5, False)))
+        seen = {}
+
+        def fake_llm(system, user):
+            seen.update(system=system, user=user)
+            return json.dumps([{"topic": "new %d" % i, "lane": "VERSUS",
+                                "why": "w", "score": 7} for i in range(10)])
+
+        assert topics.refill(fake_llm, p) == 10
+        after = read()
+        assert len(after) == 11
+        assert all(t["used"] is False for t in after)
+        assert after[1]["topic"] == "new 0"
+        assert "SCALED" in seen["system"]
+        assert "old" in seen["user"] and "{existing}" not in seen["user"]
+
+    def test_refill_accepts_a_prelisted_result_and_fenced_text(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("old", "HUMAN", 5, False)))
+        assert topics.refill(lambda s, u: [{"topic": "obj", "lane": "HUMAN", "why": "w", "score": 5}], p) == 1
+        assert topics.refill(lambda s, u: '```json\n[{"topic":"fenced","lane":"HUMAN","score":5}]\n```', p) == 1
+        assert [t["topic"] for t in read()] == ["old", "obj", "fenced"]
+
+    def test_refill_unwraps_a_dict_envelope(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("old", "HUMAN", 5, False)))
+        assert topics.refill(lambda s, u: {"topics": [{"topic": "wrapped", "lane": "HUMAN", "score": 5}]}, p) == 1
+        assert read()[-1]["topic"] == "wrapped"
+
+    def test_refill_skips_duplicates_case_and_punctuation_insensitively(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("The Animal That Refuses to Die", "WEIRD_ANIMAL", 5, True)))
+        added = topics.refill(lambda s, u: [
+            {"topic": "the animal that refuses to die!", "lane": "WEIRD_ANIMAL", "score": 9},
+            {"topic": "Genuinely New", "lane": "HUMAN", "score": 5},
+            {"topic": "Genuinely New", "lane": "HUMAN", "score": 5},
+            {"topic": "   ", "lane": "HUMAN", "score": 5},
+            "not-a-dict",
+        ], p)
+        assert added == 1
+        assert [t["topic"] for t in read()] == ["The Animal That Refuses to Die", "Genuinely New"]
+
+    def test_refill_clamps_scores_and_normalises_lanes(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("old", "HUMAN", 5, False)))
+        topics.refill(lambda s, u: [
+            {"topic": "hot", "lane": "weird animal", "score": 99},
+            {"topic": "cold", "lane": "nonsense", "score": -4},
+            {"topic": "vague", "lane": "VERSUS", "score": "high"},
+        ], p)
+        got = {t["topic"]: (t["lane"], t["score"]) for t in read()}
+        assert got["hot"] == ("WEIRD_ANIMAL", 10)
+        assert got["cold"] == ("HUMAN", 1)
+        assert got["vague"] == ("VERSUS", 5)
+
+    def test_refill_survives_llm_failure_and_junk_without_touching_the_bank(self, tf):
+        from pipeline import topics
+        p, write, read = tf
+        write(bank(("old", "HUMAN", 5, False)))
+        before = read()
+
+        def boom(s, u):
+            raise RuntimeError("all LLM providers down")
+
+        assert topics.refill(boom, p) == 0
+        assert topics.refill(lambda s, u: "the model apologised instead", p) == 0
+        assert topics.refill(lambda s, u: 42, p) == 0
+        assert read() == before
+
+    def test_load_tolerates_missing_corrupt_and_wrong_shaped_files(self, tmp_path):
+        from pipeline import topics
+        assert topics.load(str(tmp_path / "nope.json")) == []
+        bad = tmp_path / "bad.json"
+        bad.write_text("{not json", encoding="utf-8")
+        assert topics.load(str(bad)) == []
+        obj = tmp_path / "obj.json"
+        obj.write_text('{"topic":"solo"}', encoding="utf-8")
+        assert topics.load(str(obj)) == []
+
+    def test_load_repairs_partial_rows(self, tmp_path):
+        from pipeline import topics
+        p = tmp_path / "t.json"
+        p.write_text('[{"topic":"  spaced  "},{"nope":1},{"topic":"x","score":50,"used":1}]',
+                     encoding="utf-8")
+        got = topics.load(str(p))
+        assert [t["topic"] for t in got] == ["spaced", "x"]
+        assert got[0] == {"topic": "spaced", "lane": "HUMAN", "why": "", "score": 5, "used": False}
+        assert got[1]["score"] == 10 and got[1]["used"] is True
+
+    def test_save_round_trips_and_leaves_a_trailing_newline(self, tmp_path):
+        from pipeline import topics
+        p = str(tmp_path / "deep" / "t.json")
+        entries = bank(("a", "HUMAN", 5, False))
+        topics.save(entries, p)
+        assert topics.load(p) == entries
+        assert open(p, encoding="utf-8").read().endswith("]\n")

@@ -1,0 +1,142 @@
+[
+  {
+    "topic": "Your Brain Seals Your True Strength (Here's the Key)",
+    "lane": "HUMAN",
+    "why": "Central governor theory: the motor cortex withholds recruitment long before muscle failure, and trained lifters still leave measurable force on the table. Cold open number: the brain quits while the tissue is fine.",
+    "score": 10,
+    "used": false
+  },
+  {
+    "topic": "The Animal That Refuses to Die",
+    "lane": "WEIRD_ANIMAL",
+    "why": "Turritopsis dohrnii reverses its life cycle back to the polyp stage after damage or starvation, so it has no known adult death clock. Cold open number: zero recorded deaths from old age.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "You Were Built to Run Prey to Death",
+    "lane": "HUMAN",
+    "why": "Persistence hunting: nuchal ligament, Achilles spring, 2-4 million sweat glands. A human paces a horse over 42 km because quadrupeds must stop galloping to breathe. Cold open number: we out-cool everything on four legs.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "The Punch That Breaks Physics",
+    "lane": "VERSUS",
+    "why": "Mantis shrimp raptorial appendage: saddle spring loads, releases at over 20 m/s, cavitation bubble collapse adds a second hit. Cold open number: 1,500 newtons from an animal the size of a pen.",
+    "score": 8,
+    "used": false
+  },
+  {
+    "topic": "Why My Family Doesn't Age",
+    "lane": "PROFESSOR",
+    "why": "Crocodilians show negligible senescence: no measurable rise in mortality rate with age, indeterminate growth, no decline in fertility. Cold open number: a 70-year-old croc is a better hunter than a 20-year-old one.",
+    "score": 8,
+    "used": false
+  },
+  {
+    "topic": "Your Bones Beat Concrete in a Crush Test",
+    "lane": "HUMAN",
+    "why": "Cortical bone takes roughly 170 MPa in compression against about 30 MPa for standard structural concrete, and it does it while being alive and self-repairing. Cold open number: five times the concrete, one quarter the weight.",
+    "score": 7,
+    "used": false
+  },
+  {
+    "topic": "Your Eyes Can Catch a Single Photon",
+    "lane": "HUMAN",
+    "why": "Rod cells fire on one photon; the 2016 single-photon detection experiment confirmed humans report it above chance. Cold open number: one particle of light is a detectable event in your head.",
+    "score": 7,
+    "used": false
+  },
+  {
+    "topic": "Your Liver Regrows From a Quarter of Itself",
+    "lane": "HUMAN",
+    "why": "After 70-75 percent resection, hepatocytes re-enter the cycle and restore full mass in weeks. It is the only human organ that truly regenerates rather than scars. Cold open number: surgeons can take three quarters of it and hand you the rest.",
+    "score": 6,
+    "used": false
+  },
+  {
+    "topic": "Your Brain Only Cleans Itself When You Shut Down",
+    "lane": "HUMAN",
+    "why": "The glymphatic system: interstitial space opens by about 60 percent in sleep and cerebrospinal fluid flushes metabolic waste including amyloid beta. Cold open number: the sewer only opens when the lights go off.",
+    "score": 6,
+    "used": false
+  },
+  {
+    "topic": "The Clam That Lived 507 Years",
+    "lane": "WEIRD_ANIMAL",
+    "why": "Ming, an Arctica islandica dredged off Iceland, was aged by shell growth bands at 507 years. Cold open number: it was already alive before the printing press reached England.",
+    "score": 7,
+    "used": false
+  },
+  {
+    "topic": "The Frog That Freezes Solid Every Winter",
+    "lane": "WEIRD_ANIMAL",
+    "why": "Wood frogs let roughly 65 percent of body water turn to ice, stop the heart entirely, and flood cells with glucose as cryoprotectant. Cold open number: no heartbeat for weeks, then it hops away.",
+    "score": 7,
+    "used": false
+  },
+  {
+    "topic": "The Flight That Never Lands",
+    "lane": "WEIRD_ANIMAL",
+    "why": "A satellite-tagged bar-tailed godwit flew 13,560 km from Alaska to New Zealand nonstop in 11 days, no food, no water, no rest. Cold open number: it burned half its body weight in the air.",
+    "score": 7,
+    "used": false
+  },
+  {
+    "topic": "The Animal That Survived Open Space",
+    "lane": "WEIRD_ANIMAL",
+    "why": "Tardigrades flown on FOTON-M3 in 2007 survived raw vacuum plus solar UV and later reproduced. Cold open number: dried to 3 percent water, it treats a hard vacuum as weather.",
+    "score": 6,
+    "used": false
+  },
+  {
+    "topic": "The Beetle With a Chemical Cannon",
+    "lane": "WEIRD_ANIMAL",
+    "why": "Bombardier beetles mix hydroquinone and hydrogen peroxide in a reaction chamber and fire a near-100 degree Celsius spray in about 500 pulses per second. Cold open number: boiling water, aimed, from a body 1 cm long.",
+    "score": 6,
+    "used": false
+  },
+  {
+    "topic": "Cheetah vs Supercar: 0 to 60",
+    "lane": "VERSUS",
+    "why": "Sarah the cheetah ran 100 m in 5.95 seconds, reaching 0-100 km/h in about 3 seconds using spinal flexion and semi-retractable claws for grip. Cold open number: it beats most road cars off the line, on dirt.",
+    "score": 7,
+    "used": false
+  },
+  {
+    "topic": "Eagle Grip vs Human Grip",
+    "lane": "VERSUS",
+    "why": "Large eagle talons generate several hundred psi at the digit against roughly 60 psi for a strong human hand, and the tendon-locking mechanism means holding costs the bird almost nothing. Cold open number: it grips harder than you and never tires.",
+    "score": 6,
+    "used": false
+  },
+  {
+    "topic": "The Ant That Deadlifts 5,000 Times Its Weight",
+    "lane": "VERSUS",
+    "why": "Asian weaver ant neck joints held about 5,000 times body weight in centrifuge testing; square-cube law means small bodies get absurd strength-to-mass ratios. Cold open number: scaled to your mass, it is lifting a loaded freight train.",
+    "score": 6,
+    "used": false
+  },
+  {
+    "topic": "Why My Bite Holds the World Record",
+    "lane": "PROFESSOR",
+    "why": "A saltwater crocodile registered 16,460 newtons on a force transducer, the highest bite force ever directly measured in a living animal, from pterygoid muscle mass and a near-solid jaw joint. Cold open number: 3,700 pounds of force, measured, not modelled.",
+    "score": 7,
+    "used": false
+  },
+  {
+    "topic": "Why I Can Skip a Whole Year of Meals",
+    "lane": "PROFESSOR",
+    "why": "Crocodilian resting metabolism is a fraction of a mammal's, digestion is near-total, and fat is stored in the tail, so a large adult can go a year between meals. Cold open number: one meal, twelve months.",
+    "score": 6,
+    "used": false
+  },
+  {
+    "topic": "Why My Blood Kills What Yours Can't",
+    "lane": "PROFESSOR",
+    "why": "Crocodile serum carries antimicrobial peptides that inactivate bacteria which shrug off human serum, which is why a torn-off limb in swamp water does not kill the animal. Cold open number: it heals in the dirtiest water on Earth.",
+    "score": 6,
+    "used": false
+  }
+]
