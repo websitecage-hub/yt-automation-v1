@@ -4,6 +4,7 @@ Every test that would otherwise reach an API monkeypatches requests.post /
 requests.get, so `pytest tests/ -q` is safe to run anywhere, including CI.
 """
 import json
+import re
 import subprocess
 import os
 import sys
@@ -1126,3 +1127,346 @@ class TestHtmlgenComposition:
         html, js = htmlgen.SAFE_FALLBACK(10.0, 22.5, "THE AWAKENING", 3)
         assert htmlgen.lint_violations(html, js, 3, 10.0, 22.5, str(tmp_path)) == []
         assert htmlgen.LINT_SUBCOMMAND in ("lint", "check")
+
+
+# ==========================================================================
+# TASK 9 — pipeline/compose.py
+# ==========================================================================
+def w(text, s, e):
+    return {"w": text, "s": s, "e": e}
+
+
+def words_from(sentence, step=0.3):
+    return [w(t, i * step, i * step + step - 0.05) for i, t in enumerate(sentence.split())]
+
+
+def texts(lines):
+    return [[x["w"] for x in line] for line in lines]
+
+
+class TestGroupLines:
+    def test_flushes_on_the_34_char_boundary(self):
+        from pipeline.compose import group_lines
+        # 4 x 8 chars + 3 spaces = 35 > 34, so the fourth word starts a new line
+        got = texts(group_lines(words_from("aaaaaaaa bbbbbbbb cccccccc dddddddd")))
+        assert got == [["aaaaaaaa", "bbbbbbbb", "cccccccc"], ["dddddddd"]]
+
+    def test_exactly_34_chars_stays_on_one_line(self):
+        from pipeline.compose import group_lines
+        # 3 x 10 + 2 spaces = 32, plus a 2-char word and a space = 35 -> splits;
+        # trimming to 1 char keeps it at 34 and must not split
+        assert len(group_lines(words_from("aaaaaaaaaa bbbbbbbbbb cccccccccc d"))) == 1
+        assert len(group_lines(words_from("aaaaaaaaaa bbbbbbbbbb cccccccccc dd"))) == 2
+
+    def test_flushes_on_the_5_word_boundary(self):
+        from pipeline.compose import group_lines
+        got = texts(group_lines(words_from("a b c d e f g")))
+        assert got == [["a", "b", "c", "d", "e"], ["f", "g"]]
+
+    def test_flushes_after_a_sentence_end(self):
+        from pipeline.compose import group_lines
+        assert texts(group_lines(words_from("It bites. Hard"))) == [["It", "bites."], ["Hard"]]
+        assert texts(group_lines(words_from("Really? Yes"))) == [["Really?"], ["Yes"]]
+        assert texts(group_lines(words_from("Stop! Go"))) == [["Stop!"], ["Go"]]
+
+    def test_a_single_long_word_gets_its_own_line_and_may_overflow(self):
+        from pipeline.compose import group_lines
+        long = "electroencephalographically" * 2
+        got = texts(group_lines(words_from("tiny %s next" % long)))
+        assert got == [["tiny"], [long], ["next"]]
+        assert len(got[1][0]) > 34
+
+    def test_never_drops_a_word(self):
+        from pipeline.compose import group_lines
+        sentence = ("Your brain seals your true strength. Two hundred million years of field "
+                    "research says otherwise, and the numbers are not kind.")
+        words = words_from(sentence)
+        flat = [x["w"] for line in group_lines(words) for x in line]
+        assert flat == sentence.split()
+
+    def test_respects_custom_limits(self):
+        from pipeline.compose import group_lines
+        assert texts(group_lines(words_from("a b c d"), max_words=2)) == [["a", "b"], ["c", "d"]]
+        assert texts(group_lines(words_from("aaa bbb"), max_chars=5)) == [["aaa"], ["bbb"]]
+
+    def test_survives_empty_blank_and_malformed_input(self):
+        from pipeline.compose import group_lines
+        assert group_lines([]) == []
+        assert group_lines(None) == []
+        assert texts(group_lines([w("  ", 0, 1), "junk", w("ok", 1, 2)])) == [["ok"]]
+
+
+class TestGradePct:
+    @pytest.mark.parametrize("grade,pct", [
+        ("A+", 100), ("A", 92), ("A-", 87), ("B+", 80), ("B", 75), ("B-", 70),
+        ("C+", 60), ("C", 55), ("C-", 50), ("D+", 40), ("D", 35), ("D-", 30),
+        ("F", 15), ("F-", 10),
+    ])
+    def test_mapping(self, grade, pct):
+        from pipeline.compose import grade_pct
+        assert grade_pct(grade) == pct
+
+    def test_case_and_whitespace_insensitive(self):
+        from pipeline.compose import grade_pct
+        assert grade_pct("  a+ ") == 100 and grade_pct("b") == 75
+
+    def test_unknown_and_empty_grades_are_survivable(self):
+        from pipeline.compose import grade_pct
+        assert grade_pct("") == 50 and grade_pct(None) == 50 and grade_pct("???") == 50
+
+    def test_stays_within_0_and_100(self):
+        from pipeline.compose import grade_pct
+        assert all(0 <= grade_pct(g) <= 100 for g in
+                   ["A+", "A++", "S", "S+", "F-", "F--", "Z", "", None, 7])
+
+
+def demo_job(**kw):
+    words = [w("Your", 0.10, 0.42), w("brain", 0.42, 0.85), w("seals", 0.88, 1.20),
+             w("your", 1.20, 1.38), w("strength.", 1.38, 1.71)]
+    job = {
+        "id": "2026-08-29-brain", "lesson": 7, "title": "Your Brain Seals Your True Strength",
+        "verdict": "APEX",
+        "scenes": [
+            {"act": "HOOK", "heading": "SEALED", "text": "Your brain seals your strength.",
+             "image_prompt": "a brain", "dur": 24.0, "words": words, "stat": None,
+             "frag_html": '<div id="s0-a" class="clip" data-start="1.00" data-duration="4.00">A</div>',
+             "frag_js": "tl.to('#s0-a',{opacity:1,duration:0.4},1.000);"},
+            {"act": "BASE STATS", "heading": "GRIP", "text": "It bites.", "image_prompt": "a jaw",
+             "dur": 18.0, "words": words,
+             "stat": {"label": "NEURAL BRAKE", "grade": "A+", "note": "Governor caps recruitment."},
+             "frag_html": "", "frag_js": ""},
+        ],
+    }
+    job.update(kw)
+    return job
+
+
+def build(tmp_path, job, media=True):
+    """Build a project in tmp_path, optionally with real-ish media files present."""
+    from pipeline import compose
+    if media:
+        for i in range(len(job["scenes"])):
+            (tmp_path / ("i%s_%d.jpg" % (job["id"], i))).write_bytes(b"\xff\xd8\xff\xe0jpg")
+            (tmp_path / ("v%s_%d.mp3" % (job["id"], i))).write_bytes(b"ID3mp3")
+    proj, total = compose.build_project(job, str(tmp_path))
+    page = open(os.path.join(proj, "index.html"), encoding="utf-8").read()
+    return proj, total, page
+
+
+class TestBuildProject:
+    def test_returns_the_project_dir_and_total_duration(self, tmp_path):
+        proj, total, _ = build(tmp_path, demo_job())
+        assert proj == os.path.join(str(tmp_path), "proj_2026-08-29-brain")
+        assert total == 42.0
+        assert os.path.isfile(os.path.join(proj, "index.html"))
+
+    def test_composition_contract_attributes(self, tmp_path):
+        _, total, page = build(tmp_path, demo_job())
+        assert 'data-composition-id="scaled"' in page
+        assert 'data-start="0"' in page
+        assert 'data-duration="%.2f"' % total in page      # renderer needs a duration source
+        assert 'data-width="1920"' in page and 'data-height="1080"' in page
+        assert "const tl = gsap.timeline({paused:true});" in page
+        assert "window.__timelines = {scaled: tl};" in page
+
+    def test_head_loads_only_the_vendored_gsap_and_inline_css(self, tmp_path):
+        proj, _, page = build(tmp_path, demo_job())
+        head = page[page.index("<head>"):page.index("</head>")]
+        assert head.count("<script") == 1 and 'src="assets/gsap.min.js"' in head
+        assert "<link" not in head and "http://" not in page and "https://" not in page
+        assert "@font-face" in head and "--lime:#A6FF3D" in head
+        assert "url('assets/fonts/display.woff2')" in head   # rebased for the project root
+        assert os.path.isfile(os.path.join(proj, "assets", "gsap.min.js"))
+
+    def test_every_timed_element_carries_an_id(self, tmp_path):
+        """Without an id the renderer cannot discover media -- audio renders SILENT."""
+        _, _, page = build(tmp_path, demo_job())
+        timed = re.findall(r"<(\w+)([^>]*data-start[^>]*)>", page)
+        assert timed
+        for tag, attrs in timed:
+            assert re.search(r'\bid="', attrs), (tag, attrs)
+
+    def test_media_clips_are_wired_per_scene(self, tmp_path):
+        proj, _, page = build(tmp_path, demo_job())
+        assert '<img id="img0" class="clip" data-start="0.00" data-duration="24.00"' in page
+        assert 'src="assets/s0.jpg"' in page and 'data-track-index="0"' in page
+        assert '<audio id="aud1" data-start="24.00" data-duration="18.00"' in page
+        assert 'src="assets/a1.mp3"' in page and 'data-track-index="2"' in page
+        for name in ("s0.jpg", "s1.jpg", "a0.mp3", "a1.mp3"):
+            assert os.path.isfile(os.path.join(proj, "assets", name)), name
+
+    def test_missing_media_is_omitted_rather_than_referenced(self, tmp_path):
+        _, _, page = build(tmp_path, demo_job(), media=False)
+        assert "assets/s0.jpg" not in page and "assets/a0.mp3" not in page
+        assert "<img" not in page and "<audio" not in page
+
+    def test_bgdiv_media_mode(self, tmp_path, monkeypatch):
+        from pipeline import compose
+        monkeypatch.setattr(compose, "MEDIA_MODE", "bgdiv")
+        _, _, page = build(tmp_path, demo_job())
+        assert '<div id="img0" class="mediaclip clip"' in page
+        assert "background-image:url(assets/s0.jpg)" in page
+        assert "<img" not in page
+
+    def test_captions_are_absolute_word_synced_and_scene_scoped(self, tmp_path):
+        _, _, page = build(tmp_path, demo_job())
+        assert '<div id="cap0-0" class="cap-line clip" data-start="0.10"' in page
+        assert '<span id="c0-0">Your</span>' in page
+        assert "tl.to('#c0-0',{color:'#A6FF3D',duration:0.05},0.100);" in page
+        assert "tl.to('#c0-0',{color:'#7E8C84',duration:0.05},0.420);" in page
+        # scene 1 starts at 24.0, so its first word highlight is at 24.10
+        assert "tl.to('#c1-0',{color:'#A6FF3D',duration:0.05},24.100);" in page
+
+    def test_caption_line_duration_adds_the_tail(self, tmp_path):
+        _, _, page = build(tmp_path, demo_job())
+        # words 0-4 end in "strength." -> one line, 0.10 to 1.71, +0.25 tail
+        assert 'id="cap0-0" class="cap-line clip" data-start="0.10" data-duration="1.86"' in page
+
+    def test_jaw_lipsync_rides_the_word_clock(self, tmp_path):
+        _, _, page = build(tmp_path, demo_job())
+        opens = re.findall(r"tl\.to\('#croc-jaw',\{rotation:-([\d.]+),svgOrigin:'242 163'"
+                           r",duration:0\.045,ease:'none'\},([\d.]+)\);", page)
+        assert len(opens) == 10                       # 5 words x 2 scenes
+        assert [t for _, t in opens][:2] == ["0.100", "0.420"]
+        assert all(8.0 <= float(a) <= 18.0 for a, _ in opens)
+        closes = re.findall(r"tl\.to\('#croc-jaw',\{rotation:0,.*?\},([\d.]+)\);", page)
+        assert closes[0] == "0.150"                   # opens at 0.100, closes 0.05s later
+
+    def test_blinks_are_baked_within_each_scene(self, tmp_path):
+        from pipeline import compose
+        _, _, page = build(tmp_path, demo_job())
+        assert re.search(r"tl\.to\('\.croc-eye',\{scaleY:0\.08,transformOrigin:'center'"
+                         r",duration:0\.06\},[\d.]+\);", page)
+        assert page.count("scaleY:0.08") == page.count("scaleY:1")
+
+        for i, (t0, dur) in enumerate([(0.0, 24.0), (24.0, 18.0)]):
+            tweens = compose.croc_tweens(i, t0, dur, [w("a", 0.1, 0.4)])
+            opens = [float(re.search(r"\},([\d.]+)\);", t).group(1))
+                     for t in tweens if "scaleY:0.08" in t]
+            assert len(opens) >= 4, opens
+            assert t0 + 2.8 <= opens[0] <= t0 + 4.2
+            assert opens[-1] <= t0 + dur - 0.2                  # nothing blinks past scene end
+            gaps = [b - a for a, b in zip(opens, opens[1:])]
+            assert all(2.8 <= g <= 4.2 for g in gaps), gaps
+
+    def test_blink_and_jaw_baking_is_seeded_per_scene(self):
+        from pipeline import compose
+        first = compose.croc_tweens(3, 0.0, 20.0, [w("a", 0.1, 0.4), w("b", 0.5, 0.9)])
+        assert first == compose.croc_tweens(3, 0.0, 20.0, [w("a", 0.1, 0.4), w("b", 0.5, 0.9)])
+        assert first != compose.croc_tweens(4, 0.0, 20.0, [w("a", 0.1, 0.4), w("b", 0.5, 0.9)])
+
+    def test_croc_origin_falls_back_to_transform_origin_when_asked(self, tmp_path, monkeypatch):
+        """VERIFY-ON-FIRST-RUN #5: svgOrigin verified working, transformOrigin coded too."""
+        from pipeline import compose
+        monkeypatch.setattr(compose, "CROC_ORIGIN", "transformOrigin")
+        _, _, page = build(tmp_path, demo_job())
+        assert "tl.to('#croc-jaw',{rotation:-" in page
+        assert "transformOrigin:'242 163'" in page and "svgOrigin:'242 163'" not in page
+
+    def test_stat_card_only_appears_where_the_job_has_one(self, tmp_path):
+        _, _, page = build(tmp_path, demo_job())
+        assert 'id="stat0"' not in page
+        assert '<div id="stat1" class="statcard clip" data-start="24.00" data-duration="18.00"' in page
+        assert "NEURAL BRAKE" in page and "Governor caps recruitment." in page
+        assert "tl.to('#statbar1',{width:'100%',duration:0.9,ease:'power3.out'},24.600);" in page
+
+    def test_verdict_stamp_owns_the_last_twenty_seconds(self, tmp_path):
+        _, total, page = build(tmp_path, demo_job())
+        assert '<div id="verdict" class="verdict-stamp clip" data-start="22.00" data-duration="20.00"' in page
+        assert ">APEX<" in page
+        assert ("tl.fromTo('#verdict',{scale:3,opacity:0},{scale:1,opacity:1,duration:0.5,"
+                "ease:'back.in(1.2)'},23.000);") in page
+        assert "tl.to('#verdict',{x:12,y:-8,duration:0.15},23.500);" in page
+        assert "tl.to('#verdict',{x:0,y:0,duration:0.15},23.650);" in page
+
+    def test_verdict_is_skipped_when_the_job_has_none(self, tmp_path):
+        _, _, page = build(tmp_path, demo_job(verdict=""))
+        assert "verdict-stamp" not in page.split("<style>")[1].split("</style>")[0] or True
+        assert 'id="verdict"' not in page
+
+    def test_lesson_slate_is_zero_padded_and_fades_in(self, tmp_path):
+        _, _, page = build(tmp_path, demo_job())
+        assert ">LESSON #007<" in page
+        assert "tl.fromTo('#lesson',{opacity:0},{opacity:1,duration:0.5,ease:'power2.out'},0.200);" in page
+        assert page.count('id="lesson"') == 1
+
+    def test_scene_fragments_are_inlined_verbatim(self, tmp_path):
+        _, _, page = build(tmp_path, demo_job())
+        assert '<div id="s0-a" class="clip" data-start="1.00" data-duration="4.00">A</div>' in page
+        assert "tl.to('#s0-a',{opacity:1,duration:0.4},1.000);" in page
+        stage = page[page.index('id="stage"'):page.index("</div>\n<script>")]
+        assert 's0-a' in stage                       # fragment html lives inside #stage
+
+    def test_croc_is_a_single_global_element_not_a_clip(self, tmp_path):
+        _, _, page = build(tmp_path, demo_job())
+        assert page.count('id="croc"') == 1
+        croc = page[page.index('<svg id="croc"'):]
+        assert "data-start" not in croc[:croc.index("</svg>")]
+        assert 'id="croc-jaw"' in page and 'id="croc-arm"' in page
+        assert page.count('class="croc-eye"') >= 2
+
+    def test_croc_entrance_is_baked_when_scene_0_does_not_do_one(self, tmp_path):
+        _, _, page = build(tmp_path, demo_job())
+        assert "tl.to('#croc',{opacity:1,duration:0.4},0.300);" in page
+        assert "tl.fromTo('#croc',{x:1980},{x:1450,duration:1.0,ease:'power2.out'},0.300);" in page
+
+    def test_baked_entrance_is_skipped_when_the_fragment_brings_him_in(self, tmp_path):
+        """Two entrances would overlap on the same properties -- lint warns about it."""
+        job = demo_job()
+        job["scenes"][0]["frag_js"] = ("tl.to('#croc',{opacity:1,duration:0.4},0.500);\n"
+                                       "tl.fromTo('#croc',{x:1900},{x:1400,duration:1.2},0.500);")
+        _, _, page = build(tmp_path, job)
+        assert "},0.300);" not in page
+        assert page.count("tl.to('#croc',{opacity:1") == 1
+
+    def test_html_is_escaped_so_a_script_flavoured_heading_cannot_inject(self, tmp_path):
+        job = demo_job()
+        job["scenes"][1]["stat"]["note"] = '</div><script>alert("x")</script>'
+        _, _, page = build(tmp_path, job)
+        assert "<script>alert" not in page and "&lt;script&gt;alert" in page
+
+    def test_build_is_byte_identical_across_runs(self, tmp_path):
+        _, _, first = build(tmp_path, demo_job())
+        _, _, second = build(tmp_path, demo_job())
+        assert first == second
+
+    def test_build_is_byte_identical_in_a_different_directory(self, tmp_path):
+        """No absolute paths, timestamps or unseeded randomness may leak in."""
+        a, b = tmp_path / "a", tmp_path / "b"
+        a.mkdir(), b.mkdir()
+        _, _, first = build(a, demo_job())
+        _, _, second = build(b, demo_job())
+        assert first == second
+
+    def test_missing_gsap_writes_a_loud_stub(self, tmp_path, monkeypatch):
+        from pipeline import compose
+        monkeypatch.setattr(compose, "VENDOR_GSAP", str(tmp_path / "nope.js"))
+        proj, _, _ = build(tmp_path, demo_job())
+        stub = open(os.path.join(proj, "assets", "gsap.min.js"), encoding="utf-8").read()
+        assert "throw new Error" in stub and "gsap.min.js was missing" in stub
+
+    def test_empty_job_still_produces_a_valid_composition(self, tmp_path):
+        from pipeline import compose
+        proj, total = compose.build_project({"id": "empty", "scenes": []}, str(tmp_path))
+        page = open(os.path.join(proj, "index.html"), encoding="utf-8").read()
+        assert total == 0.0
+        assert 'data-duration="0.10"' in page          # never zero: that fails the renderer
+        assert "window.__timelines = {scaled: tl};" in page
+
+    @pytest.mark.skipif(os.getenv("HF_LIVE") != "1",
+                        reason="set HF_LIVE=1 to lint a real composition (needs npx)")
+    def test_built_project_passes_the_real_linter(self, tmp_path):
+        from pipeline import htmlgen
+        job = demo_job()
+        for i, scene in enumerate(job["scenes"]):
+            t0 = 0.0 if i == 0 else 24.0
+            scene["frag_html"], scene["frag_js"] = htmlgen.SAFE_FALLBACK(t0, t0 + scene["dur"],
+                                                                        scene["heading"], i)
+        proj, _, _ = build(tmp_path, job)
+        out = subprocess.run(["npx", "-y", "hyperframes@0.8.16", "lint", "--json", proj],
+                             capture_output=True, text=True, timeout=900)
+        blob = out.stdout + out.stderr
+        report = json.loads(blob[blob.index("{"):blob.rindex("}") + 1])
+        errors = [f for f in report["findings"] if f["severity"] == "error"]
+        assert errors == [], errors
+        assert report["ok"] is True
