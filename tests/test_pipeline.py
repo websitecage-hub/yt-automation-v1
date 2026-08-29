@@ -734,3 +734,395 @@ class TestTopics:
         topics.save(entries, p)
         assert topics.load(p) == entries
         assert open(p, encoding="utf-8").read().endswith("]\n")
+
+
+# ==========================================================================
+# TASK 8 — pipeline/htmlgen.py
+# ==========================================================================
+GOOD_JS = ("tl.fromTo('#s2-card',{opacity:0},{opacity:1,duration:0.5},12.000);\n"
+           "tl.to('#croc',{opacity:1,duration:0.4},12.200);\n"
+           "tl.to('#croc-arm',{rotation:-28,svgOrigin:'258 188',duration:0.35},14.000);")
+GOOD_HTML = '<div id="s2-card" class="clip" data-start="12.00" data-duration="6.00">STAT</div>'
+
+
+def job_with(scenes, **kw):
+    j = {"id": "2026-08-29-test", "title": "The Punch That Breaks Physics", "scenes": scenes}
+    j.update(kw)
+    return j
+
+
+class TestHtmlgenBans:
+    @pytest.mark.parametrize("bad", [
+        "tl.to('#s2-a',{x:Math.random()*10},12.0);",
+        "tl.to('#s2-a',{x:Date.now()},12.0);",
+        "setTimeout(function(){},10);tl.to('#s2-a',{x:1},12.0);",
+        "setInterval(f,10);tl.to('#s2-a',{x:1},12.0);",
+        "requestAnimationFrame(f);tl.to('#s2-a',{x:1},12.0);",
+        "fetch('/x');tl.to('#s2-a',{x:1},12.0);",
+        "localStorage.setItem('a','b');tl.to('#s2-a',{x:1},12.0);",
+    ])
+    def test_banned_js_tokens_are_caught(self, bad):
+        from pipeline import htmlgen
+        v = htmlgen.static_violations(GOOD_HTML, bad, 2, 12.0, 18.0)
+        assert any("banned token" in x for x in v), v
+
+    @pytest.mark.parametrize("bad", [
+        '<img id="s2-i" src="https://x.com/a.jpg">',
+        '<img id="s2-i" src="http://x.com/a.jpg">',
+        '<style>@import url(a.css);</style><div id="s2-a"></div>',
+        '<link rel="stylesheet" href="a.css"><div id="s2-a"></div>',
+        '<script src="a.js"></script><div id="s2-a"></div>',
+    ])
+    def test_banned_html_tokens_are_caught(self, bad):
+        from pipeline import htmlgen
+        v = htmlgen.static_violations(bad, GOOD_JS, 2, 12.0, 18.0)
+        assert any("banned token" in x for x in v), v
+
+    def test_lookalike_identifiers_are_not_banned(self):
+        """F.rand, mathRandom, dateNow, myFetch, timeoutMs must all pass."""
+        from pipeline import htmlgen
+        js = ("const k = F.rand;\n"
+              "tl.to('#s2-a',{x:mathRandom,duration:0.2},12.0);\n"
+              "tl.to('#s2-a',{y:dateNow + timeoutMs + myFetch(1),duration:0.2},12.5);\n"
+              "tl.to('#croc',{opacity:1,duration:0.4},12.1);")
+        assert htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0) == []
+
+    def test_clean_scene_has_no_violations(self):
+        from pipeline import htmlgen
+        assert htmlgen.static_violations(GOOD_HTML, GOOD_JS, 2, 12.0, 18.0) == []
+
+    def test_missing_tween_call_is_a_violation(self):
+        from pipeline import htmlgen
+        v = htmlgen.static_violations(GOOD_HTML, "const x = 1;", 2, 12.0, 18.0)
+        assert any("no tl.to(" in x for x in v)
+
+    def test_framework_owned_selectors_are_rejected(self):
+        from pipeline import htmlgen
+        for sel in ("#croc-jaw", ".croc-eye", "#verdict", "#lesson", "#c2-3"):
+            js = "tl.to('%s',{opacity:1,duration:0.2},12.0);" % sel
+            v = htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0)
+            assert any("framework-owned" in x for x in v), (sel, v)
+
+    def test_css_motion_is_rejected(self):
+        from pipeline import htmlgen
+        html = '<div id="s2-a" style="transition: all 0.3s ease">x</div>'
+        assert any("CSS transition" in x for x in htmlgen.static_violations(html, GOOD_JS, 2, 12.0, 18.0))
+        html = '<div id="s2-a" style="animation: spin 2s linear">x</div>'
+        assert any("CSS animation" in x for x in htmlgen.static_violations(html, GOOD_JS, 2, 12.0, 18.0))
+
+    def test_ids_must_be_scene_scoped(self):
+        from pipeline import htmlgen
+        v = htmlgen.static_violations('<div id="card">x</div>', GOOD_JS, 2, 12.0, 18.0)
+        assert any("must start with 's2-'" in x for x in v), v
+
+    def test_other_scenes_elements_are_off_limits(self):
+        from pipeline import htmlgen
+        js = "tl.to('#s5-card',{opacity:1,duration:0.2},12.0);"
+        v = htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0)
+        assert any("not yours" in x for x in v), v
+
+    def test_own_image_and_globals_are_allowed(self):
+        from pipeline import htmlgen
+        js = ("tl.to('#img2',{scale:1.05,duration:5},12.0);\n"
+              "tl.to('#croc',{x:1450,duration:1},12.0);\n"
+              "tl.to('#croc-arm',{rotation:-20,duration:0.3},13.0);")
+        assert htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0) == []
+        v = htmlgen.static_violations(GOOD_HTML, "tl.to('#img5',{scale:1.05,duration:5},12.0);", 2, 12.0, 18.0)
+        assert any("not yours" in x for x in v)
+
+
+class TestHtmlgenTimeWindow:
+    def test_times_inside_the_window_pass_including_slack(self):
+        from pipeline import htmlgen
+        for t in (12.0, 15.0, 18.0, 11.8, 18.2):
+            js = "tl.to('#s2-a',{opacity:1,duration:0.2},%s);" % t
+            assert htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0) == [], t
+
+    def test_times_outside_the_window_are_rejected(self):
+        from pipeline import htmlgen
+        for t in (0.0, 11.79, 18.21, 400.0, -3.0):
+            js = "tl.to('#s2-a',{opacity:1,duration:0.2},%s);" % t
+            v = htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0)
+            assert any("outside this scene's window" in x for x in v), t
+
+    def test_relative_position_strings_are_rejected(self):
+        from pipeline import htmlgen
+        for pos in ("'+=0.5'", '"<"', "'>'"):
+            js = "tl.to('#s2-a',{opacity:1,duration:0.2},%s);" % pos
+            v = htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0)
+            assert any("no absolute-second time" in x for x in v), pos
+
+    def test_missing_position_argument_is_rejected(self):
+        from pipeline import htmlgen
+        v = htmlgen.static_violations(GOOD_HTML, "tl.to('#s2-a',{opacity:1,duration:0.2});", 2, 12.0, 18.0)
+        assert any("no absolute-second time" in x for x in v), v
+
+    def test_parser_survives_nested_braces_commas_and_strings(self):
+        from pipeline import htmlgen
+        js = ("tl.to('#s2-a',{x:1,y:2,ease:'power2.out',onStart:null,"
+              "transformOrigin:'50% 50%',boxShadow:'0 0 20px rgba(166,255,61,0.6)'},13.250);")
+        assert [t for t, _ in htmlgen.tween_times(js)] == [13.25]
+
+    def test_parser_reads_fromto_with_two_vars_objects(self):
+        from pipeline import htmlgen
+        js = "tl.fromTo('#s2-a',{scale:3,opacity:0},{scale:1,opacity:1,duration:0.5},14.75);"
+        assert [t for t, _ in htmlgen.tween_times(js)] == [14.75]
+
+    def test_parser_handles_whitespace_newlines_and_multiple_calls(self):
+        from pipeline import htmlgen
+        js = ("tl . to (\n  '#s2-a',\n  {opacity: 1, duration: 0.4},\n  12.100\n);\n"
+              "tl.to('#s2-b',{y:-30,duration:0.6},13.4);\n")
+        assert [t for t, _ in htmlgen.tween_times(js)] == [12.1, 13.4]
+
+    def test_parser_ignores_parens_inside_quotes(self):
+        from pipeline import htmlgen
+        js = "tl.to('#s2-a',{ease:'back.in(1.2)',duration:0.5},16.000);"
+        assert [t for t, _ in htmlgen.tween_times(js)] == [16.0]
+
+    def test_parser_returns_nothing_when_there_are_no_tweens(self):
+        from pipeline import htmlgen
+        assert htmlgen.tween_times("const a = fn(1,2);") == []
+
+
+class TestHtmlgenFences:
+    def test_clean_two_fences(self):
+        from pipeline import htmlgen
+        html, js = htmlgen.parse_fences("```html\n<div id=\"s0-a\"></div>\n```\n```js\ntl.to(1);\n```")
+        assert html == '<div id="s0-a"></div>' and js == "tl.to(1);"
+
+    def test_messy_whitespace_prose_and_casing(self):
+        from pipeline import htmlgen
+        reply = ("Sure! Here is scene 3.\n\n```  HTML  \n\n<div id=\"s3-a\">hi</div>\n\n```"
+                 "\n\nAnd the timeline:\n\n``` javascript \ntl.to('#s3-a',{x:1},4.0);\n```\n\nEnjoy.")
+        html, js = htmlgen.parse_fences(reply)
+        assert html == '<div id="s3-a">hi</div>'
+        assert js == "tl.to('#s3-a',{x:1},4.0);"
+
+    def test_unlabelled_fences_fall_back_to_order(self):
+        from pipeline import htmlgen
+        html, js = htmlgen.parse_fences("```\n<div id=\"s1-a\"></div>\n```\n```\ntl.to(1);\n```")
+        assert html == '<div id="s1-a"></div>' and js == "tl.to(1);"
+
+    def test_unclosed_final_fence_still_parses(self):
+        from pipeline import htmlgen
+        html, js = htmlgen.parse_fences("```html\n<div id=\"s1-a\"></div>\n```\n```js\ntl.to('#s1-a',{x:1},2.0);")
+        assert js == "tl.to('#s1-a',{x:1},2.0);"
+
+    def test_one_or_zero_fences_raises(self):
+        from pipeline import htmlgen
+        with pytest.raises(ValueError, match="two fenced blocks"):
+            htmlgen.parse_fences("```html\n<div></div>\n```")
+        with pytest.raises(ValueError, match="two fenced blocks"):
+            htmlgen.parse_fences("no fences at all")
+
+    def test_extra_trailing_fence_is_ignored(self):
+        from pipeline import htmlgen
+        html, js = htmlgen.parse_fences(
+            "```html\n<div id=\"s1-a\"></div>\n```\n```js\ntl.to(1);\n```\n```bash\nnpm i\n```")
+        assert js == "tl.to(1);"
+
+
+class TestHtmlgenBrief:
+    def test_scene_t0_sums_previous_durations(self):
+        from pipeline import htmlgen
+        job = job_with([{"dur": 10.0}, {"dur": 5.5}, {"dur": 7.25}])
+        assert htmlgen.scene_t0(job, 0) == 0.0
+        assert htmlgen.scene_t0(job, 1) == 10.0
+        assert htmlgen.scene_t0(job, 2) == 15.5
+        assert htmlgen.scene_t0(job, 3) == 22.75
+
+    def test_scene_t0_ignores_missing_and_junk_durations(self):
+        from pipeline import htmlgen
+        job = job_with([{"dur": 10.0}, {}, {"dur": "nope"}, {"dur": 4}])
+        assert htmlgen.scene_t0(job, 4) == 14.0
+
+    def test_word_clock_is_absolute_and_formatted_to_millis(self):
+        from pipeline import htmlgen
+        words = [{"w": "Your", "s": 0.1, "e": 0.4}, {"w": " brain ", "s": 0.4, "e": 0.9}]
+        assert htmlgen.word_clock(words, 104.8) == "Your(104.900-105.200) brain(105.200-105.700)"
+
+    def test_word_clock_drops_blank_and_broken_words(self):
+        from pipeline import htmlgen
+        words = [{"w": "", "s": 0, "e": 1}, {"w": "ok", "s": 1, "e": 2}, {"w": "x", "s": "?", "e": 3}]
+        assert htmlgen.word_clock(words, 0) == "ok(1.000-2.000)"
+
+    def test_words_come_from_the_srt_work_file(self, tmp_path):
+        from pipeline import htmlgen
+        (tmp_path / "wjob1_2.json").write_text(json.dumps([{"w": "hi", "s": 0.0, "e": 0.5}]), encoding="utf-8")
+        job = job_with([{}, {}, {}], id="job1")
+        assert htmlgen.scene_words(job, 2, str(tmp_path))[0]["w"] == "hi"
+
+    def test_words_on_the_job_win_over_the_work_file(self, tmp_path):
+        from pipeline import htmlgen
+        (tmp_path / "wjob1_0.json").write_text(json.dumps([{"w": "file", "s": 0, "e": 1}]), encoding="utf-8")
+        job = job_with([{"words": [{"w": "inline", "s": 0, "e": 1}]}], id="job1")
+        assert htmlgen.scene_words(job, 0, str(tmp_path))[0]["w"] == "inline"
+
+    def test_missing_word_file_is_not_fatal(self, tmp_path):
+        from pipeline import htmlgen
+        assert htmlgen.scene_words(job_with([{}], id="nope"), 0, str(tmp_path)) == []
+
+    def test_brief_carries_the_scene_window_and_fields(self):
+        from pipeline import htmlgen
+        job = job_with([{"dur": 12.0}, {"act": "BASE STATS", "heading": "GRIP", "text": "It bites.",
+                                        "image_prompt": "a jaw", "dur": 6.5,
+                                        "words": [{"w": "It", "s": 0.2, "e": 0.5}]}])
+        b = htmlgen.build_brief(job, 1, None)
+        assert (b["t0"], b["t1"]) == (12.0, 18.5)
+        assert b["act"] == "BASE STATS" and b["heading"] == "GRIP"
+        assert b["clock"] == "It(12.200-12.500)"
+
+    def test_brief_notes_when_there_is_no_word_clock(self):
+        from pipeline import htmlgen
+        b = htmlgen.build_brief(job_with([{"dur": 5.0}]), 0, None)
+        assert "no word timings" in b["clock"]
+
+    def test_prompt_placeholders_are_all_filled(self):
+        from pipeline import htmlgen
+        job = job_with([{"act": "HOOK", "heading": "H", "text": "T", "image_prompt": "IP",
+                         "dur": 8.0, "words": [{"w": "T", "s": 0.0, "e": 0.4}]}])
+        system, user = htmlgen.render_prompt(htmlgen.build_brief(job, 0, None))
+        assert "motion designer" in system
+        for leftover in ("{i+1}", "{title}", "{act}", "{heading}", "{text}",
+                         "{clock}", "{t0}", "{t1}", "{image_prompt}"):
+            assert leftover not in user, leftover
+        assert "SCENE 1 of 16" in user
+        assert "The Punch That Breaks Physics" in user
+        assert "[0.000, 8.000]" in user
+
+
+class TestHtmlgenLoop:
+    @pytest.fixture(autouse=True)
+    def no_subprocess(self, monkeypatch):
+        """The lint gate is exercised for real elsewhere; here it must never shell out."""
+        from pipeline import htmlgen
+        monkeypatch.setattr(htmlgen, "lint_violations", lambda *a, **k: [])
+        monkeypatch.setattr(htmlgen.subprocess, "run",
+                            lambda *a, **k: pytest.fail("no subprocess in this test"))
+
+    def job(self):
+        return job_with([{"act": "HOOK", "heading": "SEALED", "text": "Your brain seals it.",
+                          "image_prompt": "a brain", "dur": 9.0,
+                          "words": [{"w": "Your", "s": 0.2, "e": 0.5}]}])
+
+    def test_accepts_a_clean_first_attempt(self, monkeypatch):
+        from pipeline import htmlgen, llm
+        reply = ("```html\n<div id=\"s0-a\" class=\"clip\" data-start=\"0.20\" "
+                 "data-duration=\"8.00\">SEALED</div>\n```\n```js\n"
+                 "tl.fromTo('#s0-a',{opacity:0},{opacity:1,duration:0.5},0.200);\n"
+                 "tl.to('#croc',{opacity:1,duration:0.4},0.400);\n```")
+        calls = []
+        monkeypatch.setattr(llm, "llm_code", lambda s, u: (calls.append(u), reply)[1])
+        job = self.job()
+        htmlgen.generate_scene(job, 0, None)
+        assert job["scenes"][0]["frag_source"] == "llm attempt 1"
+        assert "#croc" in job["scenes"][0]["frag_js"]
+        assert len(calls) == 1
+
+    def test_repairs_then_accepts_and_feeds_violations_back(self, monkeypatch):
+        from pipeline import htmlgen, llm
+        bad = "```html\n<div id=\"nope\"></div>\n```\n```js\ntl.to('#nope',{x:Math.random()},99.0);\n```"
+        good = ("```html\n<div id=\"s0-a\"></div>\n```\n```js\n"
+                "tl.to('#s0-a',{opacity:1,duration:0.4},1.000);\n```")
+        seen = []
+
+        def fake(system, user):
+            seen.append(user)
+            return bad if len(seen) == 1 else good
+
+        monkeypatch.setattr(llm, "llm_code", fake)
+        job = self.job()
+        htmlgen.generate_scene(job, 0, None)
+        assert job["scenes"][0]["frag_source"] == "llm attempt 2"
+        assert "YOUR PREVIOUS ATTEMPT WAS REJECTED" in seen[1]
+        assert "Math.random" in seen[1] and "99.000" in seen[1]
+        assert "[0.000, 9.000]" in seen[1]
+
+    def test_four_bad_attempts_fall_back_and_never_raise(self, monkeypatch):
+        from pipeline import htmlgen, llm
+        n = {"i": 0}
+
+        def fake(system, user):
+            n["i"] += 1
+            return "```html\n<div id=\"bad\"></div>\n```\n```js\nsetTimeout(f,1);tl.to('#bad',{x:1},900.0);\n```"
+
+        monkeypatch.setattr(llm, "llm_code", fake)
+        job = self.job()
+        scene = htmlgen.generate_scene(job, 0, None)
+        assert n["i"] == htmlgen.MAX_REPAIRS + 1 == 4
+        assert scene["frag_source"] == "SAFE_FALLBACK"
+        assert "s0-fbhead" in scene["frag_html"]
+        assert htmlgen.static_violations(scene["frag_html"], scene["frag_js"], 0, 0.0, 9.0) == []
+
+    def test_llm_outage_falls_back_without_raising(self, monkeypatch):
+        from pipeline import htmlgen, llm
+
+        def boom(system, user):
+            raise RuntimeError("all LLM providers down")
+
+        monkeypatch.setattr(llm, "llm_code", boom)
+        job = self.job()
+        assert htmlgen.generate_scene(job, 0, None)["frag_source"] == "SAFE_FALLBACK"
+
+    def test_unparseable_reply_is_treated_as_a_rejection(self, monkeypatch):
+        from pipeline import htmlgen, llm
+        monkeypatch.setattr(llm, "llm_code", lambda s, u: "I cannot do that.")
+        job = self.job()
+        assert htmlgen.generate_scene(job, 0, None)["frag_source"] == "SAFE_FALLBACK"
+
+    def test_lint_errors_alone_force_a_repair(self, monkeypatch):
+        from pipeline import htmlgen, llm
+        good = ("```html\n<div id=\"s0-a\"></div>\n```\n```js\n"
+                "tl.to('#s0-a',{opacity:1,duration:0.4},1.000);\n```")
+        monkeypatch.setattr(llm, "llm_code", lambda s, u: good)
+        rounds = {"i": 0}
+
+        def flaky(*a, **k):
+            rounds["i"] += 1
+            return ["hyperframes lint media_missing_id: needs an id"] if rounds["i"] == 1 else []
+
+        monkeypatch.setattr(htmlgen, "lint_violations", flaky)
+        job = self.job()
+        assert htmlgen.generate_scene(job, 0, None)["frag_source"] == "llm attempt 2"
+
+    def test_scene_slot_is_created_when_the_job_is_short(self, monkeypatch):
+        from pipeline import htmlgen, llm
+        monkeypatch.setattr(llm, "llm_code", lambda s, u: "junk")
+        job = {"id": "x", "title": "t", "scenes": []}
+        htmlgen.generate_scene(job, 2, None)
+        assert len(job["scenes"]) == 3 and job["scenes"][2]["frag_source"] == "SAFE_FALLBACK"
+
+
+class TestHtmlgenComposition:
+    def test_test_composition_has_the_contract_attributes(self):
+        from pipeline import htmlgen
+        page = htmlgen.test_composition(GOOD_HTML, GOOD_JS, 2, 12.0, 18.0)
+        assert 'data-composition-id="scaled"' in page
+        assert 'data-duration="18.00"' in page          # renderer needs a duration source
+        assert 'data-width="1920"' in page and 'data-height="1080"' in page
+        assert "gsap.timeline({paused:true})" in page
+        assert "window.__timelines = {scaled: tl}" in page
+        assert 'src="assets/gsap.min.js"' in page and "http" not in page
+        assert GOOD_HTML in page and GOOD_JS in page
+
+    def test_safe_fallback_is_self_consistent_for_any_window(self):
+        from pipeline import htmlgen
+        for t0, t1, i in ((0.0, 9.0, 0), (104.5, 118.25, 7), (500.0, 500.05, 15)):
+            html, js = htmlgen.SAFE_FALLBACK(t0, t1, "HEADING <&>", i)
+            assert htmlgen.static_violations(html, js, i, t0, max(t1, t0 + 1.2)) == []
+            assert "s%d-fbhead" % i in html
+            assert "#img%d" % i in js and "#croc" in js
+            assert "<" not in html.split(">", 1)[1].split("<")[0]   # heading text is sanitised
+
+    def test_safe_fallback_survives_an_empty_heading(self):
+        from pipeline import htmlgen
+        html, _ = htmlgen.SAFE_FALLBACK(1.0, 5.0, "")
+        assert ">SCALED<" in html
+
+    @pytest.mark.skipif(os.getenv("HF_LIVE") != "1",
+                        reason="set HF_LIVE=1 to run the real `hyperframes lint` gate (needs npx)")
+    def test_safe_fallback_passes_the_real_linter(self, tmp_path):
+        from pipeline import htmlgen
+        html, js = htmlgen.SAFE_FALLBACK(10.0, 22.5, "THE AWAKENING", 3)
+        assert htmlgen.lint_violations(html, js, 3, 10.0, 22.5, str(tmp_path)) == []
+        assert htmlgen.LINT_SUBCOMMAND in ("lint", "check")
