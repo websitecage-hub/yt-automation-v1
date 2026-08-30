@@ -1,16 +1,21 @@
 """LLM access for SCALED — two provider chains, hard-wired fallback order.
 
-llm()      creative chain: Groq -> Gemini -> NIM   (temperature 0.85)
-llm_code() code chain:     Gemini -> Groq -> NIM   (temperature 0.40)
+llm()      creative chain: seekai opus-4-8 -> seekai sonnet-5 -> Gemini -> Groq
+llm_code() code chain:     seekai sonnet-5 -> seekai opus-4-8 -> Gemini -> Groq
 
-Every provider speaks the OpenAI /chat/completions dialect, so one POST shape
-covers all three. A provider whose API key env var is empty is skipped without
-being counted as a failure; a provider that raises, returns non-200, or returns
-unparseable JSON (when json_out=True) is logged and the next one is tried.
+Providers speak one of two dialects -- "anthropic" (POST /v1/messages, x-api-key)
+for the seekai gateway, "openai" (POST /chat/completions, Bearer) for Gemini and
+Groq -- and _post normalises both to a single text/JSON return. Every HTTP call
+is retried on transient failures (timeouts, 429, 5xx) before the chain moves on;
+a provider whose key env var is empty is skipped without counting as a failure,
+and one that raises, returns non-200, or unparseable JSON (json_out) is logged so
+the next provider -- ultimately the free Gemini/Groq tail -- takes over. The
+chain only raises when every provider is exhausted.
 """
 import json
 import os
 import re
+import time
 
 import requests
 
@@ -18,31 +23,37 @@ TIMEOUT = 300
 CREATIVE_MAX_TOKENS = 8000
 CODE_MAX_TOKENS = 12000
 
-NIM_BASE = "https://integrate.api.nvidia.com/v1"
+SEEKAI_BASE = "https://seekai.cc"
 GROQ_BASE = "https://api.groq.com/openai/v1"
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
 
-# (label, base, model, env var holding the key)
-# Confirmed-live providers lead each chain (Groq gpt-oss-120b + Gemini). NIM is
-# best-effort last: this account has no general chat model provisioned right now,
-# so its call 404s and _run_chain simply falls through -- swap in a live NIM
-# model here the day the account gains one, no other change needed.
+RETRY_TRIES = 3                       # per-provider HTTP attempts before falling through
+RETRY_STATUS = {408, 409, 429, 500, 502, 503, 504}
+
+# (label, base, model, env var holding the key, dialect)
+# seekai (Anthropic dialect) leads both chains on the models the user picked;
+# free Gemini + Groq form the tail so the chain never fully dies. SEEKAI_KEY2 is
+# a second gateway key, tried after the first so a per-key limit isn't terminal.
 CREATIVE_CHAIN = [
-    ("groq", GROQ_BASE, "openai/gpt-oss-120b", "GROQ_KEY"),
-    ("gemini", GEMINI_BASE, "gemini-2.5-flash", "GEMINI_KEY"),
-    ("nim", NIM_BASE, "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY"),
+    ("seekai/opus-4-8",   SEEKAI_BASE, "claude-opus-4-8",     "SEEKAI_KEY",  "anthropic"),
+    ("seekai/sonnet-5",   SEEKAI_BASE, "claude-sonnet-5",     "SEEKAI_KEY",  "anthropic"),
+    ("seekai/opus-4-8#2", SEEKAI_BASE, "claude-opus-4-8",     "SEEKAI_KEY2", "anthropic"),
+    ("gemini",            GEMINI_BASE, "gemini-2.5-flash",    "GEMINI_KEY",  "openai"),
+    ("groq",              GROQ_BASE,   "openai/gpt-oss-120b", "GROQ_KEY",    "openai"),
 ]
 CODE_CHAIN = [
-    ("gemini", GEMINI_BASE, "gemini-2.5-flash", "GEMINI_KEY"),
-    ("groq", GROQ_BASE, "openai/gpt-oss-120b", "GROQ_KEY"),
-    ("nim", NIM_BASE, "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY"),
+    ("seekai/sonnet-5",   SEEKAI_BASE, "claude-sonnet-5",     "SEEKAI_KEY",  "anthropic"),
+    ("seekai/opus-4-8",   SEEKAI_BASE, "claude-opus-4-8",     "SEEKAI_KEY",  "anthropic"),
+    ("seekai/sonnet-5#2", SEEKAI_BASE, "claude-sonnet-5",     "SEEKAI_KEY2", "anthropic"),
+    ("gemini",            GEMINI_BASE, "gemini-2.5-flash",    "GEMINI_KEY",  "openai"),
+    ("groq",              GROQ_BASE,   "openai/gpt-oss-120b", "GROQ_KEY",    "openai"),
 ]
 
 # Filled at import: which provider keys are actually present in this process.
 # run.py logs this so a run that silently lost a provider is obvious in the log.
 PROVIDERS_HEALTH = {
     env: bool((os.getenv(env) or "").strip())
-    for env in ("NIM_KEY", "GROQ_KEY", "GEMINI_KEY")
+    for env in ("SEEKAI_KEY", "SEEKAI_KEY2", "GEMINI_KEY", "GROQ_KEY")
 }
 
 _FENCE = re.compile(r"^\s*```(?:json|JSON)?\s*|\s*```\s*$")
@@ -79,27 +90,63 @@ def parse_json(text):
     raise ValueError("response was not JSON")
 
 
-def _post(base, model, key, system, user, temperature, max_tokens, json_out):
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": system},
-            {"role": "user", "content": user},
-        ],
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-    }
-    if json_out:
-        payload["response_format"] = {"type": "json_object"}
-    r = requests.post(
-        base + "/chat/completions",
-        headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"},
-        json=payload,
-        timeout=TIMEOUT,
-    )
-    if r.status_code != 200:
-        raise RuntimeError("HTTP %s: %s" % (r.status_code, r.text[:300]))
-    content = r.json()["choices"][0]["message"]["content"]
+def _http_post(url, headers, payload):
+    """POST with bounded retries on transient failures (timeout, 429, 5xx).
+
+    Returns the 200 response. A non-retryable status (e.g. 400/401/404) raises
+    at once so the chain moves to the next provider instead of hammering a dead
+    endpoint; retryable ones back off (1s, 2s, 4s) and try again.
+    """
+    last = None
+    for attempt in range(RETRY_TRIES):
+        try:
+            r = requests.post(url, headers=headers, json=payload, timeout=TIMEOUT)
+        except requests.RequestException as e:
+            last = e
+        else:
+            if r.status_code == 200:
+                return r
+            err = RuntimeError("HTTP %s: %s" % (r.status_code, r.text[:300]))
+            if r.status_code not in RETRY_STATUS:
+                raise err
+            last = err
+        if attempt < RETRY_TRIES - 1:
+            time.sleep(2 ** attempt)
+    raise last if isinstance(last, Exception) else RuntimeError("request failed")
+
+
+def _post(base, model, key, system, user, temperature, max_tokens, json_out, dialect):
+    if dialect == "anthropic":
+        # Anthropic Messages API: system is top-level, no response_format; we lean
+        # on parse_json to recover the object the prompt already asks the model for.
+        payload = {
+            "model": model,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+            "system": system,
+            "messages": [{"role": "user", "content": user}],
+        }
+        headers = {"x-api-key": key, "anthropic-version": "2023-06-01",
+                   "content-type": "application/json"}
+        r = _http_post(base + "/v1/messages", headers, payload)
+        blocks = r.json().get("content") or []
+        content = "".join(b.get("text", "") for b in blocks
+                          if isinstance(b, dict) and b.get("type") == "text")
+    else:
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if json_out:
+            payload["response_format"] = {"type": "json_object"}
+        headers = {"Authorization": "Bearer " + key, "Content-Type": "application/json"}
+        r = _http_post(base + "/chat/completions", headers, payload)
+        content = r.json()["choices"][0]["message"]["content"]
     if not content or not content.strip():
         raise RuntimeError("empty completion")
     return parse_json(content) if json_out else content.strip()
@@ -107,19 +154,19 @@ def _post(base, model, key, system, user, temperature, max_tokens, json_out):
 
 def _run_chain(chain, system, user, temperature, max_tokens, json_out, tag):
     tried = []
-    for label, base, model, env in chain:
+    for label, base, model, env, dialect in chain:
         key = (os.getenv(env) or "").strip()
         if not key:
-            print("[llm] %s skipped: %s not set" % (model, env))
+            print("[llm] %s skipped: %s not set" % (label, env))
             continue
-        tried.append(model)
+        tried.append(label)
         try:
-            out = _post(base, model, key, system, user, temperature, max_tokens, json_out)
+            out = _post(base, model, key, system, user, temperature, max_tokens, json_out, dialect)
             print("[llm] %s ok via %s (%s)" % (tag, label, model))
             return out
         except Exception as e:
-            print("[llm] %s failed: %s" % (model, e))
-    raise RuntimeError("all LLM providers down")
+            print("[llm] %s failed: %s" % (label, e))
+    raise RuntimeError("all LLM providers down (tried: %s)" % ", ".join(tried or ["none"]))
 
 
 def llm(system, user, json_out=False):

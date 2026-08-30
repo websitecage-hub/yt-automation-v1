@@ -52,14 +52,27 @@ def chat(content):
     return {"choices": [{"message": {"content": content}}]}
 
 
+def anthropic_msg(content):
+    """An Anthropic Messages-shaped reply carrying `content` (seekai dialect)."""
+    return {"content": [{"type": "text", "text": content}]}
+
+
+def dialect_resp(url, content):
+    """Reply in whichever dialect the URL implies, so chain-order tests work."""
+    if "/v1/messages" in url:
+        return FakeResp(payload=anthropic_msg(content))
+    return FakeResp(payload=chat(content))
+
+
 # ==========================================================================
 # TASK 4 — pipeline/llm.py
 # ==========================================================================
 class TestLLM:
-    def _mod(self, monkeypatch, keys=("NIM_KEY", "GROQ_KEY", "GEMINI_KEY")):
-        for env in ("NIM_KEY", "GROQ_KEY", "GEMINI_KEY"):
+    def _mod(self, monkeypatch, keys=("SEEKAI_KEY", "SEEKAI_KEY2", "GEMINI_KEY", "GROQ_KEY")):
+        for env in ("SEEKAI_KEY", "SEEKAI_KEY2", "GEMINI_KEY", "GROQ_KEY"):
             monkeypatch.setenv(env, "k-" + env if env in keys else "")
         from pipeline import llm
+        monkeypatch.setattr(llm.time, "sleep", lambda *a, **k: None)  # no real backoff in tests
         return llm
 
     def test_happy_path_uses_first_provider(self, monkeypatch):
@@ -68,28 +81,28 @@ class TestLLM:
 
         def fake_post(url, **kw):
             calls.append((url, kw["json"]["model"], kw["json"]["temperature"]))
-            return FakeResp(payload=chat("Base stats first."))
+            return FakeResp(payload=anthropic_msg("Base stats first."))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("sys", "user") == "Base stats first."
         assert len(calls) == 1
         url, model, temp = calls[0]
-        assert url == llm.NIM_BASE + "/chat/completions"
-        assert model == "meta/llama-3.3-70b-instruct"
+        assert url == llm.SEEKAI_BASE + "/v1/messages"
+        assert model == "claude-opus-4-8"
         assert temp == 0.85
 
-    def test_code_chain_starts_at_gemini_with_low_temperature(self, monkeypatch):
+    def test_code_chain_starts_at_seekai_sonnet(self, monkeypatch):
         llm = self._mod(monkeypatch)
         seen = {}
 
         def fake_post(url, **kw):
             seen.update(url=url, **kw["json"])
-            return FakeResp(payload=chat("tl.to('#s0-a',{opacity:1},0.5);"))
+            return FakeResp(payload=anthropic_msg("tl.to('#s0-a',{opacity:1},0.5);"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         llm.llm_code("sys", "user")
-        assert seen["url"] == llm.GEMINI_BASE + "/chat/completions"
-        assert seen["model"] == "gemini-2.5-flash"
+        assert seen["url"] == llm.SEEKAI_BASE + "/v1/messages"
+        assert seen["model"] == "claude-sonnet-5"
         assert seen["temperature"] == 0.4
         assert seen["max_tokens"] == 12000
 
@@ -100,22 +113,36 @@ class TestLLM:
         def fake_post(url, **kw):
             models.append(kw["json"]["model"])
             if len(models) == 1:
-                return FakeResp(status=500, text="upstream boom")
-            return FakeResp(payload=chat("second answer"))
+                return FakeResp(status=400, text="bad request")  # non-retryable -> next provider
+            return FakeResp(payload=anthropic_msg("second answer"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "second answer"
-        assert models == ["meta/llama-3.3-70b-instruct", "llama-3.3-70b-versatile"]
+        assert models == ["claude-opus-4-8", "claude-sonnet-5"]
 
-    def test_exception_also_falls_through(self, monkeypatch):
+    def test_retryable_status_is_retried_on_same_provider(self, monkeypatch):
         llm = self._mod(monkeypatch)
         n = {"i": 0}
 
         def fake_post(url, **kw):
             n["i"] += 1
             if n["i"] == 1:
-                raise RuntimeError("connection reset")
-            return FakeResp(payload=chat("recovered"))
+                return FakeResp(status=503, text="try later")  # retryable -> retry, don't fall through
+            return FakeResp(payload=anthropic_msg("ok"))
+
+        monkeypatch.setattr(llm.requests, "post", fake_post)
+        assert llm.llm("s", "u") == "ok"
+        assert n["i"] == 2
+
+    def test_request_exception_is_retried(self, monkeypatch):
+        llm = self._mod(monkeypatch)
+        n = {"i": 0}
+
+        def fake_post(url, **kw):
+            n["i"] += 1
+            if n["i"] == 1:
+                raise llm.requests.RequestException("connection reset")
+            return FakeResp(payload=anthropic_msg("recovered"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "recovered"
@@ -131,7 +158,7 @@ class TestLLM:
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "groq only"
-        assert models == ["llama-3.3-70b-versatile"]
+        assert models == ["openai/gpt-oss-120b"]
 
     def test_all_down_raises(self, monkeypatch):
         llm = self._mod(monkeypatch)
@@ -145,8 +172,8 @@ class TestLLM:
         with pytest.raises(RuntimeError, match="all LLM providers down"):
             llm.llm("s", "u")
 
-    def test_json_out_sets_response_format(self, monkeypatch):
-        llm = self._mod(monkeypatch)
+    def test_json_out_sets_response_format_on_openai_dialect(self, monkeypatch):
+        llm = self._mod(monkeypatch, keys=("GROQ_KEY",))
         seen = {}
 
         def fake_post(url, **kw):
@@ -156,6 +183,20 @@ class TestLLM:
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u", json_out=True) == {"verdict": "APEX"}
         assert seen["response_format"] == {"type": "json_object"}
+
+    def test_anthropic_dialect_parses_json_without_response_format(self, monkeypatch):
+        llm = self._mod(monkeypatch, keys=("SEEKAI_KEY",))
+        seen = {}
+
+        def fake_post(url, **kw):
+            seen.update(url=url, **kw["json"])
+            return FakeResp(payload=anthropic_msg('{"verdict":"APEX"}'))
+
+        monkeypatch.setattr(llm.requests, "post", fake_post)
+        assert llm.llm("s", "u", json_out=True) == {"verdict": "APEX"}
+        assert "response_format" not in seen        # Anthropic has no such field
+        assert seen["system"] == "s"                # system is a top-level param
+        assert seen["url"] == llm.SEEKAI_BASE + "/v1/messages"
 
     @pytest.mark.parametrize("raw", [
         '{"a":1}',
@@ -167,13 +208,13 @@ class TestLLM:
     ])
     def test_fence_stripping_and_slicing(self, monkeypatch, raw):
         llm = self._mod(monkeypatch)
-        monkeypatch.setattr(llm.requests, "post", lambda *a, **k: FakeResp(payload=chat(raw)))
+        monkeypatch.setattr(llm.requests, "post", lambda url, **k: dialect_resp(url, raw))
         assert llm.llm("s", "u", json_out=True) == {"a": 1}
 
     def test_json_array_response_parses(self, monkeypatch):
         llm = self._mod(monkeypatch)
         monkeypatch.setattr(llm.requests, "post",
-                            lambda *a, **k: FakeResp(payload=chat('```json\n[{"topic":"x"}]\n```')))
+                            lambda url, **k: dialect_resp(url, '```json\n[{"topic":"x"}]\n```'))
         assert llm.llm("s", "u", json_out=True) == [{"topic": "x"}]
 
     def test_unparseable_json_is_a_provider_failure(self, monkeypatch):
@@ -183,21 +224,24 @@ class TestLLM:
         def fake_post(url, **kw):
             models.append(kw["json"]["model"])
             if len(models) == 1:
-                return FakeResp(payload=chat("I'm afraid I can't do that."))
-            return FakeResp(payload=chat('{"ok":true}'))
+                return FakeResp(payload=anthropic_msg("I'm afraid I can't do that."))
+            return FakeResp(payload=anthropic_msg('{"ok":true}'))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u", json_out=True) == {"ok": True}
         assert len(models) == 2
 
     def test_providers_health_reflects_env(self, monkeypatch):
-        monkeypatch.setenv("NIM_KEY", "x")
+        monkeypatch.setenv("SEEKAI_KEY", "x")
         monkeypatch.setenv("GROQ_KEY", "")
+        monkeypatch.delenv("SEEKAI_KEY2", raising=False)
         monkeypatch.delenv("GEMINI_KEY", raising=False)
         import importlib
         from pipeline import llm as _llm
         llm = importlib.reload(_llm)
-        assert llm.PROVIDERS_HEALTH == {"NIM_KEY": True, "GROQ_KEY": False, "GEMINI_KEY": False}
+        assert llm.PROVIDERS_HEALTH == {
+            "SEEKAI_KEY": True, "SEEKAI_KEY2": False, "GEMINI_KEY": False, "GROQ_KEY": False,
+        }
 
     def test_prompts_file_has_every_part_f_section(self):
         from pipeline import llm
