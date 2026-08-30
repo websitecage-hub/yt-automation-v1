@@ -68,8 +68,8 @@ def dialect_resp(url, content):
 # TASK 4 — pipeline/llm.py
 # ==========================================================================
 class TestLLM:
-    def _mod(self, monkeypatch, keys=("SEEKAI_KEY", "SEEKAI_KEY2", "GEMINI_KEY", "GROQ_KEY")):
-        for env in ("SEEKAI_KEY", "SEEKAI_KEY2", "GEMINI_KEY", "GROQ_KEY"):
+    def _mod(self, monkeypatch, keys=("NIM_KEY", "GEMINI_KEY", "GROQ_KEY", "SEEKAI_KEY")):
+        for env in ("NIM_KEY", "GEMINI_KEY", "GROQ_KEY", "SEEKAI_KEY", "SEEKAI_KEY2"):
             monkeypatch.setenv(env, "k-" + env if env in keys else "")
         from pipeline import llm
         monkeypatch.setattr(llm.time, "sleep", lambda *a, **k: None)  # no real backoff in tests
@@ -81,28 +81,28 @@ class TestLLM:
 
         def fake_post(url, **kw):
             calls.append((url, kw["json"]["model"], kw["json"]["temperature"]))
-            return FakeResp(payload=anthropic_msg("Base stats first."))
+            return FakeResp(payload=chat("Base stats first."))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("sys", "user") == "Base stats first."
         assert len(calls) == 1
         url, model, temp = calls[0]
-        assert url == llm.SEEKAI_BASE + "/v1/messages"
-        assert model == "claude-opus-4-8"
+        assert url == llm.NIM_BASE + "/chat/completions"
+        assert model == "nvidia/nemotron-3-super-120b-a12b"
         assert temp == 0.85
 
-    def test_code_chain_starts_at_seekai_sonnet(self, monkeypatch):
+    def test_code_chain_starts_at_nim_super(self, monkeypatch):
         llm = self._mod(monkeypatch)
         seen = {}
 
         def fake_post(url, **kw):
             seen.update(url=url, **kw["json"])
-            return FakeResp(payload=anthropic_msg("tl.to('#s0-a',{opacity:1},0.5);"))
+            return FakeResp(payload=chat("tl.to('#s0-a',{opacity:1},0.5);"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         llm.llm_code("sys", "user")
-        assert seen["url"] == llm.SEEKAI_BASE + "/v1/messages"
-        assert seen["model"] == "claude-sonnet-5"
+        assert seen["url"] == llm.NIM_BASE + "/chat/completions"
+        assert seen["model"] == "nvidia/nemotron-3-super-120b-a12b"
         assert seen["temperature"] == 0.4
         assert seen["max_tokens"] == 12000
 
@@ -114,11 +114,11 @@ class TestLLM:
             models.append(kw["json"]["model"])
             if len(models) == 1:
                 return FakeResp(status=400, text="bad request")  # non-retryable -> next provider
-            return FakeResp(payload=anthropic_msg("second answer"))
+            return FakeResp(payload=chat("second answer"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "second answer"
-        assert models == ["claude-opus-4-8", "claude-sonnet-5"]
+        assert models == ["nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3-nano-30b-a3b"]
 
     def test_retryable_status_is_retried_on_same_provider(self, monkeypatch):
         llm = self._mod(monkeypatch)
@@ -128,7 +128,7 @@ class TestLLM:
             n["i"] += 1
             if n["i"] == 1:
                 return FakeResp(status=503, text="try later")  # retryable -> retry, don't fall through
-            return FakeResp(payload=anthropic_msg("ok"))
+            return FakeResp(payload=chat("ok"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "ok"
@@ -142,7 +142,7 @@ class TestLLM:
             n["i"] += 1
             if n["i"] == 1:
                 raise llm.requests.RequestException("connection reset")
-            return FakeResp(payload=anthropic_msg("recovered"))
+            return FakeResp(payload=chat("recovered"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "recovered"
@@ -224,23 +224,23 @@ class TestLLM:
         def fake_post(url, **kw):
             models.append(kw["json"]["model"])
             if len(models) == 1:
-                return FakeResp(payload=anthropic_msg("I'm afraid I can't do that."))
-            return FakeResp(payload=anthropic_msg('{"ok":true}'))
+                return FakeResp(payload=chat("I'm afraid I can't do that."))
+            return FakeResp(payload=chat('{"ok":true}'))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u", json_out=True) == {"ok": True}
         assert len(models) == 2
 
     def test_providers_health_reflects_env(self, monkeypatch):
-        monkeypatch.setenv("SEEKAI_KEY", "x")
+        monkeypatch.setenv("NIM_KEY", "x")
         monkeypatch.setenv("GROQ_KEY", "")
-        monkeypatch.delenv("SEEKAI_KEY2", raising=False)
         monkeypatch.delenv("GEMINI_KEY", raising=False)
+        monkeypatch.delenv("SEEKAI_KEY", raising=False)
         import importlib
         from pipeline import llm as _llm
         llm = importlib.reload(_llm)
         assert llm.PROVIDERS_HEALTH == {
-            "SEEKAI_KEY": True, "SEEKAI_KEY2": False, "GEMINI_KEY": False, "GROQ_KEY": False,
+            "NIM_KEY": True, "GEMINI_KEY": False, "GROQ_KEY": False, "SEEKAI_KEY": False,
         }
 
     def test_prompts_file_has_every_part_f_section(self):
@@ -572,7 +572,7 @@ class TestTopics:
         so a production run flipping used/score cannot fail this."""
         seed = _committed_json("data/topics.json")
         assert len(seed) == 20
-        assert not any(t["used"] for t in seed)
+        assert all(isinstance(t["used"], bool) for t in seed)  # used/score flip in production
         assert all(t["why"] for t in seed)
         assert len({t["topic"] for t in seed}) == 20
 

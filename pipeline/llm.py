@@ -1,16 +1,16 @@
 """LLM access for SCALED — two provider chains, hard-wired fallback order.
 
-llm()      creative chain: seekai opus-4-8 -> seekai sonnet-5 -> Gemini -> Groq
-llm_code() code chain:     seekai sonnet-5 -> seekai opus-4-8 -> Gemini -> Groq
+llm()      creative chain: NIM super-120b -> NIM nano-30b -> Gemini -> Groq -> seekai
+llm_code() code chain:     NIM super-120b -> NIM nano-30b -> Gemini -> Groq -> seekai
 
-Providers speak one of two dialects -- "anthropic" (POST /v1/messages, x-api-key)
-for the seekai gateway, "openai" (POST /chat/completions, Bearer) for Gemini and
-Groq -- and _post normalises both to a single text/JSON return. Every HTTP call
-is retried on transient failures (timeouts, 429, 5xx) before the chain moves on;
-a provider whose key env var is empty is skipped without counting as a failure,
-and one that raises, returns non-200, or unparseable JSON (json_out) is logged so
-the next provider -- ultimately the free Gemini/Groq tail -- takes over. The
-chain only raises when every provider is exhausted.
+Providers speak one of three dialects -- "nim" (NVIDIA NIM, OpenAI /chat/completions
+but no response_format), "openai" (Gemini + Groq, /chat/completions with a JSON
+response_format), and "anthropic" (seekai gateway, /v1/messages + x-api-key) --
+and _post normalises all three to one text/JSON return. Every HTTP call is retried
+on transient failures (timeouts, 429, 5xx) before the chain moves on; a provider
+whose key env var is empty is skipped without counting as a failure, and one that
+raises, returns non-200, or unparseable JSON (json_out) is logged so the next
+provider takes over. The chain only raises when every provider is exhausted.
 """
 import json
 import os
@@ -23,6 +23,7 @@ TIMEOUT = 300
 CREATIVE_MAX_TOKENS = 8000
 CODE_MAX_TOKENS = 12000
 
+NIM_BASE = "https://integrate.api.nvidia.com/v1"
 SEEKAI_BASE = "https://seekai.cc"
 GROQ_BASE = "https://api.groq.com/openai/v1"
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
@@ -31,29 +32,30 @@ RETRY_TRIES = 3                       # per-provider HTTP attempts before fallin
 RETRY_STATUS = {408, 409, 429, 500, 502, 503, 504}
 
 # (label, base, model, env var holding the key, dialect)
-# seekai (Anthropic dialect) leads both chains on the models the user picked;
-# free Gemini + Groq form the tail so the chain never fully dies. SEEKAI_KEY2 is
-# a second gateway key, tried after the first so a per-key limit isn't terminal.
+# NVIDIA NIM leads both chains -- the two models this account can actually call
+# (nemotron-3 super-120b, then the faster nano-30b). Free Gemini + Groq are the
+# tail so the chain never fully dies; seekai stays last as an off-CI option (its
+# keys 401 from datacenter IPs, but work from a residential run).
 CREATIVE_CHAIN = [
-    ("seekai/opus-4-8",   SEEKAI_BASE, "claude-opus-4-8",     "SEEKAI_KEY",  "anthropic"),
-    ("seekai/sonnet-5",   SEEKAI_BASE, "claude-sonnet-5",     "SEEKAI_KEY",  "anthropic"),
-    ("seekai/opus-4-8#2", SEEKAI_BASE, "claude-opus-4-8",     "SEEKAI_KEY2", "anthropic"),
-    ("gemini",            GEMINI_BASE, "gemini-2.5-flash",    "GEMINI_KEY",  "openai"),
-    ("groq",              GROQ_BASE,   "openai/gpt-oss-120b", "GROQ_KEY",    "openai"),
+    ("nim/super-120b",  NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
+    ("nim/nano-30b",    NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
+    ("gemini",          GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
+    ("groq",            GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
+    ("seekai/opus-4-8", SEEKAI_BASE, "claude-opus-4-8",                   "SEEKAI_KEY", "anthropic"),
 ]
 CODE_CHAIN = [
-    ("seekai/sonnet-5",   SEEKAI_BASE, "claude-sonnet-5",     "SEEKAI_KEY",  "anthropic"),
-    ("seekai/opus-4-8",   SEEKAI_BASE, "claude-opus-4-8",     "SEEKAI_KEY",  "anthropic"),
-    ("seekai/sonnet-5#2", SEEKAI_BASE, "claude-sonnet-5",     "SEEKAI_KEY2", "anthropic"),
-    ("gemini",            GEMINI_BASE, "gemini-2.5-flash",    "GEMINI_KEY",  "openai"),
-    ("groq",              GROQ_BASE,   "openai/gpt-oss-120b", "GROQ_KEY",    "openai"),
+    ("nim/super-120b",  NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
+    ("nim/nano-30b",    NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
+    ("gemini",          GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
+    ("groq",            GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
+    ("seekai/sonnet-5", SEEKAI_BASE, "claude-sonnet-5",                   "SEEKAI_KEY", "anthropic"),
 ]
 
 # Filled at import: which provider keys are actually present in this process.
 # run.py logs this so a run that silently lost a provider is obvious in the log.
 PROVIDERS_HEALTH = {
     env: bool((os.getenv(env) or "").strip())
-    for env in ("SEEKAI_KEY", "SEEKAI_KEY2", "GEMINI_KEY", "GROQ_KEY")
+    for env in ("NIM_KEY", "GEMINI_KEY", "GROQ_KEY", "SEEKAI_KEY")
 }
 
 _FENCE = re.compile(r"^\s*```(?:json|JSON)?\s*|\s*```\s*$")
@@ -142,7 +144,7 @@ def _post(base, model, key, system, user, temperature, max_tokens, json_out, dia
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
-        if json_out:
+        if json_out and dialect == "openai":
             payload["response_format"] = {"type": "json_object"}
         headers = {"Authorization": "Bearer " + key, "Content-Type": "application/json"}
         r = _http_post(base + "/chat/completions", headers, payload)
