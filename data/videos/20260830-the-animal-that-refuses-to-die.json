@@ -1,0 +1,224 @@
+{
+  "id": "20260830-the-animal-that-refuses-to-die",
+  "lesson": 2,
+  "topic": "The Animal That Refuses to Die",
+  "lane": "WEIRD_ANIMAL",
+  "created": "2026-08-30T21:09:30+00:00",
+  "stage": "done",
+  "title": "Tardigrade: The Creature That Won't Die",
+  "description": "Professor Croc grades the tardigrade's impossible survival stats: radiation, vacuum, extreme temperatures, and its hidden ability to pause life itself. Can anything truly kill it? Or is this microscopic marvel an Apex Survivor?",
+  "tags": [
+    "Tardigrade",
+    "Water Bear",
+    "Extreme Survival",
+    "Biology Facts",
+    "Power Scaling",
+    "Science Explained",
+    "Animal Abilities",
+    "Evolution"
+  ],
+  "thumbnail_prompt": "Microscopic tardigrade, glowering, holding up a tiny 'NOPE' sign amidst a backdrop of a fiery, frozen, and vacuum-sealed Earth. Dramatic lighting, power-stat aesthetic. Cinematic, realistic render.",
+  "verdict": "SLEEPER",
+  "extra_credit": "",
+  "scenes": [
+    {
+      "act": "HOOK",
+      "heading": "Radiation Resistance: 5,000 Gray",
+      "text": "Most organisms die after 5 gray of radiation. Humans, certainly. The tardigrade tolerates 5,000 gray. One thousand times your lethal dose. Its radiation resistance is an anomaly.",
+      "image_prompt": "Microscopic tardigrade glowing with intense, otherworldly energy against a backdrop of atomic symbols and radiation warnings.",
+      "stat": {
+        "label": "Radiation Tolerance",
+        "grade": "S+",
+        "note": "5,000 Gy lethal dose"
+      },
+      "dur": 13.88,
+      "frag_html": "<div id=\"s0-heading\" class=\"overlay\" style=\"position:absolute; left:50%; top:30%; color:var(--ink); font-size:2.2rem; text-align:center; opacity:0;\">Radiation Resistance: <span id=\"s0-number\" style=\"opacity:0;\">5,000</span> Gray</div>\n<div id=\"s0-glow\" class=\"glow\" style=\"position:absolute; left:50%; top:50%; width:240px; height:240px; background:radial-gradient(circle, var(--lime) 0%, transparent 70%); border-radius:50%; opacity:0;\"></div>\n<div id=\"s0-atom1\" class=\"atom\" style=\"position:absolute; left:50%; top:50%; color:var(--amber); font-size:2rem; opacity:0;\">☢</div>\n<div id=\"s0-atom2\" class=\"atom\" style=\"position:absolute; left:50%; top:50%; color:var(--red); font-size:2rem; opacity:0;\">☢</div>\n<div id=\"s0-atom3\" class=\"atom\" style=\"position:absolute; left:50%; top:50%; color:var(--lime); font-size:2rem; opacity:0;\">☢</div>\n<div id=\"s0-atom4\" class=\"atom\" style=\"position:absolute; left:50%; top:50%; color:var(--dim); font-size:2rem; opacity:0;\">☢</div>",
+      "frag_js": "tl.fromTo(\"#s0-heading\", {xPercent:-50, yPercent:-50, y:20, opacity:0}, {xPercent:-50, yPercent:-50, y:0, opacity:1, duration:0.8}, 0.2);\ntl.fromTo(\"#s0-number\", {xPercent:-50, yPercent:-50, scale:0.8, opacity:0}, {xPercent:-50, yPercent:-50, scale:1.1, opacity:1, duration:0.6}, 0.5);\ntl.to(\"#s0-number\", {scale:1, duration:0.4}, 1.1);\ntl.fromTo(\"#s0-glow\", {xPercent:-50, yPercent:-50, scale:0.8, opacity:0}, {xPercent:-50, yPercent:-50, scale:1.2, opacity:0.6, duration:1.0}, 0.8);\ntl.to(\"#s0-glow\", {scale:1.0, duration:0.8}, 1.8);\ntl.fromTo(\"#s0-atom1\", {xPercent:-50, yPercent:-50, x:-200, y:-200, opacity:0}, {xPercent:-50, yPercent:-50, x:0, y:0, opacity:0.8, duration:1.2}, 1.0);\ntl.fromTo(\"#s0-atom2\", {xPercent:-50, yPercent:-50, x:200, y:-150, opacity:0}, {xPercent:-50, yPercent:-50, x:0, y:0, opacity:0.8, duration:1.2}, 1.2);\ntl.fromTo(\"#s0-atom3\", {xPercent:-50, yPercent:-50, x:-150, y:200, opacity:0}, {xPercent:-50, yPercent:-50, x:0, y:0, opacity:0.8, duration:1.2}, 1.4);\ntl.fromTo(\"#s0-atom4\", {xPercent:-50, yPercent:-50, x:100, y:150, opacity:0}, {xPercent:-50, yPercent:-50, x:0, y:0, opacity:0.8, duration:1.2}, 1.6);\ntl.fromTo(\"#img0\", {x:-10, y:-5, rotation:-2}, {x:10, y:5, rotation:2, duration:13.88, ease:\"none\"}, 0);",
+      "frag_source": "llm attempt 3"
+    },
+    {
+      "act": "HOOK",
+      "heading": "Introducing the Water Bear",
+      "text": "This is the water bear. Also known as a tardigrade. A microscopic invertebrate, less than a millimeter long. Eight legs. Slow-moving. It survives what should be unsurvivable.",
+      "image_prompt": "Highly detailed, realistic microscopic view of a tardigrade, its eight legs visible, crawling on a moss-like surface.",
+      "stat": null,
+      "dur": 12.2,
+      "frag_html": "<h1 id=\"s1-heading\" style=\"position:absolute;top:20%;left:50%;transform:translate(-50%,0);text-align:center;font-family:sans-serif;font-size:2.5rem;color:var(--ink);pointer-events:none;\">Introducing the Water Bear</h1>\n<div id=\"s1-number\" style=\"position:absolute;top:40%;left:50%;transform:translate(-50%,0);font-family:sans-serif;font-size:5rem;color:var(--lime);pointer-events:none;\">8</div>\n<div id=\"s1-underline\" style=\"position:absolute;bottom:20%;left:50%;transform:translateX(-50%);height:4px;background:var(--lime);width:0%;pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s1-heading\", 0.6, {y:30, opacity:0}, {y:0, opacity:1}, 13.900);\ntl.fromTo(\"#s1-number\", 0.5, {scale:0.8, opacity:0}, {scale:1, opacity:1}, 15.000);\ntl.fromTo(\"#s1-underline\", 0.7, {width:\"0%\"}, {width:\"100%\"}, 15.800);\ntl.fromTo(\"#img1\", 12.2, {x:-10, y:-5, scale:1}, {x:10, y:5, scale:1.02}, 13.880);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HOOK",
+      "heading": "Defying Physics",
+      "text": "Space vacuum. Crushing ocean depths. Extreme heat. Extreme cold. It laughs at these conditions. But how? What biological hardware allows this defiance of physics?",
+      "image_prompt": "A single tardigrade floating serenely in the vacuum of space, with Earth in the distant background, then transitioning to deep ocean trenches and volcanic vents.",
+      "stat": null,
+      "dur": 13.12,
+      "frag_html": "<div id=\"s2-heading\" class=\"overlay\" style=\"position:absolute; top:12%; left:10%; font-family:sans-serif; font-size:48px; color:var(--ink); pointer-events:none;\">Defying Physics</div>\n<div id=\"s2-number\" class=\"overlay\" style=\"position:absolute; top:22%; left:10%; font-family:sans-serif; font-size:96px; font-weight:bold; color:var(--lime); pointer-events:none;\">1</div>\n<div id=\"s2-glow\" class=\"overlay\" style=\"position:absolute; top:22%; left:10%; width:180px; height:180px; border-radius:50%; background:var(--lime); filter:blur(30px); opacity:0; pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s2-heading\", {opacity:0, y:20}, {duration:0.42, opacity:1, y:0, ease:\"power1.out\"}, 26.080);\ntl.fromTo(\"#s2-number\", {opacity:0, scale:0.8}, {duration:0.5, opacity:1, scale:1, ease:\"power1.out\"}, 26.500);\ntl.fromTo(\"#s2-glow\", {opacity:0, scale:0}, {duration:0.5, opacity:0.6, scale:1.2, ease:\"power1.out\"}, 27.000);\ntl.fromTo(\"#img2\", {y:0, scale:1}, {duration:2.5, y:-20, scale:1.05, ease:\"power1.inOut\"}, 27.500);\ntl.fromTo(\"#s2-heading\", {scale:1}, {duration:0.5, scale:1.05, ease:\"power1.out\"}, 30.000);\ntl.fromTo(\"#s2-heading\", {scale:1.05}, {duration:0.5, scale:1, ease:\"power1.in\"}, 30.500);\ntl.fromTo(\"#s2-number\", {scale:1}, {duration:0.5, scale:1.1, ease:\"power1.out\"}, 31.000);\ntl.fromTo(\"#s2-number\", {scale:1.1}, {duration:0.5, scale:1, ease:\"power1.in\"}, 31.500);\ntl.fromTo(\"#s2-glow\", {opacity:0.6}, {duration:0.5, opacity:0.9, ease:\"power1.out\"}, 32.000);\ntl.fromTo(\"#s2-glow\", {opacity:0.9}, {duration:0.5, opacity:0.6, ease:\"power1.in\"}, 32.500);\ntl.fromTo(\"#img2\", {y:-20, scale:1.05}, {duration:2.0, y:0, scale:1, ease:\"power1.inOut\"}, 33.000);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "BASE STATS",
+      "heading": "Basic Anatomy: Unremarkable",
+      "text": "Let's check the base stats. Typically, it lives in water films on moss or lichen. Its basic anatomy is simple. Brain, gut, nervous system. Nothing remarkable at first glance.",
+      "image_prompt": "A simple, clear biological diagram of a tardigrade's internal organs: brain, gut, nervous system, with labels.",
+      "stat": null,
+      "dur": 12.32,
+      "frag_html": "<div id=\"s3-heading\" style=\"position:absolute; top:15%; left:50%; transform:translateX(-50%); font-size:2.2rem; color:var(--ink); text-align:center; pointer-events:none;\">Basic Anatomy: Unremarkable</div>\n<div id=\"s3-keyNumber\" style=\"position:absolute; top:30%; left:50%; transform:translateX(-50%); font-size:3rem; color:var(--lime); pointer-events:none;\">0.5 mm</div>\n<div id=\"s3-brain-label\" style=\"position:absolute; top:45%; left:40%; font-size:1.2rem; color:var(--dim); pointer-events:none;\">Brain</div>\n<div id=\"s3-gut-label\" style=\"position:absolute; top:45%; left:55%; font-size:1.2rem; color:var(--dim); pointer-events:none;\">Gut</div>\n<div id=\"s3-nervous-label\" style=\"position:absolute; top:55%; left:48%; font-size:1.2rem; color:var(--dim); pointer-events:none;\">Nervous System</div>",
+      "frag_js": "tl.fromTo(\"#s3-heading\", 0.6, {opacity:0, y:20}, {opacity:1, y:0}, 39.200);\ntl.fromTo(\"#s3-keyNumber\", 0.5, {opacity:0, scale:0.8}, {opacity:1, scale:1}, 39.800);\ntl.fromTo(\"#s3-brain-label\", 0.4, {opacity:0, x:-20}, {opacity:1, x:0}, 40.500);\ntl.fromTo(\"#s3-gut-label\", 0.4, {opacity:0, x:-20}, {opacity:1, x:0}, 41.000);\ntl.fromTo(\"#s3-nervous-label\", 0.4, {opacity:0, x:-20}, {opacity:1, x:0}, 41.500);\ntl.fromTo(\"#img3\", 0.8, {scale:1}, {scale:1.02}, 44.000);\ntl.to(\"#img3\", 0.8, {scale:1}, 44.800);",
+      "frag_source": "llm attempt 4"
+    },
+    {
+      "act": "BASE STATS",
+      "heading": "Pressure Tolerance: 600 MPa",
+      "text": "Yet, its physical resilience is extreme. It can withstand pressures up to 600 megapascals. Six thousand times atmospheric pressure. Enough to crush most metals. Your bones would vaporize.",
+      "image_prompt": "A tardigrade calmly sitting at the bottom of a deep ocean trench, with exaggerated pressure lines and a tiny, crushed submarine wreck in the background.",
+      "stat": {
+        "label": "Pressure Resistance",
+        "grade": "S",
+        "note": "600 MPa (6,000 atm)"
+      },
+      "dur": 13.02,
+      "frag_html": "<div id=\"s4-heading\" class=\"overlay\">Pressure Tolerance: </div>\n<div id=\"s4-number\" class=\"overlay\">600 MPa</div>",
+      "frag_js": "tl.fromTo(\"#s4-heading\", 0.48, {opacity:0, x:-50}, {opacity:1, x:0}, 51.520);\ntl.fromTo(\"#s4-number\", 0.5, {opacity:0, x:50}, {opacity:1, x:0}, 52.000);\ntl.to(\"#s4-number\", 0.4, {scale:1.2}, 52.800);\ntl.to(\"#s4-number\", 0.4, {scale:1}, 53.200);\ntl.to(\"#s4-heading\", 1.2, {y:-20}, 53.800);\ntl.to(\"#s4-number\", 0.3, {scale:1.15}, 55.200);\ntl.to(\"#s4-number\", 0.3, {scale:1}, 55.500);\ntl.to([\"#s4-heading\",\"#s4-number\"], 1.54, {opacity:0}, 63.000);",
+      "frag_source": "llm attempt 3"
+    },
+    {
+      "act": "BASE STATS",
+      "heading": "Temperature Range: -272°C to 150°C",
+      "text": "Temperature? Zero issue. It shrugs off -272 degrees Celsius, near absolute zero. It endures 150 degrees Celsius, well above boiling. These are not its hidden abilities. Just baseline.",
+      "image_prompt": "Two scenes: a tardigrade encased in a perfect ice crystal, and another tardigrade swimming casually in molten lava, side-by-side.",
+      "stat": {
+        "label": "Thermal Resistance",
+        "grade": "S",
+        "note": "-272°C to 150°C"
+      },
+      "dur": 13.76,
+      "frag_html": "<div id=\"s5-heading\" class=\"overlay\">\n  Temperature Range: <span id=\"s5-num1\">-272</span>°C to <span id=\"s5-num2\">150</span>°C\n</div>\n<div id=\"s5-ice\" class=\"overlay\"></div>\n<div id=\"s5-lava\" class=\"overlay\"></div>",
+      "frag_js": "tl.fromTo(\"#s5-heading\", 0.660, {opacity:0, y:20}, {opacity:1, y:0}, 64.540);\ntl.fromTo(\"#s5-ice\", 0.800, {opacity:0, x:\"-100%\"}, {opacity:1, x:\"0%\"}, 65.000);\ntl.fromTo(\"#s5-lava\", 0.800, {opacity:0, x:\"100%\"}, {opacity:1, x:\"0%\"}, 65.000);\ntl.fromTo(\"#s5-num1\", 0.400, {color:\"var(--ink)\", transform:\"scale(1)\"}, {color:\"var(--lime)\", transform:\"scale(1.2)\"}, 67.800);\ntl.fromTo(\"#s5-num1\", 0.400, {color:\"var(--lime)\", transform:\"scale(1.2)\"}, {color:\"var(--ink)\", transform:\"scale(1)\"}, 68.200);\ntl.fromTo(\"#s5-num2\", 0.400, {color:\"var(--ink)\", transform:\"scale(1)\"}, {color:\"var(--lime)\", transform:\"scale(1.2)\"}, 71.700);\ntl.fromTo(\"#s5-num2\", 0.400, {color:\"var(--lime)\", transform:\"scale(1.2)\"}, {color:\"var(--ink)\", transform:\"scale(1)\"}, 72.100);\ntl.fromTo(\"#img5\", 7.000, {x:0, y:0}, {x:10, y:5}, 70.000);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HIDDEN ABILITY",
+      "heading": "Anhydrobiosis: The Tun State",
+      "text": "Its true power activates under duress. When conditions worsen, it dehydrates. It loses 97% of its body water. Its legs retract. It becomes a 'tun.' A shriveled husk.",
+      "image_prompt": "A sequence of images showing a normal tardigrade gradually shriveling into a compact, dry 'tun' state, emphasizing water loss.",
+      "stat": {
+        "label": "Anhydrobiosis",
+        "grade": "S",
+        "note": "97% water loss, decades of survival"
+      },
+      "dur": 14.12,
+      "frag_html": "<div id=\"s6-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:2.2rem; font-weight:600; color:var(--ink); text-align:center; opacity:0;\">Anhydrobiosis: The Tun State</div>\n<div id=\"s6-number-container\" style=\"position:absolute; top:40%; left:50%; transform:translateX(-50%); font-size:5rem; font-weight:800; color:var(--lime); opacity:0;\">\n  <span id=\"s6-number\">97%</span>\n</div>\n<div id=\"s6-drop\" style=\"position:absolute; top:55%; left:50%; width:80px; height:80px; background:var(--amber); border-radius:50%; opacity:1; transform:translate(-50%,-50%);\"></div>",
+      "frag_js": "tl.fromTo(\"#s6-heading\", {opacity:0, y:-20}, {opacity:1, y:0, duration:0.7}, 78.300);\ntl.fromTo(\"#s6-number-container\", {opacity:0, scale:0.5}, {opacity:1, scale:1, duration:1.0}, 79.000);\ntl.to(\"#img6\", {scale:0.6, y:50, duration:3.5}, 80.500);\ntl.to(\"#s6-drop\", {opacity:0, scale:0.5, duration:4.0}, 84.000);\ntl.to(\"#s6-number\", {scale:1.1, duration:0.75}, 88.500);\ntl.to(\"#s6-number\", {scale:1, duration:0.75}, 89.250);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HIDDEN ABILITY",
+      "heading": "Pausing Metabolism: Decades",
+      "text": "This 'tun' state is anhydrobiosis. It halts metabolism to 0.01% of normal. It endures decades without water. It can survive starvation, freezing (cryobiosis), and oxygen deprivation (anoxybiosis).",
+      "image_prompt": "A single, incredibly ancient-looking tardigrade tun, covered in dust, next to a calendar marking 'Decades Passed', then revitalizing with a drop of water.",
+      "stat": null,
+      "dur": 12.92,
+      "frag_html": "<div id=\"s7-heading\" style=\"position:absolute; top:10%; left:5%; font-size:2.2rem; color:var(--ink); pointer-events:none;\">Pausing Metabolism: Decades</div>\n<div id=\"s7-number\" style=\"position:absolute; top:18%; left:5%; font-size:3rem; color:var(--lime); pointer-events:none;\">0.01%</div>\n<div id=\"s7-calendar\" style=\"position:absolute; bottom:10%; left:5%; font-size:1.5rem; color:var(--dim); pointer-events:none;\">Decades Passed</div>\n<div id=\"s7-dust\" style=\"position:absolute; top:45%; left:50%; font-size:2rem; color:var(--amber); pointer-events:none;\">• • •</div>\n<div id=\"s7-water\" style=\"position:absolute; top:48%; left:52%; font-size:2.5rem; color:var(--red); pointer-events:none;\">💧</div>",
+      "frag_js": "tl.fromTo(\"#s7-heading\", {opacity:0, y:-20}, {opacity:1, y:0, duration:0.6, ease:\"power1.out\"}, 92.420);\ntl.fromTo(\"#s7-number\", {opacity:0, scale:0}, {opacity:1, scale:1, duration:0.5, ease:\"back.out(1.7)\"}, 93.0);\ntl.fromTo(\"#s7-calendar\", {x:-100, opacity:0}, {x:0, opacity:1, duration:0.6, ease:\"power2.out\"}, 94.0);\ntl.fromTo(\"#s7-dust\", {opacity:0, y:20}, {opacity:0.6, y:0, duration:0.8, ease:\"power1.out\"}, 95.0);\ntl.fromTo(\"#s7-water\", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.5, ease:\"elastic.out(1,0.3)\"}, 96.0);\ntl.fromTo(\".clip\", {scale:1, rotation:0}, {scale:1.05, rotation:5, duration:0.5, ease:\"power2.out\"}, 97.0);\ntl.to(\".clip\", {scale:1, rotation:0, duration:0.6, ease:\"power2.inOut\"}, 98.0);\ntl.to(\"#s7-dust\", {opacity:0, y:-20, duration:0.5, ease:\"power1.in\"}, 100.0);\ntl.to(\"#s7-calendar\", {x:100, opacity:0, duration:0.5, ease:\"power2.in\"}, 101.0);\ntl.to(\"#s7-heading\", {opacity:0, y:-20, duration:0.5, ease:\"power1.in\"}, 102.0);\ntl.to(\"#s7-number\", {scale:0.9, opacity:0.9, duration:0.4, ease:\"power1.inOut\"}, 103.0);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HIDDEN ABILITY",
+      "heading": "The Biological Vault",
+      "text": "It resists lethal salinity (osmobiosis) too. The tun is a biological vault. But what protects the delicate machinery inside? The DNA? The proteins?",
+      "image_prompt": "An X-ray vision of a tardigrade tun, showing a glowing, protected core representing its internal biological machinery.",
+      "stat": null,
+      "dur": 11.18,
+      "frag_html": "<h1 id=\"s8-heading\" style=\"position:absolute;top:10%;left:5%;color:var(--ink);font-size:2.5rem;opacity:0;\">The Biological Vault</h1>\n<div id=\"s8-number\" style=\"position:absolute;bottom:10%;right:5%;color:var(--red);font-size:4rem;opacity:0;\">10,000</div>\n<div id=\"s8-xray\" style=\"position:absolute;inset:0;background-color:var(--lime);opacity:0;pointer-events:none;\"></div>\n<div id=\"s8-core\" style=\"position:absolute;top:50%;left:50%;width:120px;height:120px;margin:-60px 0 0 -60px;background-color:var(--amber);border-radius:50%;opacity:0;\"></div>",
+      "frag_js": "tl.fromTo(\"#s8-heading\", 0.6, {opacity:0, y:20}, {opacity:1, y:0}, 105.340);\ntl.fromTo(\"#s8-number\", 0.5, {opacity:0, scale:0.8}, {opacity:1, scale:1}, 106.5);\ntl.to(\"#s8-number\", 0.3, {scale:1.2}, 108.0);\ntl.to(\"#s8-number\", 0.3, {scale:1}, 108.3);\ntl.fromTo(\"#s8-xray\", 0.8, {opacity:0}, {opacity:0.6}, 109.0);\ntl.fromTo(\"#s8-core\", 0.6, {opacity:0, scale:0.8}, {opacity:1, scale:1}, 110.0);\ntl.to(\"#s8-core\", 0.4, {scale:1.2}, 112.0);\ntl.to(\"#s8-core\", 0.4, {scale:1}, 112.5);\ntl.to(\"#img8\", 1.5, {scale:1.05, x:10, y:-5}, 113.0);\ntl.to(\"#img8\", 1.5, {scale:1, x:0, y:0}, 114.5);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "THE AWAKENING",
+      "heading": "Dsup Protein: DNA Shield",
+      "text": "The tardigrade employs specialized proteins. The Dsup protein, short for 'Damage suppressor,' wraps around its DNA. It forms a protective shield. It prevents breakage from radiation and stress.",
+      "image_prompt": "A stylized representation of a DNA double helix being enveloped and protected by a shimmering, golden Dsup protein shield.",
+      "stat": {
+        "label": "DNA Protection",
+        "grade": "S+",
+        "note": "Dsup protein shielding"
+      },
+      "dur": 13.4,
+      "frag_html": "<div id=\"s9-heading\" class=\"overlay\" style=\"color:var(--ink);font-size:2.4rem;pointer-events:none;\">Dsup Protein: DNA Shield</div>\n<div id=\"s9-key\" class=\"overlay\" style=\"color:var(--amber);font-size:2rem;font-weight:bold;pointer-events:none;\">Dsup</div>\n<div id=\"s9-shield\" class=\"overlay\" style=\"width:200px;height:200px;background:var(--lime);border-radius:50%;opacity:0.6;pointer-events:none;\"></div>\n<div id=\"s9-glow\" class=\"overlay\" style=\"width:260px;height:260px;background:var(--red);border-radius:50%;opacity:0.3;pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s9-heading\", {x:-100, opacity:0}, {x:0, opacity:1, duration:0.5}, 116.520);\ntl.fromTo(\"#s9-key\", {scale:0.8}, {scale:1.2, duration:0.3}, 117.2);\ntl.to(\"#s9-key\", {scale:1, duration:0.2}, 117.5);\ntl.fromTo(\"#s9-shield\", {scale:0, rotation:0}, {scale:1, rotation:360, duration:1.0}, 118.0);\ntl.fromTo(\"#s9-glow\", {scale:0, opacity:0}, {scale:1.2, opacity:0.6, duration:0.8}, 120.0);\ntl.to(\"#s9-glow\", {scale:1, opacity:0.3, duration:0.6}, 121.0);\ntl.to(\"#img9\", {x:10, y:-5, scale:1.02, duration:4}, 116.520);\ntl.to(\"#img9\", {x:-10, y:5, scale:0.98, duration:4}, 120.520);\ntl.to(\"#img9\", {x:0, y:0, scale:1, duration:4}, 124.520);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "THE AWAKENING",
+      "heading": "Intracellular Vitrification",
+      "text": "Two hundred million years of field research. This is the weirdest thing I've ever graded. It also produces antioxidants. And vitrification: turning intracellular water into a protective, amorphous glass-like substance.",
+      "image_prompt": "A microscopic view of tardigrade cells, showing their internal water transforming into a clear, solid, glass-like structure.",
+      "stat": null,
+      "dur": 13.88,
+      "frag_html": "<div id=\"s10-heading\">Intracellular Vitrification</div>\n<div id=\"s10-number\">200</div>",
+      "frag_js": "tl.fromTo(\"#s10-heading\", {opacity:0, x:-50}, {opacity:1, x:0, duration:0.8}, 130.000);\ntl.fromTo(\"#s10-number\", {opacity:0, x:50}, {opacity:1, x:0, duration:0.8}, 131.000);\ntl.to(\"#s10-number\", {scale:1.2, duration:0.3}, 132.500);\ntl.to(\"#s10-number\", {scale:1, duration:0.3}, 132.800);\ntl.to(\"#img10\", {y:-15, rotate:5, duration:2.0}, 133.000);\ntl.to([\"#s10-heading\",\"#s10-number\"], {opacity:0, duration:1.5}, 142.000);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "THE AWAKENING",
+      "heading": "Your Hardware vs. Theirs",
+      "text": "Imagine your cells doing this. Your body, able to pause. To restart after decades. Your own hardware could theoretically survive space. Or a nuclear blast. Your limits are not its limits.",
+      "image_prompt": "A human silhouette overlaid with glowing lines and protective shields, mimicking the tardigrade's abilities, suggesting human potential.",
+      "stat": null,
+      "dur": 13.8,
+      "frag_html": "<div id=\"s11-overlay\"></div>\n<h1 id=\"s11-heading\"\n    style=\"position:absolute;top:18%;left:50%;transform:translateX(-50%);text-align:center;font-size:2.5rem;color:var(--ink);pointer-events:none;\">\n    Your Hardware vs. Theirs\n</h1>\n<div id=\"s11-key\"\n    style=\"position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:5rem;color:var(--amber);pointer-events:none;\">\n    200\n</div>\n<div id=\"s11-shield1\"\n    style=\"position:absolute;top:50%;left:30%;transform:translate(-50%,-50%);width:100px;height:100px;background:var(--lime);opacity:0.6;border-radius:50%;pointer-events:none;\"></div>\n<div id=\"s11-shield2\"\n    style=\"position:absolute;top:50%;left:70%;transform:translate(-50%,-50%);width:100px;height:100px;background:var(--lime);opacity:0.6;border-radius:50%;pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s11-heading\", {y:-20, opacity:0}, {y:0, opacity:1, duration:0.8}, 144.0);\ntl.fromTo(\"#s11-key\",   {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.6}, 145.0);\ntl.fromTo(\"#s11-shield1\",{x:-100, rotation:-15, opacity:0}, {x:0, rotation:0, opacity:0.8, duration:0.8}, 146.0);\ntl.fromTo(\"#s11-shield2\",{x:100, rotation:15, opacity:0}, {x:0, rotation:0, opacity:0.8, duration:0.8}, 146.5);\ntl.fromTo(\"#img11\",     {y:0, scale:1}, {y:-10, scale:1.05, duration:4.0}, 148.0);\ntl.to(\"#s11-key\",       {scale:1.1, duration:0.5}, 150.0);\ntl.to(\"#s11-key\",       {scale:1,   duration:0.5}, 150.5);\ntl.to(\"#s11-shield1\",   {opacity:0, duration:1.0}, 155.0);\ntl.to(\"#s11-shield2\",   {opacity:0, duration:1.0}, 155.0);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "THE AWAKENING",
+      "heading": "The Cost of Invincibility?",
+      "text": "But this incredible resilience comes with a cost. Are there conditions it cannot tolerate? Is anything truly invincible? Or does every ultimate defense have a weakness?",
+      "image_prompt": "A single tardigrade looking small and slightly vulnerable against a vast, overwhelming, vaguely threatening cosmic background.",
+      "stat": null,
+      "dur": 10.4,
+      "frag_html": "<div id=\"s12-heading\">The Cost of Invincibility?</div>\n<div id=\"s12-num\">10⁶</div>",
+      "frag_js": "tl.fromTo(\"#s12-heading\", {opacity:0, y:30}, {opacity:1, y:0, duration:1}, 157.600);\ntl.fromTo(\"#s12-num\", {scale:0}, {scale:1, ease:\"back.out(1.7)\", duration:0.8}, 159.000);\ntl.to(\"#img12\", {x:20, y:-10, duration:6}, 160.000);\ntl.to(\"#stage\", {backgroundColor:\"var(--red)\", duration:6}, 162.000);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "FINAL FORM",
+      "heading": "Limits: UV-C and Starvation",
+      "text": "Even the tardigrade has limits. Prolonged exposure to UV-C radiation can overwhelm its defenses. Its Dsup protein is effective, but not infinite. Starvation, even in tun state, eventually takes its toll.",
+      "image_prompt": "A tardigrade tun, slowly losing its protective glow, under a focused beam of harsh, purple UV-C light.",
+      "stat": null,
+      "dur": 14.08,
+      "frag_html": "<div id=\"s13-heading\" style=\"position:absolute;top:20%;left:50%;transform:translateX(-50%);color:var(--ink);font-size:2.2rem;font-weight:600;pointer-events:none;text-align:center;\">Limits: UV-C and Starvation</div>\n<span id=\"s13-key\" style=\"position:absolute;top:30%;left:50%;transform:translateX(-50%);color:var(--lime);font-size:2.8rem;font-weight:800;pointer-events:none;\">UV-C</span>\n<div id=\"s13-beam\" style=\"position:absolute;top:0;left:50%;transform:translateX(-50%);width:0;height:100%;background:var(--amber);opacity:0;pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s13-heading\", 0.8, {y:30,opacity:0}, {y:0,opacity:1}, 168.5);\ntl.to(\"#s13-key\", {scale:1.3, duration:0.2}, 171.5);\ntl.to(\"#s13-key\", {scale:1, duration:0.2}, 171.7);\ntl.fromTo(\"#s13-beam\", 1, {opacity:0,width:0}, {opacity:0.6,width:300}, 170.5);\ntl.to(\"#img13\", {filter:\"brightness(0.8)\", duration:4}, 175.0);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "FINAL FORM",
+      "heading": "Declining the Invitation",
+      "text": "It resists death with extreme prejudice. It survives conditions that would extinguish all other life. It does not truly achieve immortality. But it approaches it. It declines the invitation to die.",
+      "image_prompt": "A tardigrade slowly rehydrating from its tun state, emerging with a determined, almost defiant expression.",
+      "stat": null,
+      "dur": 13.26,
+      "frag_html": "<div id=\"s14-overlay\" style=\"position:absolute; inset:0; pointer-events:none; display:flex; align-items:center; justify-content:center;\">\n  <div id=\"s14-content\" style=\"position:relative; text-align:center; color:var(--ink); z-index:2;\">\n    <h1 id=\"s14-heading\" style=\"margin:0; font-size:4.5rem; line-height:1; opacity:0;\">Declining the Invitation</h1>\n    <div id=\"s14-number\" style=\"margin-top:1rem; font-size:3rem; opacity:0;\">1000</div>\n    <div id=\"s14-glow\" style=\"position:absolute; inset:-50%; background:var(--lime); border-radius:50%; opacity:0; filter:blur(40px); z-index:-1;\"></div>\n  </div>\n</div>",
+      "frag_js": "tl.fromTo(\"#s14-heading\", {y:20, opacity:0}, {y:0, opacity:1, duration:0.8}, 182.080);\ntl.fromTo(\"#s14-number\", {scale:0}, {scale:1.2, duration:0.4}, 182.880);\ntl.to(\"#s14-number\", {scale:1, duration:0.4}, 183.280);\ntl.fromTo(\"#s14-glow\", {scale:0, opacity:0}, {scale:1.2, opacity:0.4, duration:0.6}, 183.680);\ntl.to(\"#s14-glow\", {scale:1, opacity:0.2, duration:0.6}, 184.280);\ntl.fromTo(\"#img14\", {scale:1, rotation:0}, {scale:1.05, rotation:2, duration:3}, 185.080);\ntl.to(\"#img14\", {scale:1, rotation:0, duration:3}, 188.080);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "FINAL FORM",
+      "heading": "The Ultimate Sleeper",
+      "text": "The tardigrade doesn't fight death. It delays it. Its biological strategies are a masterclass in survival. It is small. It is unassuming. But its resilience is unmatched. Class dismissed. Evolution isn't finished with you.",
+      "image_prompt": "A stylized, powerful tardigrade, small but radiating immense energy, standing on a tiny rock amidst a cosmic void.",
+      "stat": null,
+      "dur": 16.16,
+      "frag_html": "<div id=\"s15-heading\" style=\"position:absolute; top:18%; left:50%; transform:translateX(-50%); color:var(--ink); font-size:4.2rem; font-weight:600; pointer-events:none; opacity:0;\">The Ultimate Sleeper</div>\n<div id=\"s15-number\" style=\"position:absolute; top:38%; left:50%; transform:translateX(-50%); color:var(--lime); font-size:2.8rem; pointer-events:none; opacity:0;\">0.5 mm</div>\n<div id=\"s15-glow\" style=\"position:absolute; top:18%; left:50%; transform:translateX(-50%); width:260px; height:260px; border-radius:50%; background:var(--lime); filter:blur(40px); opacity:0; pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s15-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:1.16}, 195.34);\ntl.fromTo(\"#s15-glow\", {opacity:0, scale:0.8}, {opacity:0.55, scale:1, duration:1.5}, 196.0);\ntl.fromTo(\"#s15-number\", {opacity:0, scale:0.9}, {opacity:1, scale:1, duration:1.5}, 197.5);\ntl.fromTo(\"#img15\", {x:0, y:0, scale:1}, {x:10, y:-5, scale:1.02, duration:10, ease:\"power1.out\"}, 200.0);\ntl.fromTo(\"#s15-glow\", {scale:1}, {scale:1.07, duration:1.5, yoyo:true, repeat:1}, 208.0);",
+      "frag_source": "llm attempt 2"
+    }
+  ],
+  "mp4": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/20260830-the-animal-that-refuses-to-die.mp4",
+  "video_id": null,
+  "thumb": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/thumb_20260830-the-animal-that-refuses-to-die.jpg"
+}

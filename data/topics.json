@@ -11,7 +11,7 @@
     "lane": "WEIRD_ANIMAL",
     "why": "Turritopsis dohrnii reverses its life cycle back to the polyp stage after damage or starvation, so it has no known adult death clock. Cold open number: zero recorded deaths from old age.",
     "score": 9,
-    "used": false
+    "used": true
   },
   {
     "topic": "You Were Built to Run Prey to Death",
