@@ -68,8 +68,8 @@ def dialect_resp(url, content):
 # TASK 4 — pipeline/llm.py
 # ==========================================================================
 class TestLLM:
-    def _mod(self, monkeypatch, keys=("NIM_KEY", "GEMINI_KEY", "GROQ_KEY", "SEEKAI_KEY")):
-        for env in ("NIM_KEY", "GEMINI_KEY", "GROQ_KEY", "SEEKAI_KEY", "SEEKAI_KEY2"):
+    def _mod(self, monkeypatch, keys=("TABI_KEY", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY")):
+        for env in ("TABI_KEY", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY"):
             monkeypatch.setenv(env, "k-" + env if env in keys else "")
         from pipeline import llm
         monkeypatch.setattr(llm.time, "sleep", lambda *a, **k: None)  # no real backoff in tests
@@ -80,29 +80,30 @@ class TestLLM:
         calls = []
 
         def fake_post(url, **kw):
-            calls.append((url, kw["json"]["model"], kw["json"]["temperature"]))
-            return FakeResp(payload=chat("Base stats first."))
+            calls.append((url, kw["json"]["model"], kw["json"]["temperature"], kw["headers"]))
+            return FakeResp(payload=anthropic_msg("Base stats first."))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("sys", "user") == "Base stats first."
         assert len(calls) == 1
-        url, model, temp = calls[0]
-        assert url == llm.NIM_BASE + "/chat/completions"
-        assert model == "nvidia/nemotron-3-super-120b-a12b"
+        url, model, temp, headers = calls[0]
+        assert url == llm.TABI_BASE + "/v1/messages"
+        assert model == "claude-opus-4-8"
         assert temp == 0.85
+        assert "Mozilla/" in headers["User-Agent"]   # Cloudflare needs a browser UA
 
-    def test_code_chain_starts_at_nim_super(self, monkeypatch):
+    def test_code_chain_starts_at_tabi_opus(self, monkeypatch):
         llm = self._mod(monkeypatch)
         seen = {}
 
         def fake_post(url, **kw):
             seen.update(url=url, **kw["json"])
-            return FakeResp(payload=chat("tl.to('#s0-a',{opacity:1},0.5);"))
+            return FakeResp(payload=anthropic_msg("tl.to('#s0-a',{opacity:1},0.5);"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         llm.llm_code("sys", "user")
-        assert seen["url"] == llm.NIM_BASE + "/chat/completions"
-        assert seen["model"] == "nvidia/nemotron-3-super-120b-a12b"
+        assert seen["url"] == llm.TABI_BASE + "/v1/messages"
+        assert seen["model"] == "claude-opus-4-8"
         assert seen["temperature"] == 0.4
         assert seen["max_tokens"] == 12000
 
@@ -113,12 +114,12 @@ class TestLLM:
         def fake_post(url, **kw):
             models.append(kw["json"]["model"])
             if len(models) == 1:
-                return FakeResp(status=400, text="bad request")  # non-retryable -> next provider
+                return FakeResp(status=403, text="cloudflare")  # non-retryable -> next provider
             return FakeResp(payload=chat("second answer"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "second answer"
-        assert models == ["nvidia/nemotron-3-super-120b-a12b", "nvidia/nemotron-3-nano-30b-a3b"]
+        assert models == ["claude-opus-4-8", "nvidia/nemotron-3-super-120b-a12b"]
 
     def test_retryable_status_is_retried_on_same_provider(self, monkeypatch):
         llm = self._mod(monkeypatch)
@@ -128,7 +129,7 @@ class TestLLM:
             n["i"] += 1
             if n["i"] == 1:
                 return FakeResp(status=503, text="try later")  # retryable -> retry, don't fall through
-            return FakeResp(payload=chat("ok"))
+            return FakeResp(payload=anthropic_msg("ok"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "ok"
@@ -142,7 +143,7 @@ class TestLLM:
             n["i"] += 1
             if n["i"] == 1:
                 raise llm.requests.RequestException("connection reset")
-            return FakeResp(payload=chat("recovered"))
+            return FakeResp(payload=anthropic_msg("recovered"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "recovered"
@@ -185,7 +186,7 @@ class TestLLM:
         assert seen["response_format"] == {"type": "json_object"}
 
     def test_anthropic_dialect_parses_json_without_response_format(self, monkeypatch):
-        llm = self._mod(monkeypatch, keys=("SEEKAI_KEY",))
+        llm = self._mod(monkeypatch, keys=("TABI_KEY",))
         seen = {}
 
         def fake_post(url, **kw):
@@ -196,7 +197,7 @@ class TestLLM:
         assert llm.llm("s", "u", json_out=True) == {"verdict": "APEX"}
         assert "response_format" not in seen        # Anthropic has no such field
         assert seen["system"] == "s"                # system is a top-level param
-        assert seen["url"] == llm.SEEKAI_BASE + "/v1/messages"
+        assert seen["url"] == llm.TABI_BASE + "/v1/messages"
 
     @pytest.mark.parametrize("raw", [
         '{"a":1}',
@@ -224,7 +225,7 @@ class TestLLM:
         def fake_post(url, **kw):
             models.append(kw["json"]["model"])
             if len(models) == 1:
-                return FakeResp(payload=chat("I'm afraid I can't do that."))
+                return FakeResp(payload=anthropic_msg("I'm afraid I can't do that."))
             return FakeResp(payload=chat('{"ok":true}'))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
@@ -232,15 +233,15 @@ class TestLLM:
         assert len(models) == 2
 
     def test_providers_health_reflects_env(self, monkeypatch):
-        monkeypatch.setenv("NIM_KEY", "x")
+        monkeypatch.setenv("TABI_KEY", "x")
         monkeypatch.setenv("GROQ_KEY", "")
+        monkeypatch.delenv("NIM_KEY", raising=False)
         monkeypatch.delenv("GEMINI_KEY", raising=False)
-        monkeypatch.delenv("SEEKAI_KEY", raising=False)
         import importlib
         from pipeline import llm as _llm
         llm = importlib.reload(_llm)
         assert llm.PROVIDERS_HEALTH == {
-            "NIM_KEY": True, "GEMINI_KEY": False, "GROQ_KEY": False, "SEEKAI_KEY": False,
+            "TABI_KEY": True, "NIM_KEY": False, "GEMINI_KEY": False, "GROQ_KEY": False,
         }
 
     def test_prompts_file_has_every_part_f_section(self):

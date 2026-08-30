@@ -27,6 +27,7 @@ jobs:
       - run: pip install requests google-api-python-client google-auth
       - name: Learn
         env:
+          TABI_KEY: ${{ secrets.TABI_KEY }}
           NIM_KEY: ${{ secrets.NIM_KEY }}
           GROQ_KEY: ${{ secrets.GROQ_KEY }}
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}

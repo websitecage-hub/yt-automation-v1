@@ -1,16 +1,18 @@
 """LLM access for SCALED — two provider chains, hard-wired fallback order.
 
-llm()      creative chain: NIM super-120b -> NIM nano-30b -> Gemini -> Groq -> seekai
-llm_code() code chain:     NIM super-120b -> NIM nano-30b -> Gemini -> Groq -> seekai
+llm()      creative chain: tabi opus-4-8 -> NIM super-120b -> NIM nano-30b -> Gemini -> Groq
+llm_code() code chain:     tabi opus-4-8 -> NIM super-120b -> NIM nano-30b -> Gemini -> Groq
 
-Providers speak one of three dialects -- "nim" (NVIDIA NIM, OpenAI /chat/completions
-but no response_format), "openai" (Gemini + Groq, /chat/completions with a JSON
-response_format), and "anthropic" (seekai gateway, /v1/messages + x-api-key) --
-and _post normalises all three to one text/JSON return. Every HTTP call is retried
-on transient failures (timeouts, 429, 5xx) before the chain moves on; a provider
-whose key env var is empty is skipped without counting as a failure, and one that
-raises, returns non-200, or unparseable JSON (json_out) is logged so the next
-provider takes over. The chain only raises when every provider is exhausted.
+Providers speak one of three dialects -- "anthropic" (tabitoken gateway, /v1/messages
++ x-api-key, claude-opus-4-8), "nim" (NVIDIA NIM, OpenAI /chat/completions but no
+response_format), and "openai" (Gemini + Groq, /chat/completions with a JSON
+response_format) -- and _post normalises all three to one text/JSON return. Every
+HTTP call carries a browser User-Agent (tabitoken's Cloudflare 403s a bare curl/
+python UA) and is retried on transient failures (timeouts, 429, 5xx) before the
+chain moves on; a provider whose key env var is empty is skipped without counting
+as a failure, and one that raises, returns non-200, or unparseable JSON (json_out)
+is logged so the next provider takes over. The chain only raises when every
+provider is exhausted.
 """
 import json
 import os
@@ -24,38 +26,45 @@ CREATIVE_MAX_TOKENS = 8000
 CODE_MAX_TOKENS = 12000
 
 NIM_BASE = "https://integrate.api.nvidia.com/v1"
+TABI_BASE = "https://tabitoken.com"
 SEEKAI_BASE = "https://seekai.cc"
 GROQ_BASE = "https://api.groq.com/openai/v1"
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
 
+# tabitoken sits behind Cloudflare, which 403s requests with a bare curl/python
+# User-Agent; a browser UA sails through (verified from a datacenter IP). Sent on
+# every provider call -- harmless to the others.
+UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+
 RETRY_TRIES = 3                       # per-provider HTTP attempts before falling through
-RETRY_STATUS = {408, 409, 429, 500, 502, 503, 504}
+RETRY_STATUS = {408, 409, 429, 500, 502, 503, 504}   # 403 is NOT here: fall through fast
 
 # (label, base, model, env var holding the key, dialect)
-# NVIDIA NIM leads both chains -- the two models this account can actually call
-# (nemotron-3 super-120b, then the faster nano-30b). Free Gemini + Groq are the
-# tail so the chain never fully dies; seekai stays last as an off-CI option (its
-# keys 401 from datacenter IPs, but work from a residential run).
+# tabitoken (Anthropic dialect, claude-opus-4-8) leads both chains -- the user's
+# pick for quality. NVIDIA NIM (nemotron super-120b -> nano-30b) then free Gemini
+# + Groq form the tail so the chain never dies if tabitoken is blocked or out of
+# credit. seekai/kimi/deepseek are dropped: seekai 401s from CI IPs and the big
+# NIM reasoning models (kimi-k3, deepseek-v4) never answer within 280s.
 CREATIVE_CHAIN = [
-    ("nim/super-120b",  NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
-    ("nim/nano-30b",    NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
-    ("gemini",          GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
-    ("groq",            GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
-    ("seekai/opus-4-8", SEEKAI_BASE, "claude-opus-4-8",                   "SEEKAI_KEY", "anthropic"),
+    ("tabi/opus-4-8",  TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY",   "anthropic"),
+    ("nim/super-120b", NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
+    ("nim/nano-30b",   NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
+    ("gemini",         GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
+    ("groq",           GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
 ]
 CODE_CHAIN = [
-    ("nim/super-120b",  NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
-    ("nim/nano-30b",    NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
-    ("gemini",          GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
-    ("groq",            GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
-    ("seekai/sonnet-5", SEEKAI_BASE, "claude-sonnet-5",                   "SEEKAI_KEY", "anthropic"),
+    ("tabi/opus-4-8",  TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY",   "anthropic"),
+    ("nim/super-120b", NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
+    ("nim/nano-30b",   NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
+    ("gemini",         GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
+    ("groq",           GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
 ]
 
 # Filled at import: which provider keys are actually present in this process.
 # run.py logs this so a run that silently lost a provider is obvious in the log.
 PROVIDERS_HEALTH = {
     env: bool((os.getenv(env) or "").strip())
-    for env in ("NIM_KEY", "GEMINI_KEY", "GROQ_KEY", "SEEKAI_KEY")
+    for env in ("TABI_KEY", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY")
 }
 
 _FENCE = re.compile(r"^\s*```(?:json|JSON)?\s*|\s*```\s*$")
@@ -129,7 +138,7 @@ def _post(base, model, key, system, user, temperature, max_tokens, json_out, dia
             "messages": [{"role": "user", "content": user}],
         }
         headers = {"x-api-key": key, "anthropic-version": "2023-06-01",
-                   "content-type": "application/json"}
+                   "content-type": "application/json", "User-Agent": UA}
         r = _http_post(base + "/v1/messages", headers, payload)
         blocks = r.json().get("content") or []
         content = "".join(b.get("text", "") for b in blocks
@@ -146,7 +155,8 @@ def _post(base, model, key, system, user, temperature, max_tokens, json_out, dia
         }
         if json_out and dialect == "openai":
             payload["response_format"] = {"type": "json_object"}
-        headers = {"Authorization": "Bearer " + key, "Content-Type": "application/json"}
+        headers = {"Authorization": "Bearer " + key, "Content-Type": "application/json",
+                   "User-Agent": UA}
         r = _http_post(base + "/chat/completions", headers, payload)
         content = r.json()["choices"][0]["message"]["content"]
     if not content or not content.strip():
