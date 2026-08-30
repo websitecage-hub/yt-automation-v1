@@ -4,7 +4,7 @@
   "topic": "Your Brain Seals Your True Strength (Here's the Key)",
   "lane": "HUMAN",
   "created": "2026-08-30T13:12:46+00:00",
-  "stage": "voice",
+  "stage": "done",
   "title": "Your Brain Seals Your Strength. Here's The Key.",
   "description": "Professor Croc reveals how your brain limits your true physical power. Learn the mechanisms behind this neurological 'seal' and how advanced training can teach your body to unlock dormant strength. This isn't about muscle; it's about control.",
   "tags": [
@@ -26,28 +26,44 @@
       "heading": "The Impossible Feat",
       "text": "A human once lifted 3,500 pounds. Not trained, not a record. Just pure, unadulterated survival. This is not normal. But it is real.",
       "image_prompt": "Close-up of a human hand gripping a twisted metal beam, straining, with a faint glow around the muscles. Dark, intense lighting.",
-      "stat": null
+      "stat": null,
+      "dur": 10.32,
+      "frag_html": "<div id=\"s0-heading-wrap\" style=\"position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none;\">\n  <span id=\"s0-w0\" class=\"s0-word\" style=\"opacity:0; display:inline-block;\">The</span>\n  <span id=\"s0-w1\" class=\"s0-word\" style=\"opacity:0; display:inline-block;\">Impossible</span>\n  <span id=\"s0-w2\" class=\"s0-word\" style=\"opacity:0; display:inline-block;\">Feat</span>\n</div>\n<div id=\"s0-number\" style=\"position:absolute; left:50%; top:60%; transform:translate(-50%,-50%); font-size:4.8rem; font-weight:900; color:var(--lime); opacity:0; pointer-events:none;\">3,500</div>\n<div id=\"s0-glow\" style=\"position:absolute; left:50%; top:50%; width:300px; height:300px; margin:-150px 0 0 -150px; background:radial-gradient(circle, var(--lime) 0%, transparent 70%); opacity:0; pointer-events:none; filter:blur(30px);\"></div>",
+      "frag_js": "tl.fromTo(\"#s0-w0\", {opacity:0, y:30}, {opacity:1, y:0, duration:0.6, ease:\"power1.out\"}, 0.0);\ntl.fromTo(\"#s0-w1\", {opacity:0, y:30}, {opacity:1, y:0, duration:0.6, ease:\"power1.out\"}, 0.2);\ntl.fromTo(\"#s0-w2\", {opacity:0, y:30}, {opacity:1, y:0, duration:0.6, ease:\"power1.out\"}, 0.4);\ntl.fromTo(\"#s0-number\", {opacity:0, scale:0.8}, {opacity:1, scale:1, duration:0.5, ease:\"power1.out\"}, 1.2);\ntl.to(\"#s0-number\", {scale:1.15, duration:0.3, yoyo:true, repeat:1, ease:\"power1.inOut\"}, 2.0);\ntl.fromTo(\"#s0-glow\", {opacity:0}, {opacity:0.4, duration:0.8, ease:\"power1.out\"}, 3.0);\ntl.to(\"#s0-glow\", {opacity:0.6, duration:0.4, yoyo:true, repeat:1, ease:\"power1.inOut\"}, 4.0);\ntl.fromTo(\"#img0\", {scale:1, rotation:0}, {scale:1.02, rotation:2, duration:2.0, ease:\"none\"}, 5.0);\ntl.to(\"#img0\", {scale:1.01, rotation:-1, duration:2.0, ease:\"none\"}, 7.0);\ntl.to(\"#img0\", {scale:1, rotation:0, duration:1.0, ease:\"power1.out\"}, 9.0);",
+      "frag_source": "llm attempt 4"
     },
     {
       "act": "HOOK",
       "heading": "The Brain's Safety Protocol",
       "text": "Your brain prevents you from tearing yourself apart. It's a safety mechanism. A neurological seal on your true strength.",
       "image_prompt": "Stylized diagram showing a human brain with red 'restriction' lines extending to muscles, indicating a 'seal' or 'limiter'.",
-      "stat": null
+      "stat": null,
+      "dur": 7.16,
+      "frag_html": "<div id=\"s1-heading\" class=\"overlay\" style=\"position:absolute;left:50%;top:20%;transform:translate(-50%,-50%);font-size:2.2rem;color:var(--ink);opacity:0;pointer-events:none;\">The Brain's Safety Protocol</div>\n<div id=\"s1-key\" class=\"overlay\" style=\"position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font-size:3rem;color:var(--lime);opacity:0;pointer-events:none;\">200%</div>\n<div id=\"s1-seal\" class=\"overlay\" style=\"position:absolute;left:40%;top:50%;width:0;height:2px;background:var(--red);transform-origin:left;pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s1-heading\", {opacity:0}, {duration:0.5, opacity:1, ease:\"power1.out\"}, 10.320);\ntl.fromTo(\"#s1-key\", {scale:0, opacity:0}, {duration:0.4, scale:1.2, opacity:1, ease:\"back.out(1.7)\"}, 11.5);\ntl.to(\"#s1-key\", {duration:0.3, scale:1, ease:\"power2.inOut\"}, 11.9);\ntl.fromTo(\"#s1-seal\", {width:0}, {duration:1.5, width:\"200px\", ease:\"power1.out\"}, 12.5);\ntl.to(\"#img1\", {duration:1.0, y:\"-10px\", ease:\"power1.inOut\"}, 13.5);\ntl.to(\"#img1\", {duration:1.0, y:\"0px\", ease:\"power1.inOut\"}, 14.5);\ntl.to(\"#img1\", {duration:1.0, y:\"-5px\", ease:\"power1.inOut\"}, 15.5);\ntl.to(\"#img1\", {duration:0.98, y:\"0px\", ease:\"power1.inOut\"}, 16.5);",
+      "frag_source": "llm attempt 2"
     },
     {
       "act": "HOOK",
       "heading": "What is This Seal?",
       "text": "Muscles are stronger than you think. But your central nervous system holds the leash. It dictates how much force you can exert. This is the seal. It can break.",
       "image_prompt": "Abstract representation of a brain's neural pathways as glowing lines, with a central 'lock' icon. A question mark hovers.",
-      "stat": null
+      "stat": null,
+      "dur": 10.68,
+      "frag_html": "<div id=\"s2-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:48px; color:var(--ink); opacity:0; pointer-events:none;\">What is This Seal?</div>\n<div id=\"s2-key-number\" style=\"position:absolute; top:40%; left:50%; transform:translateX(-50%); font-size:96px; color:var(--ink); opacity:0; pointer-events:none;\">??</div>\n<div id=\"s2-neural\" style=\"position:absolute; top:50%; left:50%; width:200px; height:200px; transform:translate(-50%,-50%); pointer-events:none;\">\n  <div class=\"line\" style=\"position:absolute; bottom:0; left:0; width:0; height:4px; background:var(--lime);\"></div>\n  <div class=\"line\" style=\"position:absolute; bottom:0; left:33%; width:0; height:4px; background:var(--lime);\"></div>\n  <div class=\"line\" style=\"position:absolute; bottom:0; left:66%; width:0; height:4px; background:var(--lime);\"></div>\n</div>\n<div id=\"s2-lock\" style=\"position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:64px; color:var(--amber); opacity:0; pointer-events:none;\">🔒</div>\n<div id=\"s2-question\" style=\"position:absolute; top:30%; left:50%; transform:translateX(-50%); font-size:96px; color:var(--red); opacity:0; pointer-events:none;\">?</div>",
+      "frag_js": "tl.fromTo(\"#s2-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.52}, 17.48);\ntl.fromTo(\"#s2-neural .line\", {width:0}, {width:\"100%\", duration:1.5, stagger:0.2}, 18.0);\ntl.fromTo(\"#s2-lock\", {scale:1, opacity:0}, {opacity:1, scale:1.2, duration:0.3, yoyo:true, repeat:1}, 19.5);\ntl.fromTo(\"#s2-question\", {scale:1, opacity:0}, {opacity:1, scale:1.3, duration:0.3, yoyo:true, repeat:1}, 20.5);\ntl.fromTo(\"#s2-key-number\", {scale:1, opacity:0, color:\"var(--ink)\"}, {opacity:1, scale:1.4, color:\"var(--lime)\", duration:0.5}, 21.5);\ntl.to(\"#img2\", {scale:1.05, rotation:2, duration:10.68}, 17.48);",
+      "frag_source": "llm attempt 2"
     },
     {
       "act": "BASE STATS",
       "heading": "Baseline Capabilities",
       "text": "Let's check the base stats. A typical human can generate about 50-80 pounds of force per square inch of muscle. This is what you operate with daily.",
       "image_prompt": "Professor Croc pointing to a simple infographic showing a muscular arm with '50-80 PSI' text. A baseline stat bar is partially filled.",
-      "stat": null
+      "stat": null,
+      "dur": 9.42,
+      "frag_html": "<div id=\"s3-heading\" style=\"position:absolute; left:50%; top:20%; transform:translateX(-50%); font-size:2.4rem; font-weight:600; color:var(--ink); opacity:0;\">Baseline Capabilities</div>\n<div id=\"s3-number\" style=\"position:absolute; left:50%; top:35%; transform:translateX(-50%); font-size:3.2rem; font-weight:800; color:var(--lime); opacity:0;\">50‑80 PSI</div>\n<div id=\"s3-statbar-container\" style=\"position:absolute; left:50%; top:55%; transform:translateX(-50%); width:280px; height:24px; background-color:var(--dim); border-radius:12px; overflow:hidden;\">\n  <div id=\"s3-statbar-fill\" style=\"width:0%; height:100%; background-color:var(--lime);\"></div>\n</div>",
+      "frag_js": "tl.fromTo(\"#s3-heading\", {y:-20, opacity:0}, {y:0, opacity:1, duration:0.64, ease:\"power2.out\"}, 28.16);\ntl.fromTo(\"#s3-number\", {y:20, opacity:0}, {y:0, opacity:1, duration:0.6, ease:\"power2.out\"}, 29.0);\ntl.to(\"#s3-statbar-fill\", {width:\"100%\", duration:3.0, ease:\"power1.inOut\"}, 30.0);\ntl.to(\"#img3\", {x:10, duration:3.0, ease:\"power1.inOut\"}, 31.5);\ntl.to(\"#img3\", {x:0, duration:3.0, ease:\"power1.inOut\"}, 34.5);\ntl.fromTo(\"#s3-number\", {scale:1}, {scale:1.2, duration:0.5, ease:\"power2.out\"}, 35.0);\ntl.to(\"#s3-number\", {scale:1, duration:0.5, ease:\"power2.in\"}, 35.5);",
+      "frag_source": "llm attempt 4"
     },
     {
       "act": "BASE STATS",
@@ -58,28 +74,44 @@
         "label": "Baseline Strength Output",
         "grade": "C-",
         "note": "Limited by neurological inhibition."
-      }
+      },
+      "dur": 9.78,
+      "frag_html": "<div id=\"s4-heading\" class=\"overlay\" style=\"position:absolute;top:20%;left:50%;transform:translateX(-50%);color:var(--ink);font-size:2.2rem;font-weight:600;pointer-events:none;\">The Muscle's Potential</div>\n<div id=\"s4-number\" class=\"overlay\" style=\"position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--lime);font-size:4rem;font-weight:800;pointer-events:none;\">150</div>\n<div id=\"s4-pulse\" class=\"overlay\" style=\"position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:120px;height:120px;background:var(--lime);opacity:0.2;border-radius:50%;pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s4-heading\", {y:30, opacity:0}, {y:0, opacity:1, duration:0.8, ease:\"power3.out\"}, 37.580);\ntl.fromTo(\"#s4-number\", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.6, ease:\"back.out(1.7)\"}, 38.5);\ntl.fromTo(\"#s4-pulse\", {scale:0, opacity:0}, {scale:1.4, opacity:0.3, duration:1.2, ease:\"power2.out\"}, 38.5);\ntl.to(\"#img4\", {x:8, y:-4, scale:1.01, duration:8.36, ease:\"sine.inOut\"}, 39.0);",
+      "frag_source": "llm attempt 2"
     },
     {
       "act": "BASE STATS",
       "heading": "Why the Limit?",
       "text": "The limit is for survival. Preventing injury from overexertion. Tearing tendons, fracturing bones, exploding blood vessels. Your brain prioritizes safety.",
       "image_prompt": "X-ray diagram of a human arm showing potential areas of tendon tear or bone fracture, highlighted in red. A 'Danger' symbol.",
-      "stat": null
+      "stat": null,
+      "dur": 11.02,
+      "frag_html": "<div id=\"s5-heading\">Why the Limit?</div>\n<div id=\"s5-number\">100%</div>\n<div id=\"s5-danger\">⚠️</div>",
+      "frag_js": "tl.fromTo(\"#s5-heading\", {y:20, opacity:0}, {y:0, opacity:1, duration:0.5, ease:\"power2.out\"}, 47.360);\ntl.fromTo(\"#s5-number\", {scale:0}, {scale:1.2, duration:0.3, ease:\"power2.out\"}, 48.200);\ntl.to(\"#s5-number\", {scale:1, duration:0.2, ease:\"power2.in\"}, 48.500);\ntl.fromTo(\"#s5-danger\", {rotation:0, opacity:0}, {rotation:10, opacity:1, duration:0.5, ease:\"power2.out\"}, 49.500);\ntl.to(\"#img5\", {x:5, duration:5, ease:\"power1.inOut\"}, 51.000);",
+      "frag_source": "llm attempt 2"
     },
     {
       "act": "HIDDEN ABILITY",
       "heading": "Adrenaline Override",
       "text": "The fight-or-flight response. Your body dumps hormones like adrenaline. This is your first glimpse past the seal.",
       "image_prompt": "Graphic representation of adrenaline molecules surging through a bloodstream, connecting to receptors on muscle cells. Energetic.",
-      "stat": null
+      "stat": null,
+      "dur": 7.42,
+      "frag_html": "<div id=\"s6-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:4.5rem; font-weight:bold; color:var(--ink); opacity:0; pointer-events:none;\">Adrenaline Override</div>\n<div id=\"s6-number\" style=\"position:absolute; top:40%; left:50%; transform:translateX(-50%); font-size:6rem; font-weight:bold; color:var(--lime); opacity:0; pointer-events:none;\">5</div>\n<div id=\"s6-mol1\" style=\"position:absolute; width:24px; height:24px; background:var(--amber); border-radius:50%; opacity:0; pointer-events:none;\"></div>\n<div id=\"s6-mol2\" style=\"position:absolute; width:24px; height:24px; background:var(--amber); border-radius:50%; opacity:0; pointer-events:none;\"></div>\n<div id=\"s6-mol3\" style=\"position:absolute; width:24px; height:24px; background:var(--amber); border-radius:50%; opacity:0; pointer-events:none;\"></div>\n<div id=\"s6-mol4\" style=\"position:absolute; width:24px; height:24px; background:var(--amber); border-radius:50%; opacity:0; pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s6-heading\", {y:30, opacity:0}, {y:0, opacity:1, duration:0.5}, 58.5);\ntl.fromTo(\"#s6-number\", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.4}, 60.0);\ntl.to(\"#s6-number\", {scale:1.2, duration:0.2}, 60.5);\ntl.to(\"#s6-number\", {scale:1, duration:0.2}, 60.7);\ntl.fromTo(\"#s6-mol1\", {x:-50, y:200, opacity:0}, {x:1200, y:200, opacity:1, duration:1.5}, 61.0);\ntl.to(\"#s6-mol1\", {opacity:0, duration:0.3}, 62.5);\ntl.fromTo(\"#s6-mol2\", {x:-50, y:400, opacity:0}, {x:1200, y:400, opacity:1, duration:1.5}, 62.0);\ntl.to(\"#s6-mol2\", {opacity:0, duration:0.3}, 63.5);\ntl.fromTo(\"#s6-mol3\", {x:-50, y:600, opacity:0}, {x:1200, y:600, opacity:1, duration:1.5}, 63.0);\ntl.to(\"#s6-mol3\", {opacity:0, duration:0.3}, 64.5);\ntl.fromTo(\"#s6-mol4\", {x:-50, y:800, opacity:0}, {x:1200, y:800, opacity:1, duration:1.5}, 64.0);\ntl.to(\"#s6-mol4\", {opacity:0, duration:0.3}, 65.5);\ntl.fromTo(\"#img6\", {scale:1}, {scale:1.05, duration:0.4}, 60.0);\ntl.to(\"#img6\", {scale:1, duration:0.4}, 60.8);",
+      "frag_source": "llm attempt 3"
     },
     {
       "act": "HIDDEN ABILITY",
       "heading": "The Hormonal Key",
       "text": "Adrenaline binds to receptors, accelerating heart rate and increasing glucose availability. It signals for immediate, maximum energy expenditure.",
       "image_prompt": "Detailed illustration of adrenaline binding to a cellular receptor, triggering a cascade of internal energy release. Microscopic view.",
-      "stat": null
+      "stat": null,
+      "dur": 8.44,
+      "frag_html": "<div id=\"s7-heading\" style=\"position:absolute;top:10%;left:50%;transform:translateX(-50%);font-size:48px;color:var(--ink);text-align:center;pointer-events:none;\">The Hormonal Key</div>\n<div id=\"s7-key-number\" style=\"position:absolute;top:20%;left:50%;transform:translateX(-50%);font-size:96px;color:var(--lime);pointer-events:none;\">99</div>\n<div id=\"s7-dot-left\" style=\"position:absolute;top:10%;left:40%;width:12px;height:12px;background-color:var(--amber);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);\"></div>\n<div id=\"s7-dot-right\" style=\"position:absolute;top:10%;left:60%;width:12px;height:12px;background-color:var(--amber);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%);\"></div>\n<div id=\"s7-line\" style=\"position:absolute;top:18%;left:50%;width:0;height:2px;background-color:var(--red);transform:translateX(-50%);transform-origin:left;pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s7-heading\", {opacity:0, y:30}, {opacity:1, y:0, duration:0.8}, 66.000);\ntl.fromTo(\"#s7-key-number\", {scale:0}, {scale:1, duration:1.0, ease:\"back.out(1.7)\"}, 66.800);\ntl.fromTo(\"#s7-dot-left\", {opacity:0, scale:0}, {opacity:1, scale:1, duration:1.0, ease:\"elastic.out(1,0.3)\"}, 67.300);\ntl.fromTo(\"#s7-dot-right\", {opacity:0, scale:0}, {opacity:1, scale:1, duration:1.0, ease:\"elastic.out(1,0.3)\"}, 67.300);\ntl.to(\"#s7-line\", {width:\"100%\", duration:2.0, ease:\"power2.out\"}, 68.300);\ntl.to(\"#img7\", {scale:1.05, duration:1.75, ease:\"power1.inOut\"}, 70.300);\ntl.to(\"#img7\", {scale:1, duration:1.75, ease:\"power1.inOut\"}, 72.050);",
+      "frag_source": "llm attempt 4"
     },
     {
       "act": "HIDDEN ABILITY",
@@ -90,28 +122,44 @@
         "label": "Adrenaline-Boosted Strength",
         "grade": "B+",
         "note": "Temporary override of neurological limiters."
-      }
+      },
+      "dur": 13.2,
+      "frag_html": "<div id=\"s8-heading\" style=\"position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:48px;font-weight:bold;color:var(--ink);opacity:0;\">Temporary Buff</div>\n<div id=\"s8-number\" style=\"position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:96px;font-weight:bold;color:var(--lime);opacity:0;\">20-30%</div>\n<div id=\"s8-spark1\" style=\"position:absolute;top:40%;left:60%;width:12px;height:12px;background:var(--lime);border-radius:50%;opacity:0;\"></div>\n<div id=\"s8-spark2\" style=\"position:absolute;top:55%;left:40%;width:12px;height:12px;background:var(--amber);border-radius:50%;opacity:0;\"></div>\n<div id=\"s8-spark3\" style=\"position:absolute;top:45%;left:30%;width:12px;height:12px;background:var(--red);border-radius:50%;opacity:0;\"></div>",
+      "frag_js": "tl.fromTo(\"#s8-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.6, ease:\"power3.out\"}, 74.440);\ntl.fromTo(\"#s8-number\", {opacity:0, scale:0}, {opacity:1, scale:1, duration:0.6, ease:\"back.out(1.7)\"}, 75.200);\ntl.to(\"#s8-number\", {scale:1.1, duration:0.3, ease:\"power1.out\"}, 76.000);\ntl.to(\"#s8-number\", {scale:1, duration:0.3, ease:\"power1.in\"}, 76.300);\ntl.fromTo(\"#s8-spark1\", {opacity:0, y:10}, {opacity:0.8, y:-10, duration:0.5, ease:\"power2.out\"}, 77.000);\ntl.to(\"#s8-spark1\", {opacity:0, duration:0.4}, 77.500);\ntl.fromTo(\"#s8-spark2\", {opacity:0, x:-10}, {opacity:0.8, x:10, duration:0.5, ease:\"power2.out\"}, 77.800);\ntl.to(\"#s8-spark2\", {opacity:0, duration:0.4}, 78.300);\ntl.fromTo(\"#s8-spark3\", {opacity:0, rotation:0}, {opacity:0.8, rotation:360, duration:0.5, ease:\"power2.out\"}, 78.600);\ntl.to(\"#s8-spark3\", {opacity:0, duration:0.4}, 79.100);\ntl.fromTo(\"#img8\", {x:-5, y:-5}, {x:5, y:5, duration:13.2, ease:\"none\"}, 74.240);",
+      "frag_source": "llm attempt 2"
     },
     {
       "act": "THE AWAKENING",
       "heading": "Beyond the Emergency",
       "text": "Two hundred million years of field research. This is the weirdest thing I've ever graded. Humans can deliberately train to access these reserves.",
       "image_prompt": "Professor Croc looking at a complex human brain diagram with a puzzled expression, surrounded by ancient reptilian fossils.",
-      "stat": null
+      "stat": null,
+      "dur": 8.72,
+      "frag_html": "<div id=\"s9-heading\" style=\"position:absolute; top:12%; left:50%; transform:translateX(-50%); font-size:48px; color:var(--ink); text-align:center; pointer-events:none;\">Beyond the Emergency</div>\n<div id=\"s9-number\" style=\"position:absolute; top:28%; left:50%; transform:translateX(-50%); font-size:72px; font-weight:bold; color:var(--lime); pointer-events:none;\">200 million</div>\n<div id=\"s9-fossil1\" style=\"position:absolute; left:30%; top:50%; width:60px; height:60px; background-color:var(--lime); border-radius:50%; pointer-events:none;\"></div>\n<div id=\"s9-fossil2\" style=\"position:absolute; left:50%; top:55%; width:50px; height:50px; background-color:var(--amber); border-radius:50%; pointer-events:none;\"></div>\n<div id=\"s9-fossil3\" style=\"position:absolute; left:70%; top:48%; width:55px; height:55px; background-color:var(--red); border-radius:50%; pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s9-heading\", {y:30, opacity:0}, {duration:0.5, y:0, opacity:1, ease:\"power3.out\"}, 87.440);\ntl.fromTo(\"#s9-number\", {scale:0.8, opacity:0}, {duration:0.4, scale:1, opacity:1, ease:\"power2.out\"}, 88.0);\ntl.fromTo(\"#s9-fossil1\", {opacity:0, rotation:-15, y:20}, {duration:0.6, opacity:1, rotation:0, y:0, ease:\"power3.out\"}, 89.0);\ntl.fromTo(\"#s9-fossil2\", {opacity:0, rotation:10, y:-20}, {duration:0.6, opacity:1, rotation:0, y:0, ease:\"power3.out\"}, 90.0);\ntl.fromTo(\"#s9-fossil3\", {opacity:0, rotation:-10, y:15}, {duration:0.6, opacity:1, rotation:0, y:0, ease:\"power3.out\"}, 91.0);\ntl.to(\"#img9\", {duration:3.0, x:10, y:5, rotation:2, ease:\"power1.inOut\"}, 92.0);",
+      "frag_source": "llm attempt 2"
     },
     {
       "act": "THE AWAKENING",
       "heading": "Neurological Adaptation",
       "text": "Consistent, progressive overload training teaches your nervous system to tolerate higher loads. It's recalibrating the limiter, making the seal more flexible.",
       "image_prompt": "Animated graphic showing a weightlifter making progress over time, with neural pathways in their brain visibly strengthening and adapting.",
-      "stat": null
+      "stat": null,
+      "dur": 8.52,
+      "frag_html": "<div id=\"s10-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:2.2rem; font-weight:600; color:var(--ink); opacity:0; pointer-events:none;\">Neurological Adaptation</div>\n<div id=\"s10-key\" style=\"position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-size:3rem; font-weight:800; color:var(--lime); opacity:0; pointer-events:none;\">2×</div>\n<div id=\"s10-neural\" style=\"position:absolute; bottom:20%; left:10%; width:0; height:4px; background:var(--lime); opacity:0; pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s10-heading\", {opacity:0, y:-20}, {opacity:1, y:0, duration:0.5}, 96.200);\ntl.fromTo(\"#s10-key\", {opacity:0, scale:0.8}, {opacity:1, scale:1.2, duration:0.3}, 97.000);\ntl.fromTo(\"#s10-key\", {opacity:1, scale:1.2}, {opacity:1, scale:1, duration:0.3}, 97.300);\ntl.fromTo(\"#s10-neural\", {opacity:0, width:0}, {opacity:1, width:200, duration:1.5}, 98.000);\ntl.to(\"#img10\", {x:30, duration:5.0}, 99.000);",
+      "frag_source": "llm attempt 2"
     },
     {
       "act": "THE AWAKENING",
       "heading": "Mind Over Body",
       "text": "Visualization and controlled breathing can mimic elements of this state. Your brain is key. It's about convincing your central nervous system it's safe to exert more.",
       "image_prompt": "Person meditating with glowing brain waves, then transitioning to them performing an impressive physical feat with focus. Mental power.",
-      "stat": null
+      "stat": null,
+      "dur": 9.62,
+      "frag_html": "<div id=\"s11-heading\" class=\"overlay\">Mind Over Body</div>\n<div id=\"s11-key\" class=\"overlay\">1</div>\n<div id=\"s11-wave1\" class=\"wave\"></div>\n<div id=\"s11-wave2\" class=\"wave\"></div>",
+      "frag_js": "tl.fromTo('#s11-heading', {opacity:0, y:-20}, {opacity:1, y:0, duration:0.8}, 104.680);\ntl.fromTo('#s11-key', {opacity:0, scale:0.5}, {opacity:1, scale:1, duration:0.5}, 106.0);\ntl.to('#s11-key', {scale:1.1, duration:0.4, yoyo:true, repeat:1}, 106.6);\ntl.to('#img11', {scale:1.05, duration:1.0}, 108.0);\ntl.fromTo('#s11-wave1', {opacity:0, scale:0.5}, {opacity:0.6, scale:1.2, duration:1.5}, 109.0);\ntl.fromTo('#s11-wave2', {opacity:0, scale:0.5}, {opacity:0.4, scale:1.0, duration:1.5}, 109.5);",
+      "frag_source": "llm attempt 2"
     },
     {
       "act": "THE AWAKENING",
@@ -122,21 +170,33 @@
         "label": "Neurological Adaptation Potential",
         "grade": "A-",
         "note": "Through progressive training, the brain can be retrained."
-      }
+      },
+      "dur": 9.0,
+      "frag_html": "<div id=\"s12-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:48px; color:var(--ink); pointer-events:none; opacity:0;\">The Body's Trust</div>\n<div id=\"s12-number\" style=\"position:absolute; top:35%; left:50%; transform:translateX(-50%); font-size:96px; color:var(--lime); pointer-events:none; opacity:0; scale:0.8;\">0%</div>\n<div id=\"s12-trust-bg\" style=\"position:absolute; bottom:20%; left:50%; transform:translateX(-50%); width:300px; height:20px; background:var(--dim); border-radius:4px; opacity:0; overflow:hidden;\">\n  <div id=\"s12-trust-fill\" style=\"position:absolute; top:0; left:0; height:100%; width:0%; background:var(--lime);\"></div>\n</div>",
+      "frag_js": "tl.fromTo(\"#s12-heading\", {y:50, opacity:0}, {y:0, opacity:1, duration:0.8}, 114.300);\ntl.fromTo(\"#s12-number\", {opacity:0, scale:0.8}, {opacity:1, scale:1, duration:0.6}, 115.200);\ntl.fromTo(\"#s12-trust-bg\", {opacity:0}, {opacity:1, duration:0.5}, 116.000);\ntl.to(\"#s12-trust-fill\", {width:\"100%\", duration:2.0}, 116.500);\ntl.to(\"#s12-trust-fill\", {scale:1.05, duration:0.5}, 118.500);\ntl.to(\"#s12-trust-fill\", {scale:1, duration:0.5}, 119.000);\ntl.to(\"#img12\", {y:-10, duration:1.2, ease:\"sine.inOut\"}, 119.000);\ntl.to(\"#img12\", {y:10, duration:1.2, ease:\"sine.inOut\"}, 120.200);\ntl.to(\"#img12\", {y:0, duration:1.2, ease:\"sine.inOut\"}, 121.400);",
+      "frag_source": "llm attempt 2"
     },
     {
       "act": "FINAL FORM",
       "heading": "The Key Revealed",
       "text": "The 'key' to your true strength is not a muscle. It is your brain's ability to unlock its own safeguards. To allow more motor units to fire.",
       "image_prompt": "A stylized key inserting into a 'lock' on a glowing human brain, causing a burst of light and energy to emanate outwards.",
-      "stat": null
+      "stat": null,
+      "dur": 9.0,
+      "frag_html": "<div id=\"s13-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:48px; color:var(--ink); opacity:0; pointer-events:none;\">The Key Revealed</div>\n<svg id=\"s13-key\" style=\"position:absolute; top:40%; left:10%; width:60px; height:100px; opacity:0;\">\n  <rect x=\"25\" y=\"0\" width=\"10\" height=\"70\" fill=\"var(--amber)\"/>\n  <circle cx=\"30\" cy=\"85\" r=\"15\" fill=\"var(--amber)\"/>\n  <rect x=\"20\" y=\"60\" width=\"20\" height=\"10\" fill=\"var(--amber)\"/>\n</svg>\n<svg id=\"s13-lock\" style=\"position:absolute; top:45%; left:45%; width:80px; height:80px; opacity:0;\">\n  <rect x=\"30\" y=\"20\" width=\"20\" height=\"40\" rx=\"4\" fill=\"var(--dim)\"/>\n  <circle cx=\"40\" cy=\"15\" r=\"10\" fill=\"var(--dim)\"/>\n</svg>\n<div id=\"s13-burst1\" style=\"position:absolute; top:50%; left:50%; width:2px; height:120px; background:var(--lime); transform-origin:bottom center; opacity:0; transform:scaleY(0);\"></div>\n<div id=\"s13-burst2\" style=\"position:absolute; top:50%; left:50%; width:2px; height:120px; background:var(--lime); transform-origin:bottom center; opacity:0; transform:scaleY(0);\"></div>\n<div id=\"s13-burst3\" style=\"position:absolute; top:50%; left:50%; width:2px; height:120px; background:var(--lime); transform-origin:bottom center; opacity:0; transform:scaleY(0);\"></div>\n<div id=\"s13-burst4\" style=\"position:absolute; top:50%; left:50%; width:2px; height:120px; background:var(--lime); transform-origin:bottom center; opacity:0; transform:scaleY(0);\"></div>",
+      "frag_js": "tl.fromTo(\"#s13-heading\", 0.6, {opacity:0, y:-20}, {opacity:1, y:0}, 123.5);\ntl.fromTo(\"#s13-key\", 0.8, {opacity:0, x:-200}, {opacity:1, x:0}, 124.5);\ntl.fromTo(\"#s13-lock\", 0.6, {opacity:0, scale:0.8}, {opacity:1, scale:1}, 125.5);\ntl.fromTo(\"#s13-burst1\", 0.5, {rotation:0, scaleY:0, opacity:0}, {rotation:30, scaleY:1, opacity:1}, 126.5);\ntl.fromTo(\"#s13-burst2\", 0.5, {rotation:60, scaleY:0, opacity:0}, {rotation:60, scaleY:1, opacity:1}, 126.7);\ntl.fromTo(\"#s13-burst3\", 0.5, {rotation:120, scaleY:0, opacity:0}, {rotation:120, scaleY:1, opacity:1}, 126.9);\ntl.fromTo(\"#s13-burst4\", 0.5, {rotation:180, scaleY:0, opacity:0}, {rotation:180, scaleY:1, opacity:1}, 127.1);\ntl.to(\"#img13\", 0.6, {scale:1.05, ease:\"power1.out\"}, 128.0);\ntl.to(\"#img13\", 0.6, {scale:1, ease:\"power1.in\"}, 128.6);\ntl.fromTo(\"#s13-heading\", 0.4, {color:\"var(--ink)\"}, {color:\"var(--lime)\"}, 130.0);\ntl.fromTo(\"#s13-heading\", 0.4, {color:\"var(--lime)\"}, {color:\"var(--ink)\"}, 130.4);",
+      "frag_source": "llm attempt 4"
     },
     {
       "act": "FINAL FORM",
       "heading": "Unlocking Protocol",
       "text": "Repeated, deliberate exposure to high-stress, controlled training teaches your central nervous system to allow more power. This is how the seal truly breaks.",
       "image_prompt": "Animated graphic showing a strength bar rapidly filling, with a brain icon at the top emitting 'unlocked' signals to the muscles.",
-      "stat": null
+      "stat": null,
+      "dur": 9.38,
+      "frag_html": "<div id=\"s14-heading\" class=\"overlay\">Unlocking Protocol</div>\n<div id=\"s14-number\" class=\"overlay\">0%</div>\n<div id=\"s14-brain\" class=\"overlay\">🧠</div>\n<div id=\"s14-bar-container\" class=\"overlay\">\n  <div id=\"s14-bar-fill\" class=\"overlay\"></div>\n</div>\n<div id=\"s14-signal1\" class=\"overlay\">⚡</div>\n<div id=\"s14-signal2\" class=\"overlay\">⚡</div>\n<div id=\"s14-signal3\" class=\"overlay\">⚡</div>",
+      "frag_js": "tl.set(\"#s14-heading\", {color: \"var(--ink)\"}, 132.300);\ntl.fromTo(\"#s14-heading\", {y:30, opacity:0}, {y:0, opacity:1, duration:0.6, ease:\"power3.out\"}, 132.300);\n\ntl.set(\"#s14-number\", {color: \"var(--lime)\"}, 132.900);\ntl.fromTo(\"#s14-number\", {scale:0.8, opacity:0}, {scale:1, opacity:1, duration:0.5, ease:\"back.out\"}, 132.900);\n\ntl.set(\"#s14-brain\", {color: \"var(--ink)\"}, 133.400);\ntl.fromTo(\"#s14-brain\", {opacity:0, rotation:-10}, {opacity:1, rotation:0, duration:0.5, ease:\"power3.out\"}, 133.400);\n\ntl.set(\"#s14-bar-fill\", {backgroundColor: \"var(--lime)\"}, 133.900);\ntl.fromTo(\"#s14-bar-fill\", {width:\"0%\"}, {width:\"100%\", duration:3.0, ease:\"power3.inOut\"}, 133.900);\n\ntl.set(\"#s14-signal1\", {color: \"var(--red)\"}, 136.900);\ntl.fromTo(\"#s14-signal1\", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.4, ease:\"back.out\"}, 136.900);\ntl.set(\"#s14-signal2\", {color: \"var(--red)\"}, 137.100);\ntl.fromTo(\"#s14-signal2\", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.4, ease:\"back.out\"}, 137.100);\ntl.set(\"#s14-signal3\", {color: \"var(--red)\"}, 137.300);\ntl.fromTo(\"#s14-signal3\", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.4, ease:\"back.out\"}, 137.300);\n\ntl.to(\"#img14\", {x:10, y:-5, duration:1.6, ease:\"sine.inOut\"}, 138.400);\ntl.to(\"#img14\", {x:-10, y:5, duration:1.6, ease:\"sine.inOut\"}, 140.000);\ntl.to(\"#img14\", {x:0, y:0, duration:0.08, ease:\"sine.inOut\"}, 141.600);",
+      "frag_source": "llm attempt 2"
     },
     {
       "act": "FINAL FORM",
@@ -147,7 +207,14 @@
         "label": "Unlocked Strength Potential",
         "grade": "A+",
         "note": "Conscious control over central nervous system inhibition."
-      }
+      },
+      "dur": 13.54,
+      "frag_html": "<div id=\"s15-container\">\n  <div id=\"s15-heading\">Final Verdict:</div>\n  <div id=\"s15-underline\"></div>\n  <div id=\"s15-key\">SLEEPER</div>\n</div>",
+      "frag_js": "tl.fromTo(\"#s15-heading\", {opacity:0, y:20}, {opacity:1, y:0}, 141.680);\ntl.fromTo(\"#s15-underline\", {width:\"0%\"}, {width:\"100%\"}, 141.880);\ntl.fromTo(\"#s15-key\", {scale:1}, {scale:1.3}, 142.680);\ntl.to(\"#s15-key\", {scale:1}, 143.180);\ntl.to(\"#s15-key\", {color:\"var(--lime)\"}, 143.680);\ntl.to(\"#s15-heading\", {opacity:0}, 154.220);\ntl.to(\"#s15-underline\", {opacity:0}, 154.220);\ntl.to(\"#s15-key\", {opacity:0}, 154.220);\ntl.to(\"#img15\", {y:-10}, 150.000);\ntl.to(\"#img15\", {y:0}, 152.000);",
+      "frag_source": "llm attempt 2"
     }
-  ]
+  ],
+  "mp4": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/20260830-your-brain-seals-your-true-strength-here-s-the-k.mp4",
+  "video_id": null,
+  "thumb": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/thumb_20260830-your-brain-seals-your-true-strength-here-s-the-k.jpg"
 }

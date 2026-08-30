@@ -1,11 +1,11 @@
 # SCALED status
 
-_updated 2026-08-30T13:14:12+00:00_
+_updated 2026-08-30T16:45:00+00:00_
 
-shelf (done, unpublished): 0/5
+shelf (done, unpublished): 1/5
 
 | lesson | stage | title |
 | --- | --- | --- |
-| 1 | voice | Your Brain Seals Your Strength. Here's The Key. |
+| 1 | done | Your Brain Seals Your Strength. Here's The Key. |
 
-providers: {"SEEKAI_KEY": true, "SEEKAI_KEY2": true, "GEMINI_KEY": true, "GROQ_KEY": true}
+providers: {"TABI_KEY": true, "NIM_KEY": true, "GEMINI_KEY": true, "GROQ_KEY": true}
