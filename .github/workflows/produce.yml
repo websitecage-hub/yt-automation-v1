@@ -1,0 +1,54 @@
+name: produce
+
+# Build the next video one stage at a time. The repo is the database: job state
+# in data/videos/*.json is committed back after every run, so a killed run
+# resumes on the next invocation. Intermediates in work/ are ephemeral and
+# regenerated on demand.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"      # every 6h, off the :00 mark
+  workflow_dispatch: {}
+
+concurrency:
+  group: scaled-produce
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install requests google-api-python-client google-auth
+      - name: Produce
+        env:
+          NIM_KEY: ${{ secrets.NIM_KEY }}
+          GROQ_KEY: ${{ secrets.GROQ_KEY }}
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+          SEEKAI_KEY: ${{ secrets.SEEKAI_KEY }}
+          SEEKAI_KEY2: ${{ secrets.SEEKAI_KEY2 }}
+          VOICE_KEY: ${{ secrets.VOICE_KEY }}
+          IMAGE_KEY: ${{ secrets.IMAGE_KEY }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          RUN_BUDGET_MIN: "300"
+        run: python -m pipeline.run
+      - name: Commit state
+        if: always()
+        run: |
+          git config user.name "scaled-bot"
+          git config user.email "scaled-bot@users.noreply.github.com"
+          git add data STATUS.md
+          git commit -m "produce: advance pipeline [skip ci]" || echo "nothing to commit"
+          git push || echo "nothing to push"

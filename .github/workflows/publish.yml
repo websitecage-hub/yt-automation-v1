@@ -1,0 +1,45 @@
+name: publish
+
+# Publish one finished video off the shelf: flip it public and post the
+# extra-credit comment. DRY_RUN (no YouTube secrets) marks it published without
+# touching the network.
+
+on:
+  schedule:
+    - cron: "23 13 * * *"       # once a day, off the :00 mark
+  workflow_dispatch: {}
+
+concurrency:
+  group: scaled-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests google-api-python-client google-auth
+      - name: Publish one
+        env:
+          NIM_KEY: ${{ secrets.NIM_KEY }}
+          GROQ_KEY: ${{ secrets.GROQ_KEY }}
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+        run: python -m pipeline.publish
+      - name: Commit state
+        if: always()
+        run: |
+          git config user.name "scaled-bot"
+          git config user.email "scaled-bot@users.noreply.github.com"
+          git add data STATUS.md
+          git commit -m "publish: release one [skip ci]" || echo "nothing to commit"
+          git push || echo "nothing to push"
