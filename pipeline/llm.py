@@ -1,7 +1,7 @@
 """LLM access for SCALED — two provider chains, hard-wired fallback order.
 
-llm()      creative chain: NIM -> Groq -> Gemini   (temperature 0.85)
-llm_code() code chain:     Gemini -> NIM -> Groq   (temperature 0.40)
+llm()      creative chain: Groq -> Gemini -> NIM   (temperature 0.85)
+llm_code() code chain:     Gemini -> Groq -> NIM   (temperature 0.40)
 
 Every provider speaks the OpenAI /chat/completions dialect, so one POST shape
 covers all three. A provider whose API key env var is empty is skipped without
@@ -23,15 +23,19 @@ GROQ_BASE = "https://api.groq.com/openai/v1"
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
 
 # (label, base, model, env var holding the key)
+# Confirmed-live providers lead each chain (Groq gpt-oss-120b + Gemini). NIM is
+# best-effort last: this account has no general chat model provisioned right now,
+# so its call 404s and _run_chain simply falls through -- swap in a live NIM
+# model here the day the account gains one, no other change needed.
 CREATIVE_CHAIN = [
-    ("nim", NIM_BASE, "meta/llama-3.3-70b-instruct", "NIM_KEY"),
-    ("groq", GROQ_BASE, "llama-3.3-70b-versatile", "GROQ_KEY"),
+    ("groq", GROQ_BASE, "openai/gpt-oss-120b", "GROQ_KEY"),
     ("gemini", GEMINI_BASE, "gemini-2.5-flash", "GEMINI_KEY"),
+    ("nim", NIM_BASE, "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY"),
 ]
 CODE_CHAIN = [
     ("gemini", GEMINI_BASE, "gemini-2.5-flash", "GEMINI_KEY"),
-    ("nim", NIM_BASE, "qwen/qwen2.5-coder-32b-instruct", "NIM_KEY"),
-    ("groq", GROQ_BASE, "llama-3.3-70b-versatile", "GROQ_KEY"),
+    ("groq", GROQ_BASE, "openai/gpt-oss-120b", "GROQ_KEY"),
+    ("nim", NIM_BASE, "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY"),
 ]
 
 # Filled at import: which provider keys are actually present in this process.

@@ -32,8 +32,9 @@ BANNED = re.compile(
     r"Math\.random|Date\.now|setInterval|setTimeout|requestAnimationFrame"
     r"|fetch\(|localStorage|https?://|@import|<link|<script src"
 )
-# Framework-owned selectors the model must never touch (PART C6).
-FRAMEWORK = re.compile(r"#croc-jaw|\.croc-eye|#croc-head|#verdict|#lesson|#c\d+-\d+|#statbar|#stat-")
+# Framework-owned selectors the model must never touch (PART C6). #croc is now a
+# flat framework-animated image (no rig), so the whole #croc* family is off-limits.
+FRAMEWORK = re.compile(r"#croc\b|\.croc-eye|#verdict|#lesson|#c\d+-\d+|#statbar|#stat-")
 CSS_MOTION = re.compile(r"(?:^|[\s;\"'{])(?:transition|animation)\s*:", re.I)
 FENCE = re.compile(r"```[ \t]*([A-Za-z0-9+#]*)[ \t]*\r?\n(.*?)(?:```|\Z)", re.S)
 CALL = re.compile(r"tl\s*\.\s*(to|fromTo)\s*\(")
@@ -41,8 +42,9 @@ HTML_ID = re.compile(r"""\bid\s*=\s*["']([^"']+)["']""")
 JS_SEL = re.compile(r"""["'`]([^"'`]*#[A-Za-z][-\w]*[^"'`]*)["'`]""")
 HASH = re.compile(r"#([A-Za-z][-\w]*)")
 
-# Globals the scene prompt explicitly tells the model to animate.
-ALLOWED_GLOBAL_IDS = {"croc", "croc-arm", "stage"}
+# Globals the scene prompt allows the model to animate. The host (#croc) is NOT
+# here: it is a framework-owned flat image with a baked entrance and idle motion.
+ALLOWED_GLOBAL_IDS = {"stage"}
 
 
 # ---------------------------------------------------------------- brief
@@ -383,8 +385,9 @@ def lint_violations(html, js, i, t0, t1, work_dir):
 def SAFE_FALLBACK(t0, t1, heading, i=0):
     """Hand-written motion that always passes the gate.
 
-    Heading fades up over [t0, t0+0.8], the scene image drifts 1.00 -> 1.07 across
-    the whole window, and the croc slides in from off-frame in the first second.
+    Heading fades up over [t0, t0+0.8] and the scene image drifts 1.00 -> 1.07
+    across the whole window. The host (#croc) is framework-owned and animated by
+    compose.py, so the fallback never touches it.
     """
     t0 = float(t0)
     t1 = max(float(t1), t0 + 1.2)
@@ -401,8 +404,6 @@ def SAFE_FALLBACK(t0, t1, heading, i=0):
         % (i, t0),
         "tl.fromTo('#img%d',{scale:1.00},{scale:1.07,duration:%.3f,ease:'none'},%.3f);"
         % (i, dur, t0),
-        "tl.to('#croc',{opacity:1,duration:0.4},%.3f);" % t0,
-        "tl.fromTo('#croc',{x:1980},{x:1450,duration:1.0,ease:'power2.out'},%.3f);" % t0,
     ])
     return html, js
 

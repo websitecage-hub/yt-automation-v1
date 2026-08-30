@@ -21,16 +21,15 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STYLE = os.path.join(REPO, "config", "style.css")
 VENDOR_GSAP = os.path.join(REPO, "assets", "vendor", "gsap.min.js")
 FONT_DIR = os.path.join(REPO, "assets", "fonts")
-CROC_SVG = os.path.join(REPO, "assets", "rig", "croc.svg")
+CROC_PNG = os.path.join(REPO, "assets", "rig", "croc.png")
 
 # VERIFY-ON-FIRST-RUN #2 -- `<img class="clip">` lints and renders clean here, so
 # "img" is the default; "bgdiv" is the coded alternative, switchable by env.
 MEDIA_MODE = (os.getenv("HF_MEDIA_MODE") or "img").strip().lower() or "img"
-# VERIFY-ON-FIRST-RUN #5 -- svgOrigin verified working; transformOrigin is the fallback.
-CROC_ORIGIN = (os.getenv("HF_CROC_ORIGIN") or "svgOrigin").strip() or "svgOrigin"
 
-JAW_PIVOT = "242 163"
-ARM_PIVOT = "258 188"
+# The host is one flat PNG (no rig): the framework slides him in and gives him a
+# gentle idle zoom / rotate / drift -- that is all a flat image can do.
+CROC_ORIGIN = "center bottom"      # transform-origin used by croc_motion
 LIME = "#A6FF3D"
 DIM = "#7E8C84"
 
@@ -136,8 +135,9 @@ div.mediaclip{background-size:cover;background-position:center}
 .cap-line{position:absolute;left:210px;right:210px;bottom:130px;text-align:center}
 #lesson{position:absolute;left:64px;top:52px;font:400 34px 'ScaledMono',monospace;
   color:var(--dim);letter-spacing:.14em;opacity:0}
-#croc{position:absolute;left:0;top:640px;width:460px;height:340px;z-index:60;opacity:0;
-  pointer-events:none}
+#croc{position:absolute;left:56px;bottom:0;width:520px;height:auto;z-index:60;opacity:0;
+  pointer-events:none;transform-origin:center bottom}
+img#croc{object-fit:contain}
 .statcard{position:absolute;right:84px;top:286px;width:520px;padding:26px 30px;z-index:50}
 .statcard .stat-label{font-size:26px;color:var(--dim);letter-spacing:.12em}
 .statcard .stat-grade{font-family:'ScaledDisplay','Arial Black',sans-serif;font-size:132px;
@@ -191,28 +191,29 @@ def caption_block(i, t0, words):
     return tags, tweens
 
 
-def croc_tweens(i, t0, dur, words):
-    """Jaw lip-sync straight off the word clock, plus blinks. Seeded per scene so
-    the same job always bakes the same performance."""
-    rnd = random.Random(i * 7 + 3)
+def croc_motion(i, t0, dur):
+    """Idle life for the flat host image: a gentle zoom in/out, a little rotation and
+    a small vertical drift. Seeded per scene so a job always bakes the same
+    performance, and every beat resolves back to the base transform so consecutive
+    scenes chain without a visible jump. No rig -- this is a single PNG (PART C6,
+    amended: the host is not rigged)."""
+    rnd = random.Random(i * 13 + 5)
     tweens = []
-    for w in words or []:
-        if not isinstance(w, dict):
-            continue
-        if not str(w.get("w", "")).strip():
-            continue
-        open_at = t0 + _num(w.get("s"))
-        amount = 8 + rnd.random() * 10
-        tweens.append("tl.to('#croc-jaw',{rotation:-%.1f,%s:'%s',duration:0.045,ease:'none'},%.3f);"
-                      % (amount, CROC_ORIGIN, JAW_PIVOT, open_at))
-        tweens.append("tl.to('#croc-jaw',{rotation:0,%s:'%s',duration:0.045,ease:'none'},%.3f);"
-                      % (CROC_ORIGIN, JAW_PIVOT, open_at + 0.05))
-    t = t0 + rnd.uniform(2.8, 4.2)
-    while t < t0 + dur - 0.2:
-        tweens.append("tl.to('.croc-eye',{scaleY:0.08,transformOrigin:'center',duration:0.06},%.3f);" % t)
-        tweens.append("tl.to('.croc-eye',{scaleY:1,transformOrigin:'center',duration:0.06},%.3f);"
-                      % (t + 0.06))
-        t += rnd.uniform(2.8, 4.2)
+    t = t0 + (1.4 if i == 0 else 0.15)      # let the scene-0 entrance slide land first
+    end = t0 + dur
+    while t < end - 0.9:
+        beat = round(rnd.uniform(1.6, 2.6), 2)
+        half = round(beat / 2.0, 3)
+        sc = round(1.0 + rnd.uniform(0.02, 0.06), 3)
+        rot = round(rnd.uniform(-2.5, 2.5), 2)
+        dy = round(rnd.uniform(-16.0, 4.0), 1)
+        tweens.append("tl.to('#croc',{scale:%.3f,rotation:%.2f,y:%.1f,transformOrigin:'%s',"
+                      "duration:%.2f,ease:'sine.inOut'},%.3f);"
+                      % (sc, rot, dy, CROC_ORIGIN, half, t))
+        tweens.append("tl.to('#croc',{scale:1.000,rotation:0.00,y:0.0,transformOrigin:'%s',"
+                      "duration:%.2f,ease:'sine.inOut'},%.3f);"
+                      % (CROC_ORIGIN, half, round(t + half, 3)))
+        t = round(t + beat, 3)
     return tweens
 
 
@@ -275,26 +276,14 @@ def croc_entrance(t):
 
 
 def croc_markup():
-    """The rig from assets/rig/croc.svg, or a loud placeholder that still carries
-    the ids the baked tweens target."""
-    try:
-        with open(CROC_SVG, encoding="utf-8") as fh:
-            svg = fh.read().strip()
-        if "croc-jaw" in svg:
-            return svg
-        print("[compose] WARNING: %s has no #croc-jaw -- using the placeholder rig" % CROC_SVG)
-    except OSError as e:
-        print("[compose] WARNING: %s unreadable (%s) -- using the placeholder rig" % (CROC_SVG, e))
-    return (
-        '<svg id="croc" width="460" height="340" viewBox="0 0 460 340">'
-        '<ellipse cx="230" cy="220" rx="180" ry="80" fill="var(--croc)"/>'
-        '<g id="croc-head"><path d="M120 150 L360 150 L370 175 L110 175 Z" fill="var(--croc)"/>'
-        '<g class="croc-eye"><circle cx="150" cy="140" r="9" fill="#fff"/></g>'
-        '<g class="croc-eye"><circle cx="196" cy="140" r="9" fill="#fff"/></g></g>'
-        '<g id="croc-jaw"><path d="M110 175 L370 175 L360 200 L120 200 Z" fill="var(--croc-dark)"/></g>'
-        '<g id="croc-arm"><rect x="250" y="185" width="14" height="70" fill="var(--croc)"/></g>'
-        '</svg>'
-    )
+    """The host as a single flat image (assets/croc.png), copied in by _copy_croc.
+    No rig: the framework slides him in (croc_entrance) and gives him a gentle idle
+    zoom/rotate/drift (croc_motion) -- that is all a flat PNG can do. If the image is
+    missing we still emit an element carrying #croc so the baked tweens are no-ops."""
+    if not os.path.exists(CROC_PNG):
+        print("[compose] WARNING: %s missing -- the host image will be absent" % CROC_PNG)
+        return '<div id="croc" style="background:var(--croc);border-radius:24px"></div>'
+    return '<img id="croc" src="assets/croc.png" alt="Professor Croc">'
 
 
 # ---------------------------------------------------------------- assets
@@ -308,6 +297,17 @@ def _copy_gsap(assets):
           "time. Restore it from assets/vendor/README.txt." % VENDOR_GSAP)
     with open(dst, "w", encoding="utf-8") as fh:
         fh.write(GSAP_STUB)
+    return False
+
+
+def _copy_croc(assets):
+    """assets/rig/croc.png -> the project's assets/croc.png (the one flat host image
+    used across every scene). Missing is a loud warning, never a crash."""
+    dst = os.path.join(assets, "croc.png")
+    if os.path.exists(CROC_PNG):
+        shutil.copyfile(CROC_PNG, dst)
+        return True
+    print("[compose] WARNING: %s missing -- the host image will be absent" % CROC_PNG)
     return False
 
 
@@ -354,6 +354,7 @@ def build_project(job, work_dir):
     os.makedirs(assets, exist_ok=True)
     _copy_gsap(assets)
     _copy_fonts(assets)
+    _copy_croc(assets)
 
     scenes = job.get("scenes") or []
     body, tl = [], []
@@ -371,7 +372,7 @@ def build_project(job, work_dir):
         body.extend(cap_tags)
         tl.extend(cap_tweens)
 
-        tl.extend(croc_tweens(i, t0, dur, words))
+        tl.extend(croc_motion(i, t0, dur))
 
         card_tags, card_tweens = stat_card(i, t0, dur, scene.get("stat"))
         body.extend(card_tags)

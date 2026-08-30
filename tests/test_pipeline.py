@@ -741,8 +741,8 @@ class TestTopics:
 # TASK 8 — pipeline/htmlgen.py
 # ==========================================================================
 GOOD_JS = ("tl.fromTo('#s2-card',{opacity:0},{opacity:1,duration:0.5},12.000);\n"
-           "tl.to('#croc',{opacity:1,duration:0.4},12.200);\n"
-           "tl.to('#croc-arm',{rotation:-28,svgOrigin:'258 188',duration:0.35},14.000);")
+           "tl.to('#s2-card',{y:-30,duration:0.6},13.000);\n"
+           "tl.to('#img2',{scale:1.05,duration:4},12.200);")
 GOOD_HTML = '<div id="s2-card" class="clip" data-start="12.00" data-duration="6.00">STAT</div>'
 
 
@@ -785,7 +785,7 @@ class TestHtmlgenBans:
         js = ("const k = F.rand;\n"
               "tl.to('#s2-a',{x:mathRandom,duration:0.2},12.0);\n"
               "tl.to('#s2-a',{y:dateNow + timeoutMs + myFetch(1),duration:0.2},12.5);\n"
-              "tl.to('#croc',{opacity:1,duration:0.4},12.1);")
+              "tl.to('#s2-a',{opacity:1,duration:0.2},12.1);")
         assert htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0) == []
 
     def test_clean_scene_has_no_violations(self):
@@ -799,7 +799,7 @@ class TestHtmlgenBans:
 
     def test_framework_owned_selectors_are_rejected(self):
         from pipeline import htmlgen
-        for sel in ("#croc-jaw", ".croc-eye", "#verdict", "#lesson", "#c2-3"):
+        for sel in ("#croc", "#croc-jaw", "#croc-arm", ".croc-eye", "#verdict", "#lesson", "#c2-3"):
             js = "tl.to('%s',{opacity:1,duration:0.2},12.0);" % sel
             v = htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0)
             assert any("framework-owned" in x for x in v), (sel, v)
@@ -825,11 +825,13 @@ class TestHtmlgenBans:
     def test_own_image_and_globals_are_allowed(self):
         from pipeline import htmlgen
         js = ("tl.to('#img2',{scale:1.05,duration:5},12.0);\n"
-              "tl.to('#croc',{x:1450,duration:1},12.0);\n"
-              "tl.to('#croc-arm',{rotation:-20,duration:0.3},13.0);")
+              "tl.to('#stage',{opacity:1,duration:1},13.0);")
         assert htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0) == []
         v = htmlgen.static_violations(GOOD_HTML, "tl.to('#img5',{scale:1.05,duration:5},12.0);", 2, 12.0, 18.0)
         assert any("not yours" in x for x in v)
+        # the host is framework-owned now: the model must not touch #croc at all
+        v = htmlgen.static_violations(GOOD_HTML, "tl.to('#croc',{x:1450,duration:1},12.0);", 2, 12.0, 18.0)
+        assert any("framework-owned" in x for x in v)
 
 
 class TestHtmlgenTimeWindow:
@@ -1011,13 +1013,13 @@ class TestHtmlgenLoop:
         reply = ("```html\n<div id=\"s0-a\" class=\"clip\" data-start=\"0.20\" "
                  "data-duration=\"8.00\">SEALED</div>\n```\n```js\n"
                  "tl.fromTo('#s0-a',{opacity:0},{opacity:1,duration:0.5},0.200);\n"
-                 "tl.to('#croc',{opacity:1,duration:0.4},0.400);\n```")
+                 "tl.to('#s0-a',{y:-20,duration:0.4},0.400);\n```")
         calls = []
         monkeypatch.setattr(llm, "llm_code", lambda s, u: (calls.append(u), reply)[1])
         job = self.job()
         htmlgen.generate_scene(job, 0, None)
         assert job["scenes"][0]["frag_source"] == "llm attempt 1"
-        assert "#croc" in job["scenes"][0]["frag_js"]
+        assert "s0-a" in job["scenes"][0]["frag_js"]
         assert len(calls) == 1
 
     def test_repairs_then_accepts_and_feeds_violations_back(self, monkeypatch):
@@ -1112,7 +1114,7 @@ class TestHtmlgenComposition:
             html, js = htmlgen.SAFE_FALLBACK(t0, t1, "HEADING <&>", i)
             assert htmlgen.static_violations(html, js, i, t0, max(t1, t0 + 1.2)) == []
             assert "s%d-fbhead" % i in html
-            assert "#img%d" % i in js and "#croc" in js
+            assert "#img%d" % i in js and "#croc" not in js
             assert "<" not in html.split(">", 1)[1].split("<")[0]   # heading text is sanitised
 
     def test_safe_fallback_survives_an_empty_heading(self):
@@ -1298,7 +1300,8 @@ class TestBuildProject:
     def test_missing_media_is_omitted_rather_than_referenced(self, tmp_path):
         _, _, page = build(tmp_path, demo_job(), media=False)
         assert "assets/s0.jpg" not in page and "assets/a0.mp3" not in page
-        assert "<img" not in page and "<audio" not in page
+        # the host image is always present; only the scene media img/audio are omitted
+        assert '<img id="img' not in page and "<audio" not in page
 
     def test_bgdiv_media_mode(self, tmp_path, monkeypatch):
         from pipeline import compose
@@ -1306,7 +1309,7 @@ class TestBuildProject:
         _, _, page = build(tmp_path, demo_job())
         assert '<div id="img0" class="mediaclip clip"' in page
         assert "background-image:url(assets/s0.jpg)" in page
-        assert "<img" not in page
+        assert '<img id="img' not in page          # scene media are divs here; the host <img> stays
 
     def test_captions_are_absolute_word_synced_and_scene_scoped(self, tmp_path):
         _, _, page = build(tmp_path, demo_job())
@@ -1322,46 +1325,25 @@ class TestBuildProject:
         # words 0-4 end in "strength." -> one line, 0.10 to 1.71, +0.25 tail
         assert 'id="cap0-0" class="cap-line clip" data-start="0.10" data-duration="1.86"' in page
 
-    def test_jaw_lipsync_rides_the_word_clock(self, tmp_path):
+    def test_croc_idle_motion_is_baked_per_scene(self, tmp_path):
         _, _, page = build(tmp_path, demo_job())
-        opens = re.findall(r"tl\.to\('#croc-jaw',\{rotation:-([\d.]+),svgOrigin:'242 163'"
-                           r",duration:0\.045,ease:'none'\},([\d.]+)\);", page)
-        assert len(opens) == 10                       # 5 words x 2 scenes
-        assert [t for _, t in opens][:2] == ["0.100", "0.420"]
-        assert all(8.0 <= float(a) <= 18.0 for a, _ in opens)
-        closes = re.findall(r"tl\.to\('#croc-jaw',\{rotation:0,.*?\},([\d.]+)\);", page)
-        assert closes[0] == "0.150"                   # opens at 0.100, closes 0.05s later
+        # the flat host gets a zoom/rotate/drift performance -- never a jaw or a blink
+        assert "#croc-jaw" not in page and "croc-eye" not in page
+        assert re.search(
+            r"tl\.to\('#croc',\{scale:[\d.]+,rotation:-?[\d.]+,y:-?[\d.]+,"
+            r"transformOrigin:'center bottom',duration:[\d.]+,ease:'sine\.inOut'\},[\d.]+\);",
+            page)
 
-    def test_blinks_are_baked_within_each_scene(self, tmp_path):
+    def test_croc_motion_is_seeded_and_returns_to_base(self):
         from pipeline import compose
-        _, _, page = build(tmp_path, demo_job())
-        assert re.search(r"tl\.to\('\.croc-eye',\{scaleY:0\.08,transformOrigin:'center'"
-                         r",duration:0\.06\},[\d.]+\);", page)
-        assert page.count("scaleY:0.08") == page.count("scaleY:1")
-
-        for i, (t0, dur) in enumerate([(0.0, 24.0), (24.0, 18.0)]):
-            tweens = compose.croc_tweens(i, t0, dur, [w("a", 0.1, 0.4)])
-            opens = [float(re.search(r"\},([\d.]+)\);", t).group(1))
-                     for t in tweens if "scaleY:0.08" in t]
-            assert len(opens) >= 4, opens
-            assert t0 + 2.8 <= opens[0] <= t0 + 4.2
-            assert opens[-1] <= t0 + dur - 0.2                  # nothing blinks past scene end
-            gaps = [b - a for a, b in zip(opens, opens[1:])]
-            assert all(2.8 <= g <= 4.2 for g in gaps), gaps
-
-    def test_blink_and_jaw_baking_is_seeded_per_scene(self):
-        from pipeline import compose
-        first = compose.croc_tweens(3, 0.0, 20.0, [w("a", 0.1, 0.4), w("b", 0.5, 0.9)])
-        assert first == compose.croc_tweens(3, 0.0, 20.0, [w("a", 0.1, 0.4), w("b", 0.5, 0.9)])
-        assert first != compose.croc_tweens(4, 0.0, 20.0, [w("a", 0.1, 0.4), w("b", 0.5, 0.9)])
-
-    def test_croc_origin_falls_back_to_transform_origin_when_asked(self, tmp_path, monkeypatch):
-        """VERIFY-ON-FIRST-RUN #5: svgOrigin verified working, transformOrigin coded too."""
-        from pipeline import compose
-        monkeypatch.setattr(compose, "CROC_ORIGIN", "transformOrigin")
-        _, _, page = build(tmp_path, demo_job())
-        assert "tl.to('#croc-jaw',{rotation:-" in page
-        assert "transformOrigin:'242 163'" in page and "svgOrigin:'242 163'" not in page
+        a = compose.croc_motion(3, 0.0, 20.0)
+        assert a and a == compose.croc_motion(3, 0.0, 20.0)      # deterministic
+        assert a != compose.croc_motion(4, 0.0, 20.0)            # seeded per scene
+        # every beat resolves back to the base transform, so consecutive scenes chain cleanly
+        assert a[-1].startswith("tl.to('#croc',{scale:1.000,rotation:0.00,y:0.0")
+        times = [float(re.search(r"\},([\d.]+)\);", t).group(1)) for t in a]
+        assert times == sorted(times)
+        assert all(0.0 <= t <= 20.0 for t in times)
 
     def test_stat_card_only_appears_where_the_job_has_one(self, tmp_path):
         _, _, page = build(tmp_path, demo_job())
@@ -1397,13 +1379,14 @@ class TestBuildProject:
         stage = page[page.index('id="stage"'):page.index("</div>\n<script>")]
         assert 's0-a' in stage                       # fragment html lives inside #stage
 
-    def test_croc_is_a_single_global_element_not_a_clip(self, tmp_path):
-        _, _, page = build(tmp_path, demo_job())
+    def test_croc_is_a_single_global_image_not_a_clip(self, tmp_path):
+        proj, _, page = build(tmp_path, demo_job())
         assert page.count('id="croc"') == 1
-        croc = page[page.index('<svg id="croc"'):]
-        assert "data-start" not in croc[:croc.index("</svg>")]
-        assert 'id="croc-jaw"' in page and 'id="croc-arm"' in page
-        assert page.count('class="croc-eye"') >= 2
+        assert '<img id="croc" src="assets/croc.png"' in page
+        head = page[page.index('<img id="croc"'):]
+        assert "data-start" not in head[:head.index(">")]        # a global element, not a timed clip
+        assert os.path.isfile(os.path.join(proj, "assets", "croc.png"))
+        assert "#croc-jaw" not in page and 'class="croc-eye"' not in page
 
     def test_croc_entrance_is_baked_when_scene_0_does_not_do_one(self, tmp_path):
         _, _, page = build(tmp_path, demo_job())
@@ -1470,3 +1453,121 @@ class TestBuildProject:
         errors = [f for f in report["findings"] if f["severity"] == "error"]
         assert errors == [], errors
         assert report["ok"] is True
+
+
+# ==================== TASK 11-12: render + youtube modules ====================
+import pipeline.render as _r
+
+
+class TestRender:
+    def test_kenburns_frames_equal_round_dur_times_30(self):
+        for dur in (8.0, 12.5, 0.03, 500.0):
+            assert _r.kenburns_frames(dur) == max(1, round(dur * 30))
+
+    def test_kenburns_frames_never_below_one(self):
+        assert _r.kenburns_frames(0.03) == 1
+        assert _r.kenburns_frames(0.0) == 1
+
+    def test_still_cmd_is_ffmpeg_list(self):
+        cmd = _r.ffmpeg_still_cmd("in.jpg", 2.0, "out.mp4")
+        assert isinstance(cmd, list) and cmd[0] == "ffmpeg"
+
+    def test_still_cmd_encodes_exact_frame_count(self):
+        cmd = _r.ffmpeg_still_cmd("in.jpg", 8.0, "out.mp4")
+        assert str(_r.kenburns_frames(8.0)) in cmd
+
+    def test_concat_cmd_is_ffmpeg_list(self):
+        cmd = _r.concat_cmd(["a.mp4", "b.mp4"], "out.mp4")
+        assert isinstance(cmd, list) and cmd[0] == "ffmpeg"
+
+    def test_mux_cmd_is_ffmpeg_list(self):
+        cmd = _r.mux_cmd("v.mp4", "a.mp3", "out.mp4")
+        assert isinstance(cmd, list) and cmd[0] == "ffmpeg"
+
+    def test_render_outflag_default(self):
+        assert _r.RENDER_OUTFLAG in ("--out", "--output", "-o")
+
+
+from datetime import datetime as _dt, timedelta as _td
+
+
+@pytest.mark.parametrize("age,expected", [
+    (2.9, "fresh"), (3, "review"), (6.9, "review"), (7, "locked"),
+])
+def test_tier_boundaries(age, expected):
+    from pipeline import learn
+    assert learn.tier(age) == expected
+
+
+def _row(days, impressions, ctr, now):
+    return {"published_at": (now - _td(days=days)).isoformat(),
+            "impressions": impressions, "ctr": ctr}
+
+
+class TestAbEligible:
+    now = _dt(2026, 8, 30, 12, 0, 0)
+
+    def test_eligible_in_review_low_ctr_high_impressions(self):
+        from pipeline import learn
+        assert learn.ab_eligible(_row(5, 1000, 0.039, self.now), self.now) is True
+        assert learn.ab_eligible(_row(3, 5000, 0.01, self.now), self.now) is True
+
+    def test_fresh_never_eligible(self):
+        from pipeline import learn
+        assert learn.ab_eligible(_row(1, 5000, 0.01, self.now), self.now) is False
+
+    def test_locked_never_eligible(self):
+        from pipeline import learn
+        assert learn.ab_eligible(_row(30, 5000, 0.01, self.now), self.now) is False
+
+    def test_fails_on_high_ctr(self):
+        from pipeline import learn
+        assert learn.ab_eligible(_row(5, 5000, 0.04, self.now), self.now) is False
+
+    def test_fails_on_low_impressions(self):
+        from pipeline import learn
+        assert learn.ab_eligible(_row(5, 999, 0.01, self.now), self.now) is False
+
+
+class TestHasYt:
+    def _set_all(self, mp):
+        for v in ("YT_REFRESH_TOKEN", "YT_CLIENT_ID", "YT_CLIENT_SECRET"):
+            mp.setenv(v, "x-" + v)
+        mp.delenv("DRY_RUN", raising=False)
+
+    def test_true_when_all_present(self, monkeypatch):
+        from pipeline import upload
+        self._set_all(monkeypatch)
+        assert upload.has_yt() is True
+
+    @pytest.mark.parametrize("missing", ["YT_REFRESH_TOKEN", "YT_CLIENT_ID", "YT_CLIENT_SECRET"])
+    def test_false_when_missing(self, monkeypatch, missing):
+        from pipeline import upload
+        self._set_all(monkeypatch)
+        monkeypatch.delenv(missing, raising=False)
+        assert upload.has_yt() is False
+
+    @pytest.mark.parametrize("val", ["1", "true", "yes"])
+    def test_false_when_dry_run(self, monkeypatch, val):
+        from pipeline import upload
+        self._set_all(monkeypatch)
+        monkeypatch.setenv("DRY_RUN", val)
+        assert upload.has_yt() is False
+
+
+class TestMakeThumb:
+    def test_fills_zero_padded_lesson_and_calls_image(self, monkeypatch, tmp_path):
+        from pipeline import upload, adapters
+        captured = {}
+
+        def fake_image(prompt, size="1280x720"):
+            captured["prompt"], captured["size"] = prompt, size
+            return b"\xff\xd8\xff\xe0jpeg-bytes"
+
+        monkeypatch.setattr(adapters, "image", fake_image)
+        job = {"id": "2026-08-30-brain", "title": "Your Brain Seals Your Strength",
+               "topic": "the human brain", "lesson": 7, "word": "97%"}
+        out = upload.make_thumb(job, str(tmp_path))
+        assert out and out.endswith("thumb_2026-08-30-brain.jpg")
+        assert "LESSON #007" in captured["prompt"]
+        assert "{NNN}" not in captured["prompt"]
