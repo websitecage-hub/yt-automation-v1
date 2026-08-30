@@ -69,7 +69,7 @@ def dialect_resp(url, content):
 # ==========================================================================
 class TestLLM:
     def _mod(self, monkeypatch, keys=("TABI_KEY", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY")):
-        for env in ("TABI_KEY", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY"):
+        for env in ("TABI_KEY", "TABI_KEY2", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY"):
             monkeypatch.setenv(env, "k-" + env if env in keys else "")
         from pipeline import llm
         monkeypatch.setattr(llm.time, "sleep", lambda *a, **k: None)  # no real backoff in tests
@@ -235,14 +235,35 @@ class TestLLM:
     def test_providers_health_reflects_env(self, monkeypatch):
         monkeypatch.setenv("TABI_KEY", "x")
         monkeypatch.setenv("GROQ_KEY", "")
+        monkeypatch.delenv("TABI_KEY2", raising=False)
         monkeypatch.delenv("NIM_KEY", raising=False)
         monkeypatch.delenv("GEMINI_KEY", raising=False)
         import importlib
         from pipeline import llm as _llm
         llm = importlib.reload(_llm)
         assert llm.PROVIDERS_HEALTH == {
-            "TABI_KEY": True, "NIM_KEY": False, "GEMINI_KEY": False, "GROQ_KEY": False,
+            "TABI_KEY": True, "TABI_KEY2": False,
+            "NIM_KEY": False, "GEMINI_KEY": False, "GROQ_KEY": False,
         }
+
+    def test_second_tabi_key_is_the_first_fallback(self, monkeypatch):
+        llm = self._mod(monkeypatch, keys=("TABI_KEY", "TABI_KEY2", "NIM_KEY"))
+        models = []
+
+        def fake_post(url, **kw):
+            models.append((url, kw["json"]["model"]))
+            if len(models) == 1:
+                return FakeResp(status=403, text="cloudflare")  # first tabi key blocked
+            return FakeResp(payload=anthropic_msg("second key answer"))
+
+        monkeypatch.setattr(llm.requests, "post", fake_post)
+        assert llm.llm("s", "u") == "second key answer"
+        # a per-key block on TABI_KEY falls through to TABI_KEY2 (still opus, still
+        # the anthropic /v1/messages endpoint) before dropping to NIM.
+        assert models == [
+            (llm.TABI_BASE + "/v1/messages", "claude-opus-4-8"),
+            (llm.TABI_BASE + "/v1/messages", "claude-opus-4-8"),
+        ]
 
     def test_prompts_file_has_every_part_f_section(self):
         from pipeline import llm

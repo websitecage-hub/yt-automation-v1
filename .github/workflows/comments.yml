@@ -28,6 +28,7 @@ jobs:
       - name: Reply to comments
         env:
           TABI_KEY: ${{ secrets.TABI_KEY }}
+          TABI_KEY2: ${{ secrets.TABI_KEY2 }}
           NIM_KEY: ${{ secrets.NIM_KEY }}
           GROQ_KEY: ${{ secrets.GROQ_KEY }}
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}

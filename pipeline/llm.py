@@ -41,30 +41,34 @@ RETRY_STATUS = {408, 409, 429, 500, 502, 503, 504}   # 403 is NOT here: fall thr
 
 # (label, base, model, env var holding the key, dialect)
 # tabitoken (Anthropic dialect, claude-opus-4-8) leads both chains -- the user's
-# pick for quality. NVIDIA NIM (nemotron super-120b -> nano-30b) then free Gemini
-# + Groq form the tail so the chain never dies if tabitoken is blocked or out of
-# credit. seekai/kimi/deepseek are dropped: seekai 401s from CI IPs and the big
-# NIM reasoning models (kimi-k3, deepseek-v4) never answer within 280s.
+# pick for quality. A second tabi key (TABI_KEY2) sits right behind the first so a
+# per-key rate/credit limit isn't terminal; then NVIDIA NIM (nemotron super-120b ->
+# nano-30b) then free Gemini + Groq form the tail so the chain never dies if both
+# tabi keys are blocked or out of credit. seekai/kimi/deepseek are dropped: seekai
+# 401s from CI IPs and the big NIM reasoning models (kimi-k3, deepseek-v4) never
+# answer within 280s.
 CREATIVE_CHAIN = [
-    ("tabi/opus-4-8",  TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY",   "anthropic"),
-    ("nim/super-120b", NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
-    ("nim/nano-30b",   NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
-    ("gemini",         GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
-    ("groq",           GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
+    ("tabi/opus-4-8",   TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY",   "anthropic"),
+    ("tabi/opus-4-8#2", TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY2",  "anthropic"),
+    ("nim/super-120b",  NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
+    ("nim/nano-30b",    NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
+    ("gemini",          GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
+    ("groq",            GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
 ]
 CODE_CHAIN = [
-    ("tabi/opus-4-8",  TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY",   "anthropic"),
-    ("nim/super-120b", NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
-    ("nim/nano-30b",   NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
-    ("gemini",         GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
-    ("groq",           GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
+    ("tabi/opus-4-8",   TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY",   "anthropic"),
+    ("tabi/opus-4-8#2", TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY2",  "anthropic"),
+    ("nim/super-120b",  NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
+    ("nim/nano-30b",    NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
+    ("gemini",          GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
+    ("groq",            GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
 ]
 
 # Filled at import: which provider keys are actually present in this process.
 # run.py logs this so a run that silently lost a provider is obvious in the log.
 PROVIDERS_HEALTH = {
     env: bool((os.getenv(env) or "").strip())
-    for env in ("TABI_KEY", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY")
+    for env in ("TABI_KEY", "TABI_KEY2", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY")
 }
 
 _FENCE = re.compile(r"^\s*```(?:json|JSON)?\s*|\s*```\s*$")
