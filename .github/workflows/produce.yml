@@ -46,6 +46,17 @@ jobs:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           RUN_BUDGET_MIN: "300"
         run: python -m pipeline.run
+      - name: Upload preview (video + thumbnail + images)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview
+          path: |
+            work/**/*.mp4
+            work/**/*.jpg
+            data/videos/*.json
+          if-no-files-found: warn
+          retention-days: 14
       - name: Commit state
         if: always()
         run: |
