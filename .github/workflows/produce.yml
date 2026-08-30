@@ -30,6 +30,8 @@ jobs:
         with:
           node-version: "22"
       - run: pip install requests google-api-python-client google-auth
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Produce
         env:
           NIM_KEY: ${{ secrets.NIM_KEY }}
