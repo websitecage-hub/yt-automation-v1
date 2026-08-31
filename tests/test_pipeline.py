@@ -80,32 +80,29 @@ class TestLLM:
         calls = []
 
         def fake_post(url, **kw):
-            calls.append((url, kw["json"]["model"], kw["json"]["temperature"], kw["headers"]))
-            return FakeResp(payload=anthropic_msg("Base stats first."))
+            calls.append((url, kw["json"]["model"], kw["headers"]))
+            return FakeResp(payload=chat("Base stats first."))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("sys", "user") == "Base stats first."
         assert len(calls) == 1
-        url, model, temp, headers = calls[0]
-        assert url == llm.TABI_BASE + "/v1/messages"
-        assert model == "claude-opus-4-8"
-        assert temp == 0.85
-        assert "Mozilla/" in headers["User-Agent"]   # Cloudflare needs a browser UA
+        url, model, headers = calls[0]
+        assert url == llm.META_BASE + "/chat/completions"   # Meta is the keyless primary
+        assert model == "meta-ai-thinking"
+        assert "Mozilla/" in headers["User-Agent"]
 
-    def test_code_chain_starts_at_tabi_opus(self, monkeypatch):
+    def test_code_chain_starts_at_meta(self, monkeypatch):
         llm = self._mod(monkeypatch)
         seen = {}
 
         def fake_post(url, **kw):
             seen.update(url=url, **kw["json"])
-            return FakeResp(payload=anthropic_msg("tl.to('#s0-a',{opacity:1},0.5);"))
+            return FakeResp(payload=chat("tl.to('#s0-a',{opacity:1},0.5);"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         llm.llm_code("sys", "user")
-        assert seen["url"] == llm.TABI_BASE + "/v1/messages"
-        assert seen["model"] == "claude-opus-4-8"
-        assert seen["temperature"] == 0.4
-        assert seen["max_tokens"] == 12000
+        assert seen["url"] == llm.META_BASE + "/chat/completions"
+        assert seen["model"] == "meta-ai-thinking"
 
     def test_first_provider_fails_second_is_used(self, monkeypatch):
         llm = self._mod(monkeypatch)
@@ -114,12 +111,12 @@ class TestLLM:
         def fake_post(url, **kw):
             models.append(kw["json"]["model"])
             if len(models) == 1:
-                return FakeResp(status=403, text="cloudflare")  # non-retryable -> next provider
-            return FakeResp(payload=chat("second answer"))
+                return FakeResp(status=400, text="meta down")  # non-retryable -> next provider
+            return dialect_resp(url, "second answer")
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "second answer"
-        assert models == ["claude-opus-4-8", "nvidia/nemotron-3-super-120b-a12b"]
+        assert models == ["meta-ai-thinking", "claude-opus-4-8"]
 
     def test_retryable_status_is_retried_on_same_provider(self, monkeypatch):
         llm = self._mod(monkeypatch)
@@ -129,7 +126,7 @@ class TestLLM:
             n["i"] += 1
             if n["i"] == 1:
                 return FakeResp(status=503, text="try later")  # retryable -> retry, don't fall through
-            return FakeResp(payload=anthropic_msg("ok"))
+            return FakeResp(payload=chat("ok"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "ok"
@@ -143,23 +140,28 @@ class TestLLM:
             n["i"] += 1
             if n["i"] == 1:
                 raise llm.requests.RequestException("connection reset")
-            return FakeResp(payload=anthropic_msg("recovered"))
+            return FakeResp(payload=chat("recovered"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "recovered"
         assert n["i"] == 2
 
     def test_empty_key_provider_is_skipped_not_called(self, monkeypatch):
+        # Only GROQ has a key. Meta (keyless) is tried first; make it fail so the
+        # chain must skip the empty-key providers (tabi/nim/gemini) and land on groq.
         llm = self._mod(monkeypatch, keys=("GROQ_KEY",))
         models = []
 
         def fake_post(url, **kw):
-            models.append(kw["json"]["model"])
+            m = kw["json"]["model"]
+            models.append(m)
+            if m == "meta-ai-thinking":
+                return FakeResp(status=400, text="meta down")
             return FakeResp(payload=chat("groq only"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "groq only"
-        assert models == ["openai/gpt-oss-120b"]
+        assert models == ["meta-ai-thinking", "openai/gpt-oss-120b"]
 
     def test_all_down_raises(self, monkeypatch):
         llm = self._mod(monkeypatch)
@@ -167,17 +169,28 @@ class TestLLM:
         with pytest.raises(RuntimeError, match="all LLM providers down"):
             llm.llm("s", "u")
 
-    def test_no_keys_at_all_raises(self, monkeypatch):
+    def test_no_keys_only_meta_is_attempted(self, monkeypatch):
+        # Meta needs no key, so even with every key empty it is still tried (and is
+        # the only provider tried); the keyed providers are all skipped.
         llm = self._mod(monkeypatch, keys=())
-        monkeypatch.setattr(llm.requests, "post", lambda *a, **k: pytest.fail("must not POST"))
+        models = []
+
+        def fake_post(url, **kw):
+            models.append(kw["json"]["model"])
+            return FakeResp(status=400, text="meta down")
+
+        monkeypatch.setattr(llm.requests, "post", fake_post)
         with pytest.raises(RuntimeError, match="all LLM providers down"):
             llm.llm("s", "u")
+        assert models == ["meta-ai-thinking"]
 
     def test_json_out_sets_response_format_on_openai_dialect(self, monkeypatch):
         llm = self._mod(monkeypatch, keys=("GROQ_KEY",))
         seen = {}
 
         def fake_post(url, **kw):
+            if kw["json"]["model"] == "meta-ai-thinking":
+                return FakeResp(status=400, text="meta down")   # fall through to groq
             seen.update(kw["json"])
             return FakeResp(payload=chat('{"verdict":"APEX"}'))
 
@@ -190,6 +203,8 @@ class TestLLM:
         seen = {}
 
         def fake_post(url, **kw):
+            if kw["json"]["model"] == "meta-ai-thinking":
+                return FakeResp(status=400, text="meta down")   # fall through to tabi
             seen.update(url=url, **kw["json"])
             return FakeResp(payload=anthropic_msg('{"verdict":"APEX"}'))
 
@@ -225,9 +240,8 @@ class TestLLM:
         def fake_post(url, **kw):
             models.append(kw["json"]["model"])
             if len(models) == 1:
-                return FakeResp(payload=anthropic_msg("I'm afraid I can't do that."))
-            return FakeResp(payload=chat('{"ok":true}'))
-
+                return dialect_resp(url, "I'm afraid I can't do that.")  # meta: non-JSON
+            return dialect_resp(url, '{"ok":true}')                      # tabi: JSON
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u", json_out=True) == {"ok": True}
         assert len(models) == 2
@@ -248,19 +262,23 @@ class TestLLM:
 
     def test_second_tabi_key_is_the_first_fallback(self, monkeypatch):
         llm = self._mod(monkeypatch, keys=("TABI_KEY", "TABI_KEY2", "NIM_KEY"))
-        models = []
+        seen = []
 
         def fake_post(url, **kw):
-            models.append((url, kw["json"]["model"]))
-            if len(models) == 1:
-                return FakeResp(status=403, text="cloudflare")  # first tabi key blocked
+            m = kw["json"]["model"]
+            seen.append((url, m))
+            if m == "meta-ai-thinking":
+                return FakeResp(status=400, text="meta down")      # skip past meta
+            if [u for u, _ in seen].count(llm.TABI_BASE + "/v1/messages") == 1:
+                return FakeResp(status=403, text="cloudflare")     # first tabi key blocked
             return FakeResp(payload=anthropic_msg("second key answer"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "second key answer"
-        # a per-key block on TABI_KEY falls through to TABI_KEY2 (still opus, still
-        # the anthropic /v1/messages endpoint) before dropping to NIM.
-        assert models == [
+        # meta fails, then a per-key block on TABI_KEY falls through to TABI_KEY2
+        # (still opus, still the anthropic /v1/messages endpoint) before NIM.
+        assert seen == [
+            (llm.META_BASE + "/chat/completions", "meta-ai-thinking"),
             (llm.TABI_BASE + "/v1/messages", "claude-opus-4-8"),
             (llm.TABI_BASE + "/v1/messages", "claude-opus-4-8"),
         ]

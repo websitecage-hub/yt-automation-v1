@@ -27,6 +27,7 @@ jobs:
       - run: pip install requests google-api-python-client google-auth
       - name: Learn
         env:
+          META_KEY: ${{ secrets.META_KEY }}
           TABI_KEY: ${{ secrets.TABI_KEY }}
           TABI_KEY2: ${{ secrets.TABI_KEY2 }}
           NIM_KEY: ${{ secrets.NIM_KEY }}

@@ -34,6 +34,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Produce
         env:
+          META_KEY: ${{ secrets.META_KEY }}
           TABI_KEY: ${{ secrets.TABI_KEY }}
           TABI_KEY2: ${{ secrets.TABI_KEY2 }}
           NIM_KEY: ${{ secrets.NIM_KEY }}
