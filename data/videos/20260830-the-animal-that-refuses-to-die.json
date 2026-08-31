@@ -220,5 +220,7 @@
   ],
   "mp4": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/20260830-the-animal-that-refuses-to-die.mp4",
   "video_id": null,
-  "thumb": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/thumb_20260830-the-animal-that-refuses-to-die.jpg"
+  "thumb": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/thumb_20260830-the-animal-that-refuses-to-die.jpg",
+  "published": true,
+  "published_at": "2026-08-31T19:32:06.342923+00:00"
 }
