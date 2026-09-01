@@ -138,5 +138,75 @@
     "why": "Crocodile serum carries antimicrobial peptides that inactivate bacteria which shrug off human serum, which is why a torn-off limb in swamp water does not kill the animal. Cold open number: it heals in the dirtiest water on Earth.",
     "score": 6,
     "used": false
+  },
+  {
+    "topic": "Your Heart Can Pump Enough Blood to Fill an Olympic Pool Every Day",
+    "lane": "HUMAN",
+    "why": "In a single day the average heart moves about 7,200 liters of blood—roughly the volume of three Olympic-sized swimming pools—demonstrating the astonishing hydraulic power of our circulatory system.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "Your Nose Can Detect Over a Trillion Different Smells",
+    "lane": "HUMAN",
+    "why": "Recent research estimates that human olfactory receptors can discriminate at least one trillion distinct odors, far surpassing the old estimate of 10,000 and rivaling a dog’s sense of smell.",
+    "score": 8,
+    "used": false
+  },
+  {
+    "topic": "Your Stomach Acid Can Dissolve a Razor Blade",
+    "lane": "HUMAN",
+    "why": "Gastric acid (pH ~1.5) is strong enough to break down metal; laboratory tests show a razor blade can lose significant mass after just a few hours of exposure.",
+    "score": 7,
+    "used": false
+  },
+  {
+    "topic": "The Tardigrade Can Survive Temperatures from Absolute Zero to Above Boiling",
+    "lane": "WEIRD_ANIMAL",
+    "why": "Tardigrades enter a tun state, allowing them to withstand -272°C (near absolute zero) and up to 150°C, surviving extremes that would kill virtually all other life forms.",
+    "score": 10,
+    "used": true
+  },
+  {
+    "topic": "The Immortal Jellyfish Can Reset Its Life Cycle Indefinitely",
+    "lane": "WEIRD_ANIMAL",
+    "why": "Turritopsis dohrnii can transform its adult medusa stage back into youthful polyps, theoretically bypassing death and repeating the process endless times.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "The Mantis Shrimp’s Punch Accelerates Faster Than a .22 Caliber Bullet",
+    "lane": "WEIRD_ANIMAL",
+    "why": "Their club‑like appendages strike at 80 km/h (50 mph) with an acceleration of ~10,000 g, creating cavitation bubbles that generate shockwaves and heat comparable to a bullet impact.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "Peregrine Falcon’s Dive Speed vs. The Fastest Production Car",
+    "lane": "VERSUS",
+    "why": "A peregrine falcon stoops at over 389 km/h (242 mph), exceeding the top speed of a Tesla Model S Plaid (≈322 km/h) and showing nature’s own supersonic projectile.",
+    "score": 8,
+    "used": false
+  },
+  {
+    "topic": "Electric Eel’s Shock vs. Household Voltage",
+    "lane": "VERSUS",
+    "why": "An electric eel can discharge up to 860 volts—enough to power a small appliance—and deliver a current capable of causing muscle paralysis, far surpassing the 120‑240 V found in home outlets.",
+    "score": 7,
+    "used": false
+  },
+  {
+    "topic": "My Bite Force Can Crush a Small Car’s Frame",
+    "lane": "PROFESSOR",
+    "why": "Saltwater crocodiles exert a bite force of about 3,700 psi (≈16,500 N), enough to snap a steel pipe or dent the chassis of a compact car in a single chomp.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "My Blood Contains Antimicrobial Peptides That Kill MRSA",
+    "lane": "PROFESSOR",
+    "why": "Crocodile serum harbors cathelicidin‑like peptides that destroy multidrug‑resistant bacteria such as MRSA in laboratory tests, offering a natural antibiotic far stronger than many synthetic drugs.",
+    "score": 8,
+    "used": false
   }
 ]
