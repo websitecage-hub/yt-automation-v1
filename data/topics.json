@@ -172,7 +172,7 @@
     "lane": "WEIRD_ANIMAL",
     "why": "Turritopsis dohrnii can transform its adult medusa stage back into youthful polyps, theoretically bypassing death and repeating the process endless times.",
     "score": 9,
-    "used": false
+    "used": true
   },
   {
     "topic": "The Mantis Shrimp’s Punch Accelerates Faster Than a .22 Caliber Bullet",
