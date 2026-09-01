@@ -144,7 +144,7 @@
     "lane": "HUMAN",
     "why": "In a single day the average heart moves about 7,200 liters of blood—roughly the volume of three Olympic-sized swimming pools—demonstrating the astonishing hydraulic power of our circulatory system.",
     "score": 9,
-    "used": false
+    "used": true
   },
   {
     "topic": "Your Nose Can Detect Over a Trillion Different Smells",
