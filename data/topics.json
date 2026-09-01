@@ -39,7 +39,7 @@
     "lane": "HUMAN",
     "why": "Cortical bone takes roughly 170 MPa in compression against about 30 MPa for standard structural concrete, and it does it while being alive and self-repairing. Cold open number: five times the concrete, one quarter the weight.",
     "score": 7,
-    "used": false
+    "used": true
   },
   {
     "topic": "Your Eyes Can Catch a Single Photon",
