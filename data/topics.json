@@ -200,7 +200,7 @@
     "lane": "PROFESSOR",
     "why": "Saltwater crocodiles exert a bite force of about 3,700 psi (≈16,500 N), enough to snap a steel pipe or dent the chassis of a compact car in a single chomp.",
     "score": 9,
-    "used": false
+    "used": true
   },
   {
     "topic": "My Blood Contains Antimicrobial Peptides That Kill MRSA",
