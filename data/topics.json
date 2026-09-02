@@ -186,7 +186,7 @@
     "lane": "VERSUS",
     "why": "A peregrine falcon stoops at over 389 km/h (242 mph), exceeding the top speed of a Tesla Model S Plaid (≈322 km/h) and showing nature’s own supersonic projectile.",
     "score": 8,
-    "used": false
+    "used": true
   },
   {
     "topic": "Electric Eel’s Shock vs. Household Voltage",
