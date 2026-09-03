@@ -207,6 +207,6 @@
     "lane": "PROFESSOR",
     "why": "Crocodile serum harbors cathelicidin‑like peptides that destroy multidrug‑resistant bacteria such as MRSA in laboratory tests, offering a natural antibiotic far stronger than many synthetic drugs.",
     "score": 8,
-    "used": false
+    "used": true
   }
 ]
