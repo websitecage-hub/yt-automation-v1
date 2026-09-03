@@ -46,7 +46,7 @@
     "lane": "HUMAN",
     "why": "Rod cells fire on one photon; the 2016 single-photon detection experiment confirmed humans report it above chance. Cold open number: one particle of light is a detectable event in your head.",
     "score": 7,
-    "used": false
+    "used": true
   },
   {
     "topic": "Your Liver Regrows From a Quarter of Itself",
