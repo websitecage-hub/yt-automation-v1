@@ -208,5 +208,75 @@
     "why": "Crocodile serum harbors cathelicidin‑like peptides that destroy multidrug‑resistant bacteria such as MRSA in laboratory tests, offering a natural antibiotic far stronger than many synthetic drugs.",
     "score": 8,
     "used": true
+  },
+  {
+    "topic": "Your Sweat Can Remove as Much Heat as a Portable Air Conditioner",
+    "lane": "HUMAN",
+    "why": "Human sweat can evaporate up to ~1 L per hour, removing about 580 kcal of heat — roughly the cooling output of a small window‑unit air conditioner (~5,000 BTU/h).",
+    "score": 8,
+    "used": false
+  },
+  {
+    "topic": "Your Gut Microbiome Weighs as Much as Your Brain",
+    "lane": "HUMAN",
+    "why": "The collective mass of bacteria in a healthy adult gut averages ~1.5 kg, essentially the same as the average adult brain (~1.4 kg).",
+    "score": 7,
+    "used": false
+  },
+  {
+    "topic": "Your DNA, if Uncoiled, Would Stretch From Earth to the Sun and Back Over 200 Times",
+    "lane": "HUMAN",
+    "why": "Stretching out the DNA from all ~3.7×10¹³ cells in a human body yields ~7.4×10¹³ m of double helix — enough to reach the Sun and back over 200 times.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "The Axolotl Can Regenerate Its Heart, Spinal Cord, and Parts of Its Brain",
+    "lane": "WEIRD_ANIMAL",
+    "why": "Axolotls can regenerate entire limbs, spinal cord, heart tissue, and even portions of their brain without scarring, a regenerative ability unmatched by most vertebrates.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "The Pistol Shrimp’s Snap Creates a Cavitation Bubble That Reaches Temperatures Hotter Than the Sun’s Surface",
+    "lane": "WEIRD_ANIMAL",
+    "why": "The snap of a pistol shrimp generates a cavitation bubble that collapses at ~5,000 K — hotter than the Sun’s surface (~5,800 K) — producing a flash of light and a powerful shockwave.",
+    "score": 10,
+    "used": true
+  },
+  {
+    "topic": "The Naked Mole Rat Is Essentially Cancer‑Resistant and Can Live Over 30 Years",
+    "lane": "WEIRD_ANIMAL",
+    "why": "Naked mole rats exhibit extraordinary cancer resistance due to high‑molecular‑weight hyaluronan and early contact inhibition, allowing lifespans exceeding 30 years for a rodent.",
+    "score": 8,
+    "used": false
+  },
+  {
+    "topic": "Hummingbird Wingbeat vs. Helicopter Rotor: Which Beats Faster?",
+    "lane": "VERSUS",
+    "why": "A hummingbird can flap its wings up to 80 times per second, far exceeding the typical rotor speed of a small helicopter (~5–6 revolutions per second).",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "Elephant Trunk Water Flow vs. Fire Hose: How Many Gallons Per Minute Can an Elephant Spray?",
+    "lane": "VERSUS",
+    "why": "An elephant can draw up to 10 L of water per second through its trunk and spray it out — roughly 158 gallons per minute, comparable to a standard fire hose’s flow.",
+    "score": 8,
+    "used": false
+  },
+  {
+    "topic": "Human Sweat Rate vs. Camel: Who Loses Less Water Per Hour?",
+    "lane": "VERSUS",
+    "why": "A resting human loses ~0.5 L of sweat per hour in heat, while a camel can lose less than 0.1 L per hour thanks to its ability to tolerate higher body temperatures and reabsorb water from urine.",
+    "score": 8,
+    "used": false
+  },
+  {
+    "topic": "My Osteoderm Armor Can Withstand a Bullet From a Handgun",
+    "lane": "PROFESSOR",
+    "why": "The bony osteoderms embedded in a crocodile’s skin act like natural composite armor, capable of deflecting bullets from low‑calibre handguns.",
+    "score": 9,
+    "used": false
   }
 ]

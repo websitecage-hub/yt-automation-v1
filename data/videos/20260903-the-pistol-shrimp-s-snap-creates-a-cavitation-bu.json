@@ -1,0 +1,224 @@
+{
+  "id": "20260903-the-pistol-shrimp-s-snap-creates-a-cavitation-bu",
+  "lesson": 4,
+  "topic": "The Pistol Shrimp’s Snap Creates a Cavitation Bubble That Reaches Temperatures Hotter Than the Sun’s Surface",
+  "lane": "WEIRD_ANIMAL",
+  "created": "2026-09-03T21:05:16+00:00",
+  "stage": "done",
+  "title": "This Shrimp Snaps Hotter Than The Sun's Surface",
+  "description": "Professor Croc grades the pistol shrimp, a creature whose claw snap generates a cavitation bubble with temperatures exceeding the sun's surface. Discover the physics of this hidden ability and its unexpected applications for human technology. Prepare for a THREAT-level assessment.",
+  "tags": [
+    "Pistol Shrimp",
+    "Cavitation",
+    "Sonoluminescence",
+    "Extreme Biology",
+    "Marine Life",
+    "Animal Abilities",
+    "Physics of Life",
+    "Human Technology"
+  ],
+  "thumbnail_prompt": "A highly detailed, almost scientific illustration of a pistol shrimp's claw snapping, generating a super-heated cavitation bubble. The bubble glows intensely with yellows, oranges, and whites, resembling a miniature star. Text overlay: 'HOTTER THAN THE SUN'. Professor Croc's silhouette in the corner, looking unimpressed.",
+  "verdict": "THREAT",
+  "extra_credit": "None",
+  "scenes": [
+    {
+      "act": "HOOK",
+      "heading": "The Sun in Your Hand",
+      "text": "A pistol shrimp’s snap creates a bubble. Inside that bubble, temperatures reach 5,000 Kelvin. That is the surface temperature of the sun. This tiny creature does it to hunt. How does something so small generate such extreme power? The mechanism is simple, yet devastating.",
+      "image_prompt": "Close-up of a pistol shrimp's snapping claw, with a translucent, glowing bubble forming. Heat lines emanate from the bubble. Emphasize the contrast between the small shrimp and the intense heat.",
+      "stat": null,
+      "dur": 16.74,
+      "frag_html": "<div id=\"s0-heading\" class=\"overlay\">The Sun in Your Hand</div>\n<div id=\"s0-number\" class=\"overlay\">5,000 Kelvin</div>\n<div id=\"s0-heat1\" class=\"heat\"></div>\n<div id=\"s0-heat2\" class=\"heat\"></div>\n<div id=\"s0-heat3\" class=\"heat\"></div>\n<div id=\"s0-heat4\" class=\"heat\"></div>",
+      "frag_js": "tl.fromTo(\"#s0-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.8}, 0.5);\ntl.to(\"#s0-heading\", {opacity:0, duration:0.5}, 15.5);\n\ntl.fromTo(\"#s0-number\", {scale:0.8, opacity:0}, {scale:1, opacity:1, duration:0.6}, 2.0);\ntl.to(\"#s0-number\", {scale:1.2, duration:0.3}, 3.0);\ntl.to(\"#s0-number\", {scale:1, duration:0.3}, 3.5);\n\ntl.fromTo(\"#s0-heat1\", {opacity:0, rotation:0}, {opacity:1, rotation:5, duration:0.6}, 4.0);\ntl.to(\"#s0-heat1\", {opacity:0, duration:0.4}, 15.0);\n\ntl.fromTo(\"#s0-heat2\", {opacity:0, rotation:0}, {opacity:1, rotation:-5, duration:0.6}, 5.0);\ntl.to(\"#s0-heat2\", {opacity:0, duration:0.4}, 15.2);\n\ntl.fromTo(\"#s0-heat3\", {opacity:0, rotation:0}, {opacity:1, rotation:5, duration:0.6}, 6.0);\ntl.to(\"#s0-heat3\", {opacity:0, duration:0.4}, 15.4);\n\ntl.fromTo(\"#s0-heat4\", {opacity:0, rotation:0}, {opacity:1, rotation:-5, duration:0.6}, 7.0);\ntl.to(\"#s0-heat4\", {opacity:0, duration:0.4}, 15.6);\n\ntl.to(\"#img0\", {scale:1.02, duration:8.0}, 0.0);\ntl.to(\"#img0\", {scale:1, duration:8.0}, 8.0);\n\ntl.to(\"#stage\", {rotation:0.5, duration:8.0}, 0.0);\ntl.to(\"#stage\", {rotation:0, duration:8.0}, 8.0);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HOOK",
+      "heading": "Sonic Superweapon",
+      "text": "This isn't fire. It's cavitation. The shrimp’s claw creates a low-pressure void in the water. This void forms a bubble. The bubble quickly collapses, creating a shockwave. This collapse is the weapon. It happens too fast for the eye to follow.",
+      "image_prompt": "Sequence illustration showing the pistol shrimp's claw closing, then a cavitation bubble forming, then collapsing into a shockwave. Visualise pressure changes in the water.",
+      "stat": null,
+      "dur": 15.76,
+      "frag_html": "<div id=\"s1-heading\" class=\"overlay\" style=\"position:absolute; top:18%; left:50%; transform:translateX(-50%); font-size:4.2rem; color:var(--ink); text-align:center; pointer-events:none;\">Sonic Superweapon</div>\n<div id=\"s1-number\" class=\"overlay\" style=\"position:absolute; top:30%; left:50%; transform:translateX(-50%); font-size:5.8rem; color:var(--lime); pointer-events:none;\">5,000°C</div>\n<div id=\"s1-bubble\" class=\"overlay\" style=\"position:absolute; top:50%; left:50%; width:0; height:0; border-radius:50%; background:var(--amber); opacity:0; pointer-events:none; transform:translate(-50%,-50%);\"></div>\n<div id=\"s1-shock\" class=\"overlay\" style=\"position:absolute; top:50%; left:50%; width:0; height:0; border:2px solid var(--red); border-radius:50%; opacity:0; pointer-events:none; transform:translate(-50%,-50%);\"></div>\n<div id=\"s1-pressure\" class=\"overlay\" style=\"position:absolute; top:45%; left:50%; width:0; height:2px; background:var(--dim); transform-origin:left; pointer-events:none; transform:translate(-50%,-50%);\"></div>",
+      "frag_js": "tl.fromTo(\"#s1-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.4}, 16.740);\ntl.fromTo(\"#s1-number\", {opacity:0, scale:0.8}, {opacity:1, scale:1, duration:0.4}, 17.000);\ntl.fromTo(\"#img1\", {rotation:-2}, {rotation:2, duration:0.3}, 16.800);\ntl.fromTo(\"#s1-bubble\", {width:0, height:0, opacity:0}, {width:160, height:160, opacity:0.8, duration:0.8}, 18.000);\ntl.to(\"#s1-bubble\", {width:0, height:0, opacity:0, duration:0.6}, 19.000);\ntl.fromTo(\"#s1-shock\", {width:0, height:0, opacity:0}, {width:400, height:400, opacity:0.6, duration:1.0}, 19.500);\ntl.to(\"#s1-shock\", {opacity:0, duration:0.8}, 20.500);\ntl.fromTo(\"#s1-pressure\", {scaleX:0, opacity:0}, {scaleX:1, opacity:0.6, duration:0.8}, 22.000);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HOOK",
+      "heading": "Shockwave Force",
+      "text": "The collapsing bubble generates immense force. The shockwave can reach speeds over 30 meters per second. This is faster than a professional boxer's punch. It stuns or kills prey instantly. This isn't just a loud noise. It is a physical blow.",
+      "image_prompt": "An artistic representation of a shockwave emanating from a collapsing cavitation bubble, hitting a small fish that is visibly stunned. Show the pressure wave as a distinct force.",
+      "stat": {
+        "label": "Cavitation Force",
+        "grade": "S+",
+        "note": "Pressure wave >30 m/s"
+      },
+      "dur": 15.68,
+      "frag_html": "<div id=\"s2-root\" style=\"position:absolute; inset:0; pointer-events:none;\">\n  <h1 id=\"s2-heading\" style=\"position:absolute; top:20%; left:50%; transform:translate(-50%,-50%) translateY(20px); color:var(--ink); font-size:48px; opacity:0;\">Shockwave Force</h1>\n  <div id=\"s2-fact\" style=\"position:absolute; top:30%; left:50%; transform:translate(-50%,-50%) translateY(20px); color:var(--dim); font-size:24px; opacity:0;\">The shockwave can reach speeds over 30 meters per second.</div>\n  <span id=\"s2-number\" style=\"position:absolute; top:38%; left:50%; transform:translate(-50%,-50%) scale(0.8); color:var(--lime); font-size:36px; font-weight:bold; opacity:0;\">30</span>\n  <div id=\"s2-shockwave\" style=\"position:absolute; top:50%; left:50%; width:0px; height:0px; border-radius:50%; border:2px solid var(--amber); opacity:0; transform:translate(-50%,-50%);\"></div>\n  <div id=\"s2-fish\" style=\"position:absolute; top:55%; left:50%; width:80px; height:40px; background:var(--dim); border-radius:50% 20% 20% 50%; opacity:0; transform:translate(-50%,-50%) scale(0.9);\"></div>\n</div>",
+      "frag_js": "tl.fromTo(\"#s2-heading\", {opacity:0, y:\"20px\"}, {opacity:1, y:\"0px\"}, 32.5, 33.5);\ntl.fromTo(\"#s2-fact\", {opacity:0, y:\"20px\"}, {opacity:1, y:\"0px\"}, 33.5, 34.5);\ntl.fromTo(\"#s2-number\", {opacity:0, scale:0.8}, {opacity:1, scale:1.2}, 34.5, 35.0);\ntl.fromTo(\"#s2-number\", {opacity:1, scale:1.2}, {opacity:1, scale:1}, 35.0, 35.5);\ntl.fromTo(\"#s2-shockwave\", {width:0, height:0, opacity:0}, {width:300, height:300, opacity:0.4}, 35.5, 38.0);\ntl.fromTo(\"#s2-shockwave\", {opacity:0.4}, {opacity:0}, 38.0, 45.0);\ntl.fromTo(\"#s2-fish\", {scale:0.9, rotation:0}, {scale:1.2, rotation:-10}, 38.0, 38.2);\ntl.fromTo(\"#s2-fish\", {scale:1.2, rotation:-10}, {scale:1, rotation:0}, 38.2, 38.8);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "BASE STATS",
+      "heading": "The Snapping Claw",
+      "text": "Let's check the base stats. The pistol shrimp, or snapping shrimp, is small. Most species are 3-5 centimeters long. Its defining feature is its oversized snapping claw. This claw can be half the shrimp's body weight. It is purpose-built for its unique attack.",
+      "image_prompt": "A clear, detailed anatomical drawing or photograph of a pistol shrimp, highlighting its disproportionately large snapping claw compared to its body.",
+      "stat": null,
+      "dur": 16.6,
+      "frag_html": "<div id=\"s3-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); color:var(--ink); font-size:48px; font-weight:600; pointer-events:none;\">The Snapping Claw</div>\n<div id=\"s3-number\" style=\"position:absolute; top:35%; left:50%; transform:translateX(-50%); color:var(--lime); font-size:60px; font-weight:800; pointer-events:none;\">3‑5 cm</div>\n<div id=\"s3-highlight\" style=\"position:absolute; top:44%; left:50%; transform:translateX(-50%); width:0; height:4px; background:var(--lime); pointer-events:none;\"></div>\n<div id=\"s3-label\" style=\"position:absolute; top:50%; left:50%; transform:translateX(-50%); color:var(--dim); font-size:24px; pointer-events:none;\">Body length</div>",
+      "frag_js": "tl.fromTo(\"#s3-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.8}, 48.5);\ntl.fromTo(\"#s3-number\", {opacity:0, scale:0.8}, {opacity:1, scale:1, duration:0.6}, 49.5);\ntl.to(\"#s3-highlight\", {width:\"100%\", duration:0.8}, 50.5);\ntl.fromTo(\"#s3-label\", {opacity:0, y:10}, {opacity:1, y:0, duration:0.6}, 52.0);\ntl.fromTo(\"#img3\", {x:0, scale:1}, {x:10, scale:1.01, duration:3.5}, 55.0);\ntl.to(\"#img3\", {x:0, scale:1, duration:2.78}, 58.5);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "BASE STATS",
+      "heading": "The Hyper-Accelerated Snap",
+      "text": "The claw's mechanism is a spring-loaded system. Muscles contract, locking the claw open. When released, the dactyl — the movable 'finger' — slams into a fixed part. This happens at incredible speed. The water is displaced at 30 meters per second.",
+      "image_prompt": "An X-ray or cutaway diagram of the pistol shrimp's claw, showing the internal muscle and locking mechanism. Illustrate the 'cocked' and 'fired' positions.",
+      "stat": null,
+      "dur": 16.4,
+      "frag_html": "<div id=\"s4-heading\" class=\"overlay\" style=\"position:absolute;left:50%;top:20%;transform:translateX(-50%);color:var(--ink);font-size:2.2rem;font-weight:600;text-align:center;pointer-events:none;\">The Hyper-Accelerated Snap</div>\n<div id=\"s4-number\" class=\"overlay\" style=\"position:absolute;left:50%;top:38%;transform:translateX(-50%);color:var(--lime);font-size:4rem;font-weight:800;text-align:center;pointer-events:none;\">30</div>\n<div id=\"s4-highlight\" class=\"overlay\" style=\"position:absolute;left:50%;top:50%;transform:translateX(-50%);height:4px;background:var(--lime);width:0;pointer-events:none;\"></div>\n<div id=\"s4-label\" class=\"overlay\" style=\"position:absolute;left:50%;top:58%;transform:translateX(-50%);color:var(--ink);font-size:1.4rem;text-align:center;pointer-events:none;\">meters per second</div>",
+      "frag_js": "tl.fromTo(\"#s4-heading\", {x:-100, opacity:0}, {x:0, opacity:1, duration:0.5}, 64.800);\ntl.fromTo(\"#s4-number\", {scale:0, opacity:0}, {scale:1, opacity:1, duration:0.5, ease:\"back.out(1.7)\"}, 65.300);\ntl.fromTo(\"#s4-highlight\", {width:0}, {width:120, duration:0.5}, 65.800);\ntl.fromTo(\"#s4-label\", {opacity:0, y:20}, {opacity:0, y:0, duration:0.5}, 66.300);\ntl.to(\"#img4\", {x:5, duration:2}, 66.800);\ntl.to(\"#img4\", {x:-5, duration:2}, 68.800);\ntl.to(\"#img4\", {x:0, duration:1}, 70.800);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "BASE STATS",
+      "heading": "The Vacuum Bubble",
+      "text": "This rapid displacement of water creates the low-pressure cavitation bubble. The bubble is initially filled with water vapor. It can be up to 1-2 centimeters in diameter. It is a temporary void, an unstable pocket in the ocean.",
+      "image_prompt": "Slow-motion photographic sequence showing the formation of the cavitation bubble immediately after the shrimp's claw snaps. The bubble should be visible and growing.",
+      "stat": {
+        "label": "Claw Velocity",
+        "grade": "A",
+        "note": "Water jet >30 m/s"
+      },
+      "dur": 14.14,
+      "frag_html": "<div id=\"s5-heading\" class=\"overlay\">The Vacuum Bubble</div>\n<div id=\"s5-key-number\" class=\"overlay\">1-2 cm</div>\n<div id=\"s5-subtitle\" class=\"overlay\">Cavitation bubble formation</div>",
+      "frag_js": "tl.fromTo(\"#s5-heading\", 0.8, {opacity:0, y:-20}, {opacity:1, y:0}, 81.180);\ntl.fromTo(\"#s5-key-number\", 0.6, {scale:0.8}, {scale:1.2}, 82.200);\ntl.to(\"#s5-key-number\", 0.6, {scale:1.0}, 82.800);\ntl.fromTo(\"#s5-subtitle\", 0.8, {opacity:0}, {opacity:1}, 84.000);\ntl.fromTo(\"#img5\", 3.0, {scale:1.0}, {scale:1.03}, 86.000);\ntl.to(\"#img5\", 3.0, {rotation:1.5}, 89.000);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HIDDEN ABILITY",
+      "heading": "Implosion: The True Power",
+      "text": "The bubble is not the weapon. Its collapse is. The surrounding water pressure crushes the bubble. This implosion happens in microseconds. As it collapses, the energy is concentrated into an incredibly small volume. This is where the extreme conditions are generated.",
+      "image_prompt": "A dramatic rendering of the cavitation bubble imploding, with water rushing in from all sides, creating intense pressure at the center point.",
+      "stat": null,
+      "dur": 16.32,
+      "frag_html": "<div id=\"s6-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:48px; font-weight:600; color:var(--ink); opacity:0; pointer-events:none;\">Implosion: The True Power</div>\n<div id=\"s6-number\" style=\"position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); font-size:72px; font-weight:bold; color:var(--amber); opacity:0; pointer-events:none;\">5000°C</div>\n<div id=\"s6-burst\" style=\"position:absolute; top:50%; left:50%; width:0; height:0; border:2px solid var(--lime); border-radius:50%; opacity:0; pointer-events:none; transform:translate(-50%,-50%);\"></div>\n<div id=\"s6-shock\" style=\"position:absolute; top:50%; left:50%; width:0; height:0; border:2px solid var(--red); border-radius:50%; opacity:0; pointer-events:none; transform:translate(-50%,-50%);\"></div>",
+      "frag_js": "tl.fromTo(\"#s6-heading\", {opacity:0, y:-20}, {opacity:1, y:0, duration:0.6}, 95.320);\ntl.fromTo(\"#s6-number\", {opacity:0, scale:0.5}, {opacity:1, scale:1, duration:0.5}, 96.500);\ntl.to(\"#s6-number\", {scale:1.1, duration:0.2}, 97.500);\ntl.to(\"#s6-number\", {scale:1, duration:0.2}, 97.700);\ntl.fromTo(\"#s6-burst\", {opacity:0, scale:0}, {opacity:0.8, scale:1.5, duration:0.8}, 98.000);\ntl.to(\"#s6-burst\", {opacity:0, duration:0.4}, 98.800);\ntl.fromTo(\"#s6-shock\", {opacity:0, scale:0}, {opacity:0.6, scale:2, duration:1.0}, 100.000);\ntl.to(\"#s6-shock\", {opacity:0, duration:0.5}, 101.000);\ntl.to(\"#img6\", {rotation:0.2, duration:4}, 95.320);\ntl.to(\"#img6\", {rotation:-0.2, duration:4}, 99.320);\ntl.to(\"#img6\", {scale:1.03, duration:3}, 103.320);\ntl.to(\"#img6\", {scale:1, duration:3}, 106.320);\ntl.to(\"#img6\", {rotation:0, duration:2}, 109.320);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HIDDEN ABILITY",
+      "heading": "Light from Sound",
+      "text": "The collapse is so violent it generates light. This is called sonoluminescence. The temperature spike to 5,000 Kelvin is theoretical, inside the collapsing bubble. It's fleeting, but real. This energy bursts out as a flash and a micro-jet of water.",
+      "image_prompt": "A representation of the cavitation bubble at the moment of sonoluminescence, emitting a tiny, intense flash of light from its core as it collapses. Show the high temperature.",
+      "stat": null,
+      "dur": 16.94,
+      "frag_html": "<div id=\"s7-heading\" class=\"overlay\">Light from Sound</div>\n<div id=\"s7-number\" class=\"overlay\">5000 K</div>\n<div id=\"s7-flash\" class=\"overlay\"></div>\n<div id=\"s7-bubble-text\" class=\"overlay\">Sonoluminescence</div>",
+      "frag_js": "tl.fromTo(\"#s7-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.6}, 111.80);\ntl.fromTo(\"#s7-number\", {opacity:0, scale:0.5}, {opacity:1, scale:1, duration:0.4}, 118.0);\ntl.to(\"#s7-number\", {scale:1.2, duration:0.2}, 118.4);\ntl.to(\"#s7-number\", {scale:1, duration:0.2}, 118.6);\ntl.fromTo(\"#s7-flash\", {opacity:0, scale:0}, {opacity:0.8, scale:1.2, duration:0.3}, 119.0);\ntl.to(\"#s7-flash\", {opacity:0, scale:0.8, duration:0.2}, 119.5);\ntl.fromTo(\"#s7-bubble-text\", {opacity:0, y:10}, {opacity:1, y:0, duration:0.5}, 120.2);\ntl.to(\"#img7\", {scale:1.02, duration:0.2}, 119.0);\ntl.to(\"#img7\", {scale:1, duration:0.2}, 119.4);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HIDDEN ABILITY",
+      "heading": "Practical Application",
+      "text": "The shrimp uses this concentrated energy. The shockwave stuns small fish and crabs. The micro-jet can also burrow into coral, creating a home. It's not just a defense mechanism. It is a tool for survival and habitat creation. A versatile hidden ability.",
+      "image_prompt": "A pistol shrimp using its cavitation bubble to stun a small fish, with another image showing it burrowing into coral or rock using the same mechanism.",
+      "stat": {
+        "label": "Bubble Temperature",
+        "grade": "S++",
+        "note": "Transient 5,000 Kelvin"
+      },
+      "dur": 16.0,
+      "frag_html": "<h1 id=\"s8-heading\" style=\"position:absolute;top:10%;left:50%;transform:translateX(-50%);font-size:48px;color:var(--ink);pointer-events:none;\">Practical Application</h1>\n<div id=\"s8-key\" style=\"position:absolute;top:20%;left:50%;transform:translateX(-50%);font-size:60px;color:var(--lime);pointer-events:none;\">5000°C</div>\n<div id=\"s8-fish\" style=\"position:absolute;width:80px;height:80px;background:var(--amber;border-radius:50%;top:40%;left:30%;pointer-events:none;\"></div>\n<div id=\"s8-coral\" style=\"position:absolute;width:100px;height:100px;background:var(--red);clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,0% 35%,39% 35%);top:45%;left:55%;pointer-events:none;\"></div>\n<div id=\"s8-shock\" style=\"position:absolute;width:120px;height:120px;background:var(--dim);border-radius:50%;opacity:0;top:35%;left:50%;transform:translate(-50%,-50%);pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s8-heading\", {y:50, opacity:0}, {y:0, opacity:1, duration:0.8}, 129.0);\ntl.fromTo(\"#s8-key\", {scale:0.8}, {scale:1.2, duration:0.4}, 130.0);\ntl.to(\"#s8-key\", {scale:1, duration:0.4}, 130.4);\ntl.fromTo(\"#s8-fish\", {x:-100, opacity:0}, {x:0, opacity:1, duration:1.0}, 131.5);\ntl.fromTo(\"#s8-shock\", {scale:0, opacity:0}, {scale:1.5, opacity:0.6, duration:1.5}, 133.0);\ntl.fromTo(\"#s8-coral\", {rotation:0, opacity:0}, {rotation:360, opacity:0.8, duration:1.5}, 135.0);\ntl.to(\"#img8\", {x:10, y:5, scale:1.02, duration:16.0}, 128.580);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "THE AWAKENING",
+      "heading": "Human Cavitation: Ultrasound",
+      "text": "Can humans harness cavitation? Not with a claw, but with technology. Medical ultrasound uses controlled cavitation. High-frequency sound waves create and collapse micro-bubbles. This generates imaging. It is a precise, non-invasive tool.",
+      "image_prompt": "An abstract, futuristic representation of medical ultrasound technology, showing sound waves creating and collapsing tiny bubbles within a human organ for imaging purposes. Clinical, clean aesthetic.",
+      "stat": null,
+      "dur": 16.16,
+      "frag_html": "<div id=\"s9-heading\" class=\"overlay\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:4rem; font-weight:bold; color:var(--ink); pointer-events:none;\">Human Cavitation: Ultrasound</div>\n<div id=\"s9-key-number\" class=\"overlay\" style=\"position:absolute; top:35%; left:50%; transform:translateX(-50%); font-size:3rem; color:var(--lime); pointer-events:none;\">20 kHz</div>\n<div id=\"s9-wave1\" class=\"wave\" style=\"position:absolute; top:50%; left:-200px; width:200px; height:2px; background:var(--lime); pointer-events:none;\"></div>\n<div id=\"s9-wave2\" class=\"wave\" style=\"position:absolute; top:55%; left:2200px; width:200px; height:2px; background:var(--lime); pointer-events:none;\"></div>\n<div id=\"s9-bubble1\" class=\"bubble\" style=\"position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); width:40px; height:40px; border-radius:50%; background:var(--amber); opacity:0; pointer-events:none;\"></div>\n<div id=\"s9-bubble2\" class=\"bubble\" style=\"position:absolute; top:45%; left:50%; transform:translate(-50%,-50%); width:40px; height:40px; border-radius:50%; background:var(--amber); opacity:0; pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s9-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.5}, 144.600);\ntl.fromTo(\"#s9-key-number\", {opacity:0, scale:0.8}, {opacity:1, scale:1, duration:0.5}, 148.000);\ntl.fromTo(\"#s9-key-number\", {scale:1}, {scale:1.2, duration:0.25}, 149.000);\ntl.to(\"#s9-key-number\", {scale:1, duration:0.25}, 149.250);\ntl.fromTo(\"#s9-wave1\", {x:-200}, {x:2000, duration:5}, 150.000);\ntl.fromTo(\"#s9-wave2\", {x:2000}, {x:-200, duration:5}, 150.500);\ntl.fromTo(\"#s9-bubble1\", {opacity:0, scale:0.5}, {opacity:1, scale:1, duration:0.5}, 152.000);\ntl.fromTo(\"#s9-bubble1\", {scale:1}, {scale:1.5, duration:0.25}, 152.800);\ntl.to(\"#s9-bubble1\", {scale:1, duration:0.25}, 153.050);\ntl.fromTo(\"#s9-bubble2\", {opacity:0, scale:0.5}, {opacity:1, scale:1, duration:0.5}, 154.000);\ntl.fromTo(\"#s9-bubble2\", {scale:1}, {scale:1.5, duration:0.25}, 154.800);\ntl.to(\"#s9-bubble2\", {scale:1, duration:0.25}, 155.050);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "THE AWAKENING",
+      "heading": "Surgical Applications",
+      "text": "Beyond imaging, cavitation can be surgical. Focused ultrasound lithotripsy uses cavitation to break kidney stones without incisions. The localized shockwaves shatter the stones. This mechanism mirrors the shrimp's impact, but on a microscopic scale.",
+      "image_prompt": "Visualisation of focused ultrasound waves converging on a kidney stone, showing the stone fragmenting due to cavitation. Illustrate the targeted nature of the treatment.",
+      "stat": null,
+      "dur": 15.9,
+      "frag_html": "<div id=\"s10-heading\" style=\"position:absolute;top:10%;left:50%;transform:translateX(-50%);font-size:48px;color:var(--ink);text-align:center;\">Surgical Applications</div>\n<div id=\"s10-key\" style=\"position:absolute;top:20%;left:50%;transform:translateX(-50%);font-size:36px;color:var(--lime);text-align:center;\">1.0 MHz</div>\n<div id=\"s10-wave1\" style=\"position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:200px;height:200px;border:2px solid var(--amber);border-radius:50%;opacity:0;\"></div>\n<div id=\"s10-wave2\" style=\"position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:200px;height:200px;border:2px solid var(--amber);border-radius:50%;opacity:0;\"></div>\n<div id=\"s10-wave3\" style=\"position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:200px;height:200px;border:2px solid var(--amber);border-radius:50%;opacity:0;\"></div>\n<div id=\"s10-stone\" style=\"position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:80px;height:40px;background:var(--red);border-radius:50%;opacity:0.8;\"></div>",
+      "frag_js": "tl.fromTo(\"#s10-heading\", {y:30, opacity:0}, {y:0, opacity:1, duration:0.8, ease:\"power3.out\"}, 160.740);\ntl.fromTo(\"#s10-key\", {scale:0.8, opacity:0}, {scale:1, opacity:1, duration:0.5, ease:\"power2.out\"}, 161.540);\ntl.fromTo(\"#s10-wave1\", {scale:0, opacity:0.8}, {scale:1.2, opacity:0, duration:1.2, ease:\"power1.out\"}, 162.040);\ntl.fromTo(\"#s10-wave2\", {scale:0, opacity:0.8}, {scale:1.2, opacity:0, duration:1.2, ease:\"power1.out\"}, 163.240);\ntl.fromTo(\"#s10-wave3\", {scale:0, opacity:0.8}, {scale:1.2, opacity:0, duration:1.2, ease:\"power1.out\"}, 164.440);\ntl.fromTo(\"#s10-stone\", {scale:1}, {scale:1.3, duration:0.4, ease:\"power1.inOut\"}, 165.640);\ntl.to(\"#img10\", {x:5, y:-3, duration:10, ease:\"none\"}, 160.740);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "THE AWAKENING",
+      "heading": "Industrial Power",
+      "text": "Cavitation is also a powerful industrial process. It cleans surfaces, drills holes, and even enhances chemical reactions. The extreme pressures and temperatures, though microscopic, are effective. Humans leverage this principle across many fields.",
+      "image_prompt": "Montage showing various industrial applications of cavitation: cleaning delicate machinery, drilling through materials, and mixing chemicals in a reactor. Highlight the versatility.",
+      "stat": {
+        "label": "Human Cavitation",
+        "grade": "A",
+        "note": "Imaging, Surgery, Industrial"
+      },
+      "dur": 15.54,
+      "frag_html": "<div id=\"s11-heading\" class=\"overlay\">Industrial Power</div>\n<div id=\"s11-number\" class=\"overlay\">5,000 °C</div>\n<div id=\"s11-dot1\" class=\"dot\"></div>\n<div id=\"s11-dot2\" class=\"dot\"></div>",
+      "frag_js": "tl.fromTo(\"#s11-heading\", {y:20, opacity:0}, {y:0, opacity:1}, 176.640);\ntl.fromTo(\"#s11-number\", {scale:0}, {scale:1}, 177.640);\ntl.fromTo(\"#s11-dot1\", {scale:0.8}, {scale:1.2}, 178.640);\ntl.fromTo(\"#s11-dot1\", {scale:1.2}, {scale:0.8}, 179.140);\ntl.fromTo(\"#s11-dot1\", {scale:0.8}, {scale:1.2}, 179.640);\ntl.fromTo(\"#s11-dot1\", {scale:1.2}, {scale:0.8}, 180.140);\ntl.fromTo(\"#s11-dot2\", {rotation:0}, {rotation:360}, 180.640);\ntl.fromTo(\"#img11\", {scale:1, x:0}, {scale:1.05, x:10}, 182.640);\ntl.fromTo(\"#s11-heading\", {opacity:1}, {opacity:0}, 191.640);\ntl.fromTo(\"#s11-number\", {opacity:1}, {opacity:0}, 191.640);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "FINAL FORM",
+      "heading": "The Ultimate Snap",
+      "text": "The pistol shrimp takes a fundamental physics principle – the collapse of a void – and weaponizes it. It generates extreme heat and pressure from a simple mechanical action. It is a biological marvel of energy concentration. Unparalleled in its niche.",
+      "image_prompt": "A majestic, slightly stylized image of a pistol shrimp, with the cavitation bubble glowing intensely in front of its claw. The shrimp looks powerful and efficient, almost legendary.",
+      "stat": null,
+      "dur": 15.36,
+      "frag_html": "<h2 id=\"s12-heading\">The Ultimate Snap</h2>\n<div id=\"s12-number\">5,000 °C</div>\n<div id=\"s12-glow\"></div>\n<div id=\"s12-pulse\"></div>",
+      "frag_js": "tl.fromTo(\"#s12-heading\", {y:30, opacity:0}, {y:0, opacity:1, duration:0.5, ease:\"power3.out\"}, 192.300);\ntl.fromTo(\"#s12-number\", {scale:0.8, opacity:0}, {scale:1, opacity:1, duration:0.5, ease:\"power3.out\"}, 193.000);\ntl.fromTo(\"#s12-glow\", {scale:0, opacity:0}, {scale:1.2, opacity:0.6, duration:0.8, ease:\"power2.out\"}, 193.800);\ntl.fromTo(\"#s12-pulse\", {scale:0, opacity:0}, {scale:1.5, opacity:0.2, duration:0.6, ease:\"power2.out\"}, 195.000);\ntl.to(\"#s12-pulse\", {opacity:0, duration:0.4}, 195.600);\ntl.fromTo(\"#img12\", {scale:1}, {scale:1.05, duration:0.8, ease:\"power1.inOut\"}, 197.000);\ntl.to(\"#img12\", {scale:1, duration:0.4}, 197.800);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "FINAL FORM",
+      "heading": "Evolution's Hot Hand",
+      "text": "Two hundred million years of field research. This is the weirdest thing I've ever graded. Evolution granted this shrimp a power usually reserved for celestial bodies. It doesn't just survive; it dominates its micro-environment with a miniature star.",
+      "image_prompt": "A split image: one side showing the vastness of the sun's surface, the other showing a highly magnified view of the pistol shrimp's cavitation bubble glowing with similar intensity. Emphasize the scale difference.",
+      "stat": null,
+      "dur": 14.26,
+      "frag_html": "<div id=\"s13-wrapper\">\n  <h1 id=\"s13-heading\">Evolution's Hot Hand</h1>\n  <div id=\"s13-number\">200 million</div>\n  <img id=\"s13-img\" class=\"clip\">\n</div>",
+      "frag_js": "tl.fromTo(\"#s13-heading\", {y: 50, opacity:0}, {y:0, opacity:1, duration:1}, 207.540);\ntl.fromTo(\"#s13-number\", {scale:0.8, opacity:0}, {scale:1, opacity:1, duration:1}, 208.540);\ntl.to(\"#s13-img\", {x: -20, scale:1.02, duration:2}, 209.540);\ntl.to(\"#s13-heading\", {color: \"var(--lime)\", duration:2}, 211.540);\ntl.to(\"#s13-number\", {scale:1.3, duration:1}, 213.540);\ntl.to(\"#s13-number\", {scale:1, duration:1}, 214.540);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "FINAL FORM",
+      "heading": "Verdict: THREAT",
+      "text": "The pistol shrimp's ability to create a high-temperature, high-pressure shockwave makes it a formidable predator. Its localized, extreme power defines it. It is not an apex predator globally, but within its immediate domain, it is an absolute THREAT.",
+      "image_prompt": "The 'THREAT' verdict stamp prominently displayed over a dynamic image of the pistol shrimp mid-snap, with the superheated bubble forming. The background should be slightly blurred to focus on the verdict and shrimp.",
+      "stat": null,
+      "dur": 14.76,
+      "frag_html": "<div id=\"s14-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:48px; font-weight:bold; color:var(--ink); opacity:0; pointer-events:none;\">Verdict: THREAT</div>\n<div id=\"s14-key\" style=\"position:absolute; top:40%; left:50%; transform:translateX(-50%); font-size:36px; color:var(--lime); opacity:0; pointer-events:none;\">≈4,800°C</div>\n<div id=\"s14-stamp\" style=\"position:absolute; top:55%; left:50%; transform:translate(-50%,-50%); font-size:42px; font-weight:bold; color:var(--ink); background:var(--amber); padding:12px 24px; border-radius:8px; opacity:0; pointer-events:none;\">THREAT</div>\n<div id=\"s14-bubble\" style=\"position:absolute; top:50%; left:50%; width:0px; height:0px; background:var(--red); border-radius:50%; opacity:0; transform:translate(-50%,-50%); pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s14-heading\", {opacity:0, x:-50}, {opacity:1, x:0, duration:0.8, ease:\"power3.out\"}, 222.0);\ntl.fromTo(\"#s14-key\", {opacity:0, scale:0.8}, {opacity:1, scale:1.2, duration:0.6, ease:\"back.out(1.7)\"}, 222.8);\ntl.fromTo(\"#s14-stamp\", {opacity:0, rotation:-5}, {opacity:1, rotation:0, duration:0.7, ease:\"power2.out\"}, 223.6);\ntl.fromTo(\"#s14-bubble\", {width:0, height:0, opacity:0}, {width:150, height:150, opacity:0.6, duration:1.2, ease:\"power2.out\"}, 224.3);\ntl.to(\"#img14\", {scale:1.05, x:10, y:-5, duration:10.76, ease:\"none\"}, 225.3);",
+      "frag_source": "llm attempt 4"
+    },
+    {
+      "act": "FINAL FORM",
+      "heading": "Unseen Power",
+      "text": "This shrimp snaps hotter than the sun's surface. A small creature with a galactic-level weapon. It demonstrates that true power is often hidden in plain sight, waiting for the right mechanism to unleash it. Class dismissed. Evolution isn't finished with you.",
+      "image_prompt": "A final, powerful shot of the pistol shrimp, perhaps in silhouette, with the glowing cavitation bubble as its signature. The overall tone is one of respect for its unique biological weapon.",
+      "stat": {
+        "label": "Overall Grade",
+        "grade": "A+",
+        "note": "THREAT level localized power"
+      },
+      "dur": 15.86,
+      "frag_html": "<div id=\"s15-heading\" class=\"overlay\">Unseen Power</div>\n<div id=\"s15-number\" class=\"overlay\">8,000 K</div>\n<div id=\"s15-bubble\" class=\"overlay\"><div class=\"bubble-inner\"></div></div>",
+      "frag_js": "tl.fromTo(\"#s15-heading\", {opacity:0, y:30}, {opacity:1, y:0, duration:0.8}, 236.560);\ntl.fromTo(\"#s15-number\", {opacity:0, scale:0.5}, {opacity:1, scale:1, duration:0.6}, 238.0);\ntl.fromTo(\"#s15-bubble\", {opacity:0, scale:0}, {opacity:1, scale:1, duration:0.5}, 240.0);\ntl.to(\"#s15-bubble\", {scale:1.2, duration:0.4, yoyo:true, repeat:1}, 240.6);\ntl.to(\"#img15\", {x:-20, y:10, duration:15.0}, 236.560);",
+      "frag_source": "llm attempt 4"
+    }
+  ],
+  "mp4": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/20260903-the-pistol-shrimp-s-snap-creates-a-cavitation-bu.mp4",
+  "video_id": null,
+  "thumb": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/thumb_20260903-the-pistol-shrimp-s-snap-creates-a-cavitation-bu.jpg"
+}
