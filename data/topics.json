@@ -235,7 +235,7 @@
     "lane": "WEIRD_ANIMAL",
     "why": "Axolotls can regenerate entire limbs, spinal cord, heart tissue, and even portions of their brain without scarring, a regenerative ability unmatched by most vertebrates.",
     "score": 9,
-    "used": false
+    "used": true
   },
   {
     "topic": "The Pistol Shrimp’s Snap Creates a Cavitation Bubble That Reaches Temperatures Hotter Than the Sun’s Surface",
