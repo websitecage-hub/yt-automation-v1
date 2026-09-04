@@ -228,7 +228,7 @@
     "lane": "HUMAN",
     "why": "Stretching out the DNA from all ~3.7×10¹³ cells in a human body yields ~7.4×10¹³ m of double helix — enough to reach the Sun and back over 200 times.",
     "score": 9,
-    "used": false
+    "used": true
   },
   {
     "topic": "The Axolotl Can Regenerate Its Heart, Spinal Cord, and Parts of Its Brain",
