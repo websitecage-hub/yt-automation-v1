@@ -256,7 +256,7 @@
     "lane": "VERSUS",
     "why": "A hummingbird can flap its wings up to 80 times per second, far exceeding the typical rotor speed of a small helicopter (~5–6 revolutions per second).",
     "score": 9,
-    "used": false
+    "used": true
   },
   {
     "topic": "Elephant Trunk Water Flow vs. Fire Hose: How Many Gallons Per Minute Can an Elephant Spray?",
