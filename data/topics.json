@@ -270,7 +270,7 @@
     "lane": "VERSUS",
     "why": "A resting human loses ~0.5 L of sweat per hour in heat, while a camel can lose less than 0.1 L per hour thanks to its ability to tolerate higher body temperatures and reabsorb water from urine.",
     "score": 8,
-    "used": false
+    "used": true
   },
   {
     "topic": "My Osteoderm Armor Can Withstand a Bullet From a Handgun",
