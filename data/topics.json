@@ -249,7 +249,7 @@
     "lane": "WEIRD_ANIMAL",
     "why": "Naked mole rats exhibit extraordinary cancer resistance due to high‑molecular‑weight hyaluronan and early contact inhibition, allowing lifespans exceeding 30 years for a rodent.",
     "score": 8,
-    "used": false
+    "used": true
   },
   {
     "topic": "Hummingbird Wingbeat vs. Helicopter Rotor: Which Beats Faster?",
