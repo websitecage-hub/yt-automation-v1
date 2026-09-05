@@ -263,7 +263,7 @@
     "lane": "VERSUS",
     "why": "An elephant can draw up to 10 L of water per second through its trunk and spray it out — roughly 158 gallons per minute, comparable to a standard fire hose’s flow.",
     "score": 8,
-    "used": false
+    "used": true
   },
   {
     "topic": "Human Sweat Rate vs. Camel: Who Loses Less Water Per Hour?",
