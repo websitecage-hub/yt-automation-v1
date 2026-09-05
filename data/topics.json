@@ -214,7 +214,7 @@
     "lane": "HUMAN",
     "why": "Human sweat can evaporate up to ~1 L per hour, removing about 580 kcal of heat — roughly the cooling output of a small window‑unit air conditioner (~5,000 BTU/h).",
     "score": 8,
-    "used": false
+    "used": true
   },
   {
     "topic": "Your Gut Microbiome Weighs as Much as Your Brain",
