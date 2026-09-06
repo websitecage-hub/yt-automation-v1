@@ -278,5 +278,75 @@
     "why": "The bony osteoderms embedded in a crocodile’s skin act like natural composite armor, capable of deflecting bullets from low‑calibre handguns.",
     "score": 9,
     "used": true
+  },
+  {
+    "topic": "Your Brain Generates Enough Electricity to Power a Small LED Bulb",
+    "lane": "HUMAN",
+    "why": "The human brain operates at about 20 watts, enough to light a standard LED bulb continuously.",
+    "score": 8,
+    "used": false
+  },
+  {
+    "topic": "Your Lungs Have a Surface Area Roughly Equal to a Badminton Court",
+    "lane": "HUMAN",
+    "why": "With roughly 300 million alveoli, the lungs provide ~70‑100 m2 of area, comparable to a badminton court.",
+    "score": 9,
+    "used": true
+  },
+  {
+    "topic": "Your Body Contains Enough Iron to Forge a 3‑inch Nail",
+    "lane": "HUMAN",
+    "why": "An average adult holds about 4 grams of iron, sufficient to make a small nail.",
+    "score": 7,
+    "used": false
+  },
+  {
+    "topic": "The Blue Whale’s Heart Weighs as Much as a Small Car",
+    "lane": "WEIRD_ANIMAL",
+    "why": "A blue whale’s heart can weigh ~180 kg, similar to a compact car’s mass.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "The Arctic Tern Migrates About 70,000 Kilometers Each Year, the Longest Animal Migration",
+    "lane": "WEIRD_ANIMAL",
+    "why": "Arctic terns travel from Arctic to Antarctic and back, covering ~70k km annually.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "The Platypus Can Detect Electric Fields as Weak as 50 Microvolts With Its Bill",
+    "lane": "WEIRD_ANIMAL",
+    "why": "The platypus’s bill contains electroreceptors that sense tiny electric fields from prey.",
+    "score": 8,
+    "used": false
+  },
+  {
+    "topic": "Saltwater Crocodile Bite Force vs. Hydraulic Press: Which Wins?",
+    "lane": "VERSUS",
+    "why": "A saltwater crocodile’s bite exceeds 3,700 psi, rivaling many industrial hydraulic presses.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "Mantis Shrimp Punch vs. Heavyweight Boxer’s Punch: Speed Comparison",
+    "lane": "VERSUS",
+    "why": "The mantis shrimp’s strike accelerates at ~10,000 g, far surpassing a boxer’s punch.",
+    "score": 9,
+    "used": false
+  },
+  {
+    "topic": "My Salt Glands Can Excrete Enough Salt to Match Drinking Seawater Every Day",
+    "lane": "PROFESSOR",
+    "why": "Crocodilian salt glands secrete concentrated saline, allowing them to handle high salt intake.",
+    "score": 8,
+    "used": false
+  },
+  {
+    "topic": "My Heart Can Slow to Just 2‑3 Beats Per Minute While Submerged",
+    "lane": "PROFESSOR",
+    "why": "During dives, crocodiles can reduce heart rate to a few bpm to conserve oxygen.",
+    "score": 8,
+    "used": false
   }
 ]

@@ -1,6 +1,6 @@
 # SCALED status
 
-_updated 2026-09-06T06:22:03+00:00_
+_updated 2026-09-06T11:55:16+00:00_
 
 shelf (done, unpublished): 1/5
 
@@ -11,5 +11,6 @@ shelf (done, unpublished): 1/5
 | 3 | done | Boiling Point. Absolute Zero. It Just Doesn't Care. |
 | 4 | done | This Shrimp Snaps Hotter Than The Sun's Surface |
 | 5 | done | Frog Stops Its Heart. Wakes Up Weeks Later. |
+| 6 | voice | Lungs = Badminton Court? The Scaled Truth |
 
 providers: {"TABI_KEY": true, "NIM_KEY": true, "GEMINI_KEY": true, "GROQ_KEY": true}
