@@ -1,0 +1,220 @@
+{
+  "id": "20260906-the-frog-that-freezes-solid-every-winter",
+  "lesson": 5,
+  "topic": "The Frog That Freezes Solid Every Winter",
+  "lane": "WEIRD_ANIMAL",
+  "created": "2026-09-06T04:41:12+00:00",
+  "stage": "done",
+  "title": "Frog Stops Its Heart. Wakes Up Weeks Later.",
+  "description": "Professor Croc grades the wood frog, an amphibian that freezes solid, stops its heart, and then reanimates. Discover the cryo-mechanisms that allow this creature to cheat death every winter. Could humans ever achieve this 'paused' state?",
+  "tags": [
+    "Biology",
+    "Frogs",
+    "Cryonics",
+    "Survival",
+    "Evolution",
+    "Animals",
+    "Science",
+    "What If"
+  ],
+  "thumbnail_prompt": "A wood frog, partially encased in a block of ice, looking eerily still but intact. A digital overlay shows a 'PAUSED' symbol or a heart monitor flatline, with a subtle glow around the frog.",
+  "verdict": "SLEEPER",
+  "extra_credit": "None",
+  "scenes": [
+    {
+      "act": "HOOK",
+      "heading": "The Frozen Heart",
+      "text": "Each winter, the wood frog allows up to 65% of its body water to freeze solid. This isn't just cold. This is an intentional shutdown. Its heart stops. Its blood flow ceases. Breathing? Unnecessary. Brain activity? Zero. It is clinically dead.",
+      "image_prompt": "Close-up of a wood frog, partially frozen in ice, eyes glazed over but intact. A digital graphic shows a flatlined ECG.",
+      "stat": {
+        "label": "Cryo-Tolerance",
+        "grade": "A",
+        "note": "Survives 65% body water frozen."
+      },
+      "dur": 20.12,
+      "frag_html": "<style>\n  #s0-heading {\n    position: absolute;\n    top: 20%;\n    left: 50%;\n    transform: translateX(-50%);\n    font-size: 3.2rem;\n    font-weight: 600;\n    color: var(--ink);\n    opacity: 0;\n    pointer-events: none;\n  }\n  #s0-number {\n    position: absolute;\n    top: 40%;\n    left: 50%;\n    transform: translateX(-50%);\n    font-size: 5rem;\n    font-weight: 800;\n    color: var(--lime);\n    opacity: 0;\n    pointer-events: none;\n  }\n  #s0-ecg {\n    position: absolute;\n    top: 55%;\n    left: 50%;\n    width: 0;\n    height: 2px;\n    background: var(--red);\n    transform: translateX(-50%);\n    opacity: 0;\n    pointer-events: none;\n  }\n  #s0-frost {\n    position: absolute;\n    inset: 0;\n    background: var(--dim);\n    opacity: 0;\n    pointer-events: none;\n  }\n</style>\n<div id=\"s0-heading\">The Frozen Heart</div>\n<div id=\"s0-number\">65%</div>\n<hr id=\"s0-ecg\">\n<div id=\"s0-frost\"></div>",
+      "frag_js": "tl.fromTo(\"#s0-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.8}, 0.0);\ntl.fromTo(\"#s0-number\", {opacity:0, y:30}, {opacity:1, y:0, duration:0.6}, 1.0);\ntl.fromTo(\"#s0-ecg\", {width:\"0%\"}, {width:\"100%\", duration:1.0}, 2.0);\ntl.to(\"#s0-frost\", {opacity:0.2, duration:1.5}, 3.0);",
+      "frag_source": "llm attempt 3"
+    },
+    {
+      "act": "HOOK",
+      "heading": "A Pause In Life",
+      "text": "For weeks, sometimes months, the frog remains in this state. It is a block of ice, indistinguishable from the frozen soil. Predators ignore it. Time passes without effect. It is a biological pause button. How does anything survive this?",
+      "image_prompt": "A cross-section of frozen soil with a perfectly preserved, ice-encased wood frog nestled within. Winter forest background.",
+      "stat": null,
+      "dur": 15.98,
+      "frag_html": "<div id=\"s1-heading\" class=\"overlay\" style=\"position:absolute; top:45%; left:50%; transform:translate(-50%,-50%); font-size:4rem; color:var(--ink); pointer-events:none;\">A Pause In Life</div>\n<div id=\"s1-key\" class=\"overlay\" style=\"position:absolute; top:55%; left:50%; transform:translate(-50%,-50%); font-size:6rem; color:var(--lime); pointer-events:none;\">weeks</div>",
+      "frag_js": "tl.fromTo('#s1-heading', {opacity:0, y:-20}, {opacity:1, y:0, duration:0.68, ease:\"power3.out\"}, 20.120);\ntl.fromTo('#s1-key', {opacity:0, scale:0.5}, {opacity:1, scale:1, duration:0.70, ease:\"power3.out\"}, 20.800);\ntl.to('#img1', {x:-20, y:10, duration:2.5, ease:\"power1.inOut\"}, 21.500);\ntl.to('#img1', {scale:1.05, duration:0.5, ease:\"power1.out\"}, 24.000);\ntl.to('#img1', {scale:1, duration:0.5, ease:\"power1.in\"}, 24.500);\ntl.to('#s1-heading', {opacity:0, duration:1.0, ease:\"power1.in\"}, 35.000);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HOOK",
+      "heading": "The Undead Amphibian",
+      "text": "Then, spring arrives. The ice thaws. Within hours, the frog's heart restarts. Blood begins to flow. Its brain flickers back online. It hops away, as if nothing happened. This is not survival. This is reanimation. But what makes it possible?",
+      "image_prompt": "Time-lapse style image showing a wood frog slowly thawing and then beginning to move, eyes alert. Green moss and melting snow.",
+      "stat": null,
+      "dur": 18.36,
+      "frag_html": "<div id=\"s2-heading\" style=\"position:absolute;top:15%;left:50%;transform:translateX(-50%);font-family:sans-serif;font-size:48px;color:var(--ink);text-align:center;pointer-events:none;\">The Undead Amphibian</div>\n<div id=\"s2-weeks\" style=\"position:absolute;top:40%;left:50%;transform:translateX(-50%);font-family:sans-serif;font-size:36px;color:var(--lime);text-align:center;pointer-events:none;\">Weeks</div>\n<div id=\"s2-note\" style=\"position:absolute;top:65%;left:50%;transform:translateX(-50%);font-family:sans-serif;font-size:28px;color:var(--amber);text-align:center;pointer-events:none;\">Reanimation</div>\n<div id=\"s2-glow\" style=\"position:absolute;top:50%;left:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:var(--lime);opacity:0;pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s2-heading\", {y:50, opacity:0}, {y:0, opacity:1, duration:0.8}, 36.100);\ntl.fromTo(\"#s2-weeks\", {scale:0.8, opacity:0}, {scale:1, opacity:1, duration:0.8}, 38.000);\ntl.fromTo(\"#s2-note\", {x:-50, opacity:0}, {x:0, opacity:1, duration:0.8}, 42.000);\ntl.fromTo(\"#s2-glow\", {scale:0, opacity:0}, {scale:1.2, opacity:0.4, duration:3.0}, 48.000);\ntl.to(\"#s2-glow\", {scale:1.8, opacity:0, duration:1.5}, 51.000);\ntl.fromTo(\"#img2\", {scale:1}, {scale:1.02, duration:4.0}, 36.100);\ntl.to(\"#img2\", {scale:1, duration:4.0}, 40.100);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "BASE STATS",
+      "heading": "Meet the Wood Frog",
+      "text": "Let's check the base stats. The wood frog, *Rana sylvatica*, is a small amphibian found across North America. Its primary challenge: survive harsh, sub-zero winters. Most animals migrate or hibernate. This one opts for a different strategy.",
+      "image_prompt": "A healthy wood frog sitting on a forest floor, looking stoic. Text overlay: 'Rana sylvatica'.",
+      "stat": {
+        "label": "Metabolic Shutdown",
+        "grade": "A",
+        "note": "Heartbeat stops for weeks."
+      },
+      "dur": 16.0,
+      "frag_html": "<div id=\"s3-heading\" class=\"overlay\" style=\"position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); opacity:0; pointer-events:none; font-family:sans-serif; font-size:2.2rem; color:var(--ink);\">Meet the Wood Frog</div>\n<div id=\"s3-key\" class=\"overlay\" style=\"position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); opacity:0; pointer-events:none; font-family:sans-serif; font-size:3rem; font-weight:bold; color:var(--lime);\">5</div>\n<div id=\"s3-sci\" class=\"overlay\" style=\"position:absolute; top:60%; left:50%; transform:translate(-50%,-50%); opacity:0; pointer-events:none; font-family:sans-serif; font-size:1.8rem; color:var(--dim);\">Rana sylvatica</div>",
+      "frag_js": "tl.fromTo(\"#s3-heading\", {opacity:0, y:-20}, {opacity:1, y:0, duration:1}, 54.460);\ntl.fromTo(\"#s3-key\", {opacity:0, scale:0}, {opacity:1, scale:1, duration:1}, 55.460);\ntl.to(\"#s3-key\", {scale:1.2, duration:0.3}, 56.460);\ntl.to(\"#s3-key\", {scale:1.0, duration:0.3}, 56.760);\ntl.fromTo(\"#s3-sci\", {opacity:0, y:20}, {opacity:1, y:0, duration:1}, 57.460);\ntl.to(\"#img3\", {x:20, y:-10, duration:4}, 58.460);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "BASE STATS",
+      "heading": "The Freezing Point Problem",
+      "text": "The problem with freezing is ice. Ice crystals are sharp. They puncture cell membranes. They damage tissues. For most creatures, freezing means death. Uncontrolled ice formation is lethal. This frog has found a workaround.",
+      "image_prompt": "Microscopic view of ice crystals forming, sharp edges visible, encroaching on stylized biological cells.",
+      "stat": null,
+      "dur": 16.72,
+      "frag_html": "<div id=\"s4-heading\" class=\"overlay\" style=\"position:absolute; top:30%; left:50%; transform:translate(-50%,-50%); color:var(--ink); font-size:2.5rem; text-align:center; pointer-events:none;\">The Freezing Point Problem</div>\n<div id=\"s4-key\" class=\"overlay\" style=\"position:absolute; top:45%; left:50%; transform:translate(-50%,-50%); color:var(--lime); font-size:3.5rem; font-weight:bold; pointer-events:none;\">0°C</div>\n<div id=\"s4-ice\" class=\"overlay\" style=\"position:absolute; top:55%; left:50%; transform:translate(-50%,-50%); width:220px; height:160px; pointer-events:none;\">\n  <div style=\"position:absolute; left:20%; top:15%; width:4px; height:22px; background:var(--amber); transform:rotate(30deg);\"></div>\n  <div style=\"position:absolute; left:40%; top:5%; width:4px; height:26px; background:var(--amber); transform:rotate(-45deg);\"></div>\n  <div style=\"position:absolute; left:60%; top:20%; width:4px; height:18px; background:var(--amber); transform:rotate(60deg);\"></div>\n  <div style=\"position:absolute; left:80%; top:10%; width:4px; height:24px; background:var(--amber); transform:rotate(-30deg);\"></div>\n</div>\n<div id=\"s4-cell\" class=\"overlay\" style=\"position:absolute; top:70%; left:50%; transform:translate(-50%,-50%); width:130px; height:130px; pointer-events:none;\">\n  <div style=\"position:absolute; inset:0; border:2px solid var(--dim); border-radius:50%; background:rgba(0,0,0,0.04);\"></div>\n  <div style=\"position:absolute; left:50%; top:50%; width:22px; height:22px; background:var(--dim); border-radius:50%; transform:translate(-50%,-50%);\"></div>\n</div>",
+      "frag_js": "tl.fromTo(\"#s4-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.8}, 70.460);\ntl.fromTo(\"#s4-key\", {opacity:0, scale:0.5}, {opacity:1, scale:1, duration:0.8}, 71.500);\ntl.fromTo(\"#s4-ice\", {x:-260, opacity:0}, {x:0, opacity:1, duration:5.5}, 72.500);\ntl.fromTo(\"#s4-cell\", {opacity:0, scale:1.2}, {opacity:1, scale:1, duration:0.6}, 73.000);\ntl.to(\"#s4-cell\", {scale:0.8, duration:2.0}, 78.000);\ntl.to(\"#img4\", {x:10, y:5, rotation:0.2, duration:9.54}, 70.460);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "BASE STATS",
+      "heading": "Controlled Crystallization",
+      "text": "The wood frog doesn't prevent freezing entirely. It controls it. Ice forms only in the extracellular spaces—outside its cells. Its cells themselves remain unfrozen. This is crucial. But how does it achieve this precise control?",
+      "image_prompt": "Diagram showing ice crystals forming between cells, but not inside them. Cells are depicted as plump and intact.",
+      "stat": null,
+      "dur": 15.2,
+      "frag_html": "<div id=\"s5-heading\" style=\"position:absolute; top:18%; left:50%; transform:translateX(-50%); font-size:2.2rem; font-weight:600; color:var(--ink); text-align:center; pointer-events:none; opacity:0;\">Controlled Crystallization</div>\n<div id=\"s5-keyNumber\" style=\"position:absolute; top:28%; left:50%; transform:translateX(-50%); font-size:3.5rem; font-weight:800; color:var(--lime); pointer-events:none; opacity:0;\">0%</div>\n<div id=\"s5-cellGroup\" style=\"position:absolute; top:50%; left:30%; transform:translateY(-50%); display:flex; flex-direction:column; gap:20px; pointer-events:none;\">\n  <div id=\"s5-cell1\" style=\"width:80px; height:80px; border-radius:50%; background:var(--dim); border:2px solid var(--ink); opacity:0;\"></div>\n  <div id=\"s5-cell2\" style=\"width:80px; height:80px; border-radius:50%; background:var(--dim); border:2px solid var(--ink); opacity:0;\"></div>\n  <div id=\"s5-cell3\" style=\"width:80px; height:80px; border-radius:50%; background:var(--dim); border:2px solid var(--ink); opacity:0;\"></div>\n</div>\n<div id=\"s5-iceGroup\" style=\"position:absolute; top:50%; left:70%; transform:translateY(-50%); display:flex; flex-direction:column; gap:20px; pointer-events:none;\">\n  <div id=\"s5-ice1\" style=\"width:60px; height:60px; background:var(--amber); border-radius:12px; opacity:0;\"></div>\n  <div id=\"s5-ice2\" style=\"width:60px; height:60px; background:var(--amber); border-radius:12px; opacity:0;\"></div>\n  <div id=\"s5-ice3\" style=\"width:60px; height:60px; background:var(--amber); border-radius:12px; opacity:0;\"></div>\n</div>",
+      "frag_js": "tl.fromTo('#s5-heading', {y:30, opacity:0}, {duration:0.8, y:0, opacity:1, ease:\"power3.out\"}, 87.180);\ntl.fromTo('#s5-keyNumber', {scale:0, opacity:0}, {duration:0.4, scale:1, opacity:1, ease:\"back.out(1.7)\"}, 88.500);\ntl.fromTo('#s5-cell1', {opacity:0, y:20}, {duration:0.5, opacity:1, y:0, ease:\"power2.out\"}, 89.200);\ntl.fromTo('#s5-cell2', {opacity:0, y:20}, {duration:0.5, opacity:1, y:0, ease:\"power2.out\"}, 89.350);\ntl.fromTo('#s5-cell3', {opacity:0, y:20}, {duration:0.5, opacity:1, y:0, ease:\"power2.out\"}, 89.500);\ntl.fromTo('#s5-ice1', {opacity:0, rotation:-10}, {duration:0.4, opacity:1, rotation:0, ease:\"power2.out\"}, 90.500);\ntl.fromTo('#s5-ice2', {opacity:0, rotation:10}, {duration:0.4, opacity:1, rotation:0, ease:\"power2.out\"}, 90.650);\ntl.fromTo('#s5-ice3', {opacity:0, rotation:-5}, {duration:0.4, opacity:1, rotation:0, ease:\"power2.out\"}, 90.800);\ntl.to('#img5', {duration:3, x:10, ease:\"power1.inOut\"}, 92.000);\ntl.to('#img5', {duration:3, x:-10, ease:\"power1.inOut\"}, 95.000);\ntl.to('#img5', {duration:3, x:0, ease:\"power1.inOut\"}, 98.000);\ntl.fromTo('#s5-keyNumber', {scale:1}, {duration:0.3, scale:1.2, ease:\"power2.out\"}, 100.0);\ntl.to('#s5-keyNumber', {duration:0.3, scale:1, ease:\"power2.out\"}, 100.3);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HIDDEN ABILITY",
+      "heading": "The Sugar Solution",
+      "text": "Its hidden ability: massive glucose production. When freezing begins, the frog's liver floods its bloodstream with glucose. Sugar levels can reach 100 times normal. This acts as a natural antifreeze, a cryoprotectant.",
+      "image_prompt": "Stylized graphic of a frog's liver releasing glucose molecules into the bloodstream, represented as small hexagons. 'GLUCOSE' label.",
+      "stat": {
+        "label": "Cryoprotection",
+        "grade": "S",
+        "note": "Glucose levels 100x normal."
+      },
+      "dur": 13.98,
+      "frag_html": "<h1 id=\"s6-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); color:var(--ink); font-size:48px; opacity:0;\">The Sugar Solution</h1>\n<div id=\"s6-number\" style=\"position:absolute; top:55%; left:50%; transform:translate(-50%,-50%); font-size:96px; color:var(--amber); opacity:0;\">100</div>\n<div id=\"s6-label\" style=\"position:absolute; top:40%; left:50%; transform:translate(-50%,-50%); color:var(--lime); font-size:28px; opacity:0;\">GLUCOSE</div>\n<div id=\"s6-hex1\" class=\"hex\" style=\"position:absolute; top:50%; left:50%; width:24px; height:24px; background:var(--lime); opacity:0;\"></div>\n<div id=\"s6-hex2\" class=\"hex\" style=\"position:absolute; top:50%; left:50%; width:24px; height:24px; background:var(--amber); opacity:0;\"></div>\n<div id=\"s6-hex3\" class=\"hex\" style=\"position:absolute; top:50%; left:50%; width:24px; height:24px; background:var(--red); opacity:0;\"></div>\n<div id=\"s6-hex4\" class=\"hex\" style=\"position:absolute; top:50%; left:50%; width:24px; height:24px; background:var(--dim); opacity:0;\"></div>",
+      "frag_js": "tl.fromTo(\"#s6-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.8}, 102.380);\ntl.fromTo(\"#s6-number\", {opacity:0, scale:0.5}, {opacity:1, scale:1, duration:0.6}, 103.300);\ntl.fromTo(\"#s6-label\", {opacity:0, y:-20}, {opacity:1, y:0, duration:0.6, ease:\"back.out(1.7)\"}, 104.000);\ntl.fromTo(\"#s6-hex1\", {opacity:0, scale:0}, {opacity:1, scale:1, duration:0.4}, 105.000);\ntl.fromTo(\"#s6-hex2\", {opacity:0, scale:0}, {opacity:1, scale:1, duration:0.4}, 105.300);\ntl.fromTo(\"#s6-hex3\", {opacity:0, scale:0}, {opacity:1, scale:1, duration:0.4}, 105.600);\ntl.fromTo(\"#s6-hex4\", {opacity:0, scale:0}, {opacity:1, scale:1, duration:0.4}, 105.900);\ntl.to(\"#img6\", {scale:1.02, y:-2, duration:4, ease:\"none\"}, 108.000);\ntl.to(\"#img6\", {scale:1.00, y:0, duration:4, ease:\"none\"}, 112.000);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "HIDDEN ABILITY",
+      "heading": "Cellular Shield",
+      "text": "This high concentration of glucose draws water out of the cells. It prevents them from freezing. It also prevents them from shrinking too much due to external ice. The cells become internally protected, stable.",
+      "image_prompt": "Diagram showing water leaving a cell and glucose molecules surrounding it, preventing ice formation inside the cell.",
+      "stat": null,
+      "dur": 13.1,
+      "frag_html": "<div id=\"s7-fbhead\" class=\"clip\" data-start=\"116.36\" data-duration=\"13.10\" data-track-index=\"1\" style=\"position:absolute;left:120px;top:120px;width:1100px;font:900 72px/1.1 'Archivo Black','Arial Black',sans-serif;color:var(--ink);opacity:0\">Cellular Shield</div>",
+      "frag_js": "tl.fromTo('#s7-fbhead',{opacity:0,y:40},{opacity:1,y:0,duration:0.8,ease:'power2.out'},116.360);\ntl.fromTo('#img7',{scale:1.00},{scale:1.07,duration:13.100,ease:'none'},116.360);",
+      "frag_source": "SAFE_FALLBACK"
+    },
+    {
+      "act": "HIDDEN ABILITY",
+      "heading": "The Urea Boost",
+      "text": "Glucose isn't alone. The frog also accumulates urea. Urea works with glucose to further protect cells. It prevents dehydration and maintains cell volume. This dual-agent system is key to its resilience. This isn't luck. This is biology.",
+      "image_prompt": "Graphic showing glucose and urea molecules working together to protect a cell from freezing and dehydration. 'UREA' label.",
+      "stat": null,
+      "dur": 16.72,
+      "frag_html": "<div id=\"s8-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); color:var(--ink); font-size:48px; pointer-events:none;\">The Urea Boost</div>\n<div id=\"s8-number\" style=\"position:absolute; top:40%; left:50%; transform:translateX(-50%); color:var(--lime); font-size:96px; pointer-events:none;\">2</div>\n<div id=\"s8-urea-label\" style=\"position:absolute; top:60%; left:50%; transform:translateX(-50%); color:var(--amber); font-size:36px; pointer-events:none;\">UREA</div>",
+      "frag_js": "tl.fromTo(\"#s8-heading\", {opacity:0, y:30}, {opacity:1, y:0, duration:0.8}, 130.0);\ntl.fromTo(\"#s8-number\", {opacity:0, scale:0.8}, {opacity:1, scale:1.2, duration:0.6}, 132.0);\ntl.to(\"#s8-number\", {scale:1, duration:0.4}, 132.6);\ntl.fromTo(\"#s8-urea-label\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.6}, 138.0);\ntl.to(\"#img8\", {x:15, y:-10, scale:1.03, duration:12.0}, 134.0);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "THE AWAKENING",
+      "heading": "Human Limitations",
+      "text": "Could humans awaken this power? Currently, no. Our cells lack these natural cryoprotectants. Attempts at human cryopreservation face the same ice crystal problem. Our organs would be shredded. We are not built for this.",
+      "image_prompt": "A human hand reaching towards a block of ice, with a 'NO ENTRY' or 'ACCESS DENIED' overlay. Slightly melancholic.",
+      "stat": null,
+      "dur": 15.92,
+      "frag_html": "<div id=\"s9-heading\" class=\"overlay\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); color:var(--ink); font-size:2.2rem; pointer-events:none;\">Human Limitations</div>\n<div id=\"s9-key\" class=\"overlay\" style=\"position:absolute; top:40%; left:50%; transform:translateX(-50%); color:var(--lime); font-size:3.5rem; font-weight:bold; pointer-events:none;\">0%</div>\n<div id=\"s9-noentry\" class=\"overlay\" style=\"position:absolute; top:55%; left:50%; transform:translateX(-50%); color:var(--red); font-size:2rem; letter-spacing:0.05em; pointer-events:none;\">NO ENTRY</div>\n<div id=\"s9-dim\" class=\"overlay\" style=\"position:absolute; inset:0; background-color:var(--dim); pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s9-heading\", {opacity:0, y:-20}, {opacity:1, y:0, duration:0.5}, 146.20);\ntl.fromTo(\"#s9-key\",   {opacity:0, scale:0.8}, {opacity:1, scale:1, duration:0.6}, 147.50);\ntl.fromTo(\"#s9-noentry\",{opacity:0, rotation:10}, {opacity:1, rotation:0, duration:0.5}, 149.00);\ntl.fromTo(\"#s9-dim\",   {opacity:0}, {opacity:0.4, duration:0.5}, 150.50);\ntl.fromTo(\"#img9\",     {y:0}, {y:-10, duration:6}, 146.20);\ntl.to(\"#img9\",         {y:0, duration:6}, 152.20);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "THE AWAKENING",
+      "heading": "Medical Parallels",
+      "text": "However, the frog's mechanism inspires medical research. Induced hypothermia slows metabolism during surgery, protecting tissues. But full freezing and reanimation? That remains science fiction for us. For now.",
+      "image_prompt": "Medical scene: a patient under observation with monitors, showing controlled hypothermia. Focus on the delicate balance.",
+      "stat": null,
+      "dur": 13.24,
+      "frag_html": "<div id=\"s10-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); font-size:2.2rem; color:var(--ink); pointer-events:none;\">Medical Parallels</div>\n<div id=\"s10-number\" style=\"position:absolute; top:40%; left:50%; transform:translateX(-50%); font-size:3.5rem; color:var(--lime); pointer-events:none;\">37°C</div>\n<div id=\"s10-note\" style=\"position:absolute; top:55%; left:50%; transform:translateX(-50%); font-size:1.2rem; color:var(--dim); pointer-events:none;\">Induced hypothermia slows metabolism during surgery.</div>",
+      "frag_js": "tl.fromTo(\"#s10-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.8, ease:\"power3.out\"}, 162.500);\ntl.fromTo(\"#s10-number\", {opacity:0, scale:0.8}, {opacity:1, scale:1, duration:0.6, ease:\"power2.out\"}, 163.300);\ntl.fromTo(\"#s10-note\", {opacity:0, y:10}, {opacity:1, y:0, duration:0.6, ease:\"power2.out\"}, 164.100);\ntl.fromTo(\"#img10\", {x:0, y:0}, {x:15, y:-8, duration:4.0, ease:\"none\"}, 165.100);\ntl.fromTo(\"#img10\", {x:15, y:-8}, {x:0, y:0, duration:4.0, ease:\"none\"}, 169.100);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "THE AWAKENING",
+      "heading": "The Blueprint",
+      "text": "The wood frog provides a biological blueprint. Understanding its enzymes, its genetic switches, could one day lead to breakthroughs. Imagine organ banking. Or long-term space travel. The potential is immense. Two hundred million years of field research.",
+      "image_prompt": "Stylized DNA double helix glowing, with a small frog silhouette superimposed. Futuristic medical tech in the background.",
+      "stat": null,
+      "dur": 17.2,
+      "frag_html": "<div id=\"s11-heading\" style=\"position:absolute; top:15%; left:50%; transform:translateX(-50%); font-size:48px; color:var(--ink); opacity:0; pointer-events:none;\">The Blueprint</div>\n<div id=\"s11-key\" style=\"position:absolute; top:30%; left:50%; transform:translateX(-50%); font-size:36px; color:var(--amber); opacity:0; pointer-events:none;\">200 million years</div>\n<div id=\"s11-dna\" style=\"position:absolute; top:45%; left:50%; width:180px; height:180px; margin:-90px 0 0 -90px; background:radial-gradient(circle, var(--lime) 0%, transparent 70%); border-radius:50%; opacity:0; pointer-events:none;\"></div>\n<div id=\"s11-frog\" style=\"position:absolute; top:55%; left:50%; width:80px; height:80px; margin:-40px 0 0 -40px; background:var(--ink); border-radius:50%; opacity:0; pointer-events:none;\"></div>\n<div id=\"s11-tech\" style=\"position:absolute; inset:0; background:var(--dim); opacity:0; pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s11-tech\", {opacity:0}, {opacity:0.3, duration:0.66}, 175.340);\ntl.fromTo(\"#s11-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.8}, 176.000);\ntl.fromTo(\"#s11-key\", {opacity:0, scale:0.8}, {opacity:1, scale:1, duration:0.8}, 177.000);\ntl.fromTo(\"#s11-dna\", {opacity:0, scale:0.5}, {opacity:0.8, scale:1, duration:0.8}, 178.500);\ntl.to(\"#s11-dna\", {scale:1.1, duration:0.4, yoyo:true, repeat:1}, 179.300);\ntl.fromTo(\"#s11-frog\", {opacity:0, scale:0.5}, {opacity:1, scale:1, duration:0.8}, 181.000);\ntl.to(\"#img11\", {scale:1.02, duration:4}, 183.000);\ntl.to(\"#img11\", {scale:1, duration:4}, 187.000);",
+      "frag_source": "llm attempt 4"
+    },
+    {
+      "act": "THE AWAKENING",
+      "heading": "A Different Kind of Strength",
+      "text": "This isn't about raw power or speed. It's about fundamental resilience. The ability to simply *wait* out the impossible. To return from a state of suspended animation. Your hardware cannot replicate this. Yet.",
+      "image_prompt": "A thoughtful Professor Croc looking at a detailed diagram of a frozen frog, contemplating its biology. Focus on Croc's expression.",
+      "stat": null,
+      "dur": 14.14,
+      "frag_html": "<div id=\"s12-heading\" style=\"position:absolute;top:20%;left:50%;transform:translateX(-50%);text-align:center;font-size:48px;color:var(--ink);pointer-events:none;\">A Different Kind of Strength</div>\n<div id=\"s12-number\" style=\"position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:120px;font-weight:bold;color:var(--lime);pointer-events:none;\">8</div>\n<div id=\"s12-highlight\" style=\"position:absolute;top:50%;left:50%;width:200px;height:200px;background:var(--amber);border-radius:50%;opacity:0;transform:translate(-50%,-50%)scale(0);pointer-events:none;\"></div>",
+      "frag_js": "tl.fromTo(\"#s12-heading\", 0.6, {opacity:0, y:20}, {opacity:1, y:0}, 192.560);\ntl.fromTo(\"#s12-highlight\", 0.5, {opacity:0, scale:0}, {opacity:0.4, scale:1}, 193.200);\ntl.fromTo(\"#s12-number\", 0.4, {scale:0.8, opacity:0}, {scale:1.2, opacity:1}, 195.000);\ntl.fromTo(\"#s12-number\", 0.4, {scale:1.2, opacity:1}, {scale:1.0, opacity:1}, 195.400);\ntl.fromTo(\"#img12\", 1.0, {opacity:0, y:30}, {opacity:1, y:0}, 198.000);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "FINAL FORM",
+      "heading": "The Cycle of Rebirth",
+      "text": "Every year, this frog undergoes a complete bodily shutdown and restart. It emerges, mates, and lives its life, only to repeat the process. This is not a one-time trick. It is its entire lifecycle. Its final form is a recurring miracle.",
+      "image_prompt": "A montage: frozen frog, then thawing frog, then hopping frog in spring. Seamless transition.",
+      "stat": null,
+      "dur": 14.94,
+      "frag_html": "<div id=\"s13-heading\" style=\"position:absolute; top:20%; left:50%; transform:translateX(-50%); color:var(--ink); font-size:4rem; pointer-events:none;\">The Cycle of Rebirth</div>\n<div id=\"s13-number\" style=\"position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--lime); font-size:6rem; pointer-events:none;\">weeks</div>",
+      "frag_js": "tl.fromTo(\"#s13-heading\", {opacity:0, y:50}, {opacity:1, y:0, duration:1.2}, 206.680);\ntl.fromTo(\"#s13-number\", {opacity:0, scale:0}, {opacity:1, scale:1, duration:0.8}, 208.0);\ntl.to(\"#s13-number\", {scale:1.2, duration:0.3, repeat:1, yoyo:true}, 209.0);\ntl.fromTo(\"#img13\", {scale:0.8}, {scale:1.2, duration:2.0}, 210.0);\ntl.to(\"#img13\", {x:20, duration:3.0}, 213.0);",
+      "frag_source": "llm attempt 4"
+    },
+    {
+      "act": "FINAL FORM",
+      "heading": "Master of Suspension",
+      "text": "The frog that freezes solid every winter is a master of suspended animation. It doesn't fight death. It politely postpones it. It is a living, breathing, frozen paradox. Its power lies in its ability to simply exist beyond the rules.",
+      "image_prompt": "A majestic shot of the wood frog, slightly thawed, with a glow of resilience around it. Winter landscape in the background.",
+      "stat": {
+        "label": "Survival Rating",
+        "grade": "APEX",
+        "note": "Annual death and rebirth cycle."
+      },
+      "dur": 15.28,
+      "frag_html": "<div id=\"s14-heading\" style=\"position:absolute;top:20%;left:50%;transform:translate(-50%,0);font-size:4rem;color:var(--ink);opacity:0;pointer-events:none;\">Master of Suspension</div>\n<div id=\"s14-number\" style=\"position:absolute;top:40%;left:50%;transform:translate(-50%,0);font-size:6rem;color:var(--lime);opacity:0;pointer-events:none;\">8 weeks</div>\n<div id=\"s14-sub\" style=\"position:absolute;top:55%;left:50%;transform:translate(-50%,0);font-size:2rem;color:var(--dim);opacity:0;pointer-events:none;\">Suspended Animation</div>\n<div id=\"s14-glow\" style=\"position:absolute;top:50%;left:50%;width:300px;height:300px;background:radial-gradient(circle,var(--lime)0%,transparent 70%);filter:blur(30px);opacity:0;pointer-events:none;transform:translate(-50%,-50%);z-index:-1;\"></div>",
+      "frag_js": "tl.fromTo(\"#s14-heading\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.8}, 222.0);\ntl.fromTo(\"#s14-glow\", {opacity:0, scale:0.5}, {opacity:0.6, scale:1, duration:1.0}, 222.5);\ntl.fromTo(\"#s14-number\", {opacity:0, scale:0.8}, {opacity:1, scale:1, duration:0.8}, 223.5);\ntl.fromTo(\"#s14-sub\", {opacity:0, y:20}, {opacity:1, y:0, duration:0.8}, 224.5);\ntl.to(\"#img14\", {scale:1.02, x:10, y:-5, duration:9.0, ease:\"none\"}, 225.0);",
+      "frag_source": "llm attempt 2"
+    },
+    {
+      "act": "FINAL FORM",
+      "heading": "Verdict: SLEEPER",
+      "text": "This creature appears inert, dead, powerless. But within its frozen form lies a blueprint for defying biology's most fundamental limits. It is a silent, hidden powerhouse. Class dismissed. Evolution isn't finished with you.",
+      "image_prompt": "The 'SLEEPER' verdict stamp appears over a final shot of the wood frog, now fully reanimated and alert, looking directly at the camera. A subtle animation of ice melting into water droplets around it.",
+      "stat": null,
+      "dur": 15.3,
+      "frag_html": "<div id=\"s15-heading\" class=\"heading\">Verdict: <span id=\"s15-sleeper-word\" class=\"sleeper\">SLEEPER</span></div>\n<div id=\"s15-stamp\" class=\"stamp\">SLEEPER</div>\n<div id=\"s15-drop1\" class=\"drop\" style=\"width:8px;height:8px;background:var(--amber);border-radius:50%;\"></div>\n<div id=\"s15-drop2\" class=\"drop\" style=\"width:8px;height:8px;background:var(--amber);border-radius:50%;\"></div>\n<div id=\"s15-drop3\" class=\"drop\" style=\"width:8px;height:8px;background:var(--amber);border-radius:50%;\"></div>",
+      "frag_js": "tl.fromTo(\"#s15-heading\", {opacity:0, y:30}, {opacity:1, y:0, duration:0.8}, 236.900);\ntl.fromTo(\"#s15-sleeper-word\", {scale:0.8, opacity:0.5}, {scale:1.2, opacity:1, color:\"var(--lime)\", duration:0.6}, 238.000);\ntl.fromTo(\"#s15-stamp\", {scale:0, rotation:-10}, {scale:1, rotation:0, duration:0.7}, 240.000);\ntl.fromTo(\"#s15-drop1\", {opacity:0, y:-20}, {opacity:1, y:20, duration:0.8}, 242.000);\ntl.fromTo(\"#s15-drop2\", {opacity:0, y:-20, x:-10}, {opacity:1, y:20, x:10, duration:0.8}, 242.300);\ntl.fromTo(\"#s15-drop3\", {opacity:0, y:-20, x:10}, {opacity:1, y:20, x:-10, duration:0.8}, 242.600);\ntl.fromTo(\"#img15\", {scale:1}, {scale:1.05, duration:15.3}, 236.900);",
+      "frag_source": "llm attempt 2"
+    }
+  ],
+  "mp4": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/20260906-the-frog-that-freezes-solid-every-winter.mp4",
+  "video_id": null,
+  "thumb": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/thumb_20260906-the-frog-that-freezes-solid-every-winter.jpg"
+}
