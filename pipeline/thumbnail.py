@@ -84,14 +84,20 @@ ACCENT_WORDS = ("VS", "NERFED", "BROKE", "BROKEN", "DEAD", "WRONG", "LOST",
 # generic symbolic equations only. The headline is the sole place numbers appear,
 # and those come quoted from the script model, which is grounded in the research.
 LOOK = (
-    "Photorealistic cinematic YouTube thumbnail, 16:9, shot on 85mm. Pure black "
-    "background, hard rim light raking the subject from behind so its silhouette "
-    "glows warm, deep crushed blacks, near-monochrome charcoal and bone tones "
-    "with one electric cyan glint, volumetric haze, extreme micro-detail, high "
-    "dynamic range, movie-poster production value. Faint low-opacity white "
-    "handwritten annotation marks drawn into the dark air -- hairline arrows, "
-    "measurement ticks and generic symbolic notation only. ONE single continuous "
-    "photograph that bleeds off all four edges. "
+    "Photorealistic cinematic YouTube thumbnail, 16:9, shot on 85mm. ONE dominant "
+    "subject in extreme close-up filling at least two thirds of the frame, cropped "
+    "by the edges, not floating. Dark photographic atmosphere -- deep charcoal-blue "
+    "gradient wash, not pure black: a dimly visible environment behind (laboratory "
+    "bench surface, concrete wall, out-of-focus shelving), volumetric haze "
+    "catching a single warm key light from the side plus a faint cool rim from "
+    "behind, shallow depth of field, natural skin/bone/wet textures with film "
+    "grain, dramatic chiaroscuro like a Real Science cover frame. A single small "
+    "electric cyan glint may catch ONE edge only. ONE handwritten white annotation "
+    "at most -- a short arrow or a circled detail with a one-word name -- drawn "
+    "into the dark air, or none at all. "
+    "The headline type is the other half of the frame: ENORMOUS bold condensed "
+    "sans-serif capitals, half the frame tall, overlapping the subject, lit by "
+    "the scene. "
 )
 
 # Appended to every archetype. The panel/seam clause is load-bearing: without it
@@ -102,51 +108,58 @@ NEGATIVE = (
     "inset frame, no border, no letterbox bars, no collage, no numbers or digits "
     "or measured quantities anywhere in the handwritten annotations, no other "
     "text anywhere, no gibberish letters, no misspelling, no watermark, no logo, "
-    "no cartoon, no flat vector art, no empty dead space."
+    "no cartoon, no flat vector art, no pure black empty void background, no "
+    "subject floating in nothing, no glowing neon x-ray innards, no translucent "
+    "glowing organs, no laser glow, no floating lamp or random props, no smoke "
+    "machine haze, no videogame asset look, no 3d render look."
 )
 
 # Six compositions. `scene` gets {subject}; `pos` is where the type goes. Each
-# one names its own clue device -- that is the difference between a nice picture
-# and a thumbnail somebody clicks -- and each one keeps that device wordless or
-# name-only, never numeric.
+# one is built around ONE dominant close-up subject and at most ONE annotation
+# device -- the reference thumbnails (crow profile, wasp macro, lightkeeper
+# face) are all a single face/object going edge to edge with huge two-tone
+# type, never a labelled diagram. Versus is the only two-subject setup, staged
+# as an absurd scale gag, not a face-off in a void.
 ARCHETYPES = (
     ("versus",
-     "Composition: the two things named here face each other across the frame in "
-     "the same scale and the same light, almost touching in the centre, with a "
-     "thin cyan arc of electricity crackling in the gap between them: {subject}. "
-     "A hairline white arrow points in at each side, each with a one-word "
-     "handwritten name and no figures.",
-     "lower left"),
+     "Composition: the two things named here in the SAME frame at wildly "
+     "different scales for an absurd size gag, like a snail versus a climber: "
+     "{subject}. The small one sits on the bench surface in the foreground in "
+     "razor macro focus, the huge one looms behind it out of focus in the dark. "
+     "ONE short handwritten white arrow between them, no words on it.",
+     "upper right"),
     ("callout",
      "Composition: extreme full-bleed macro of {subject} filling the entire "
-     "frame. A crisp thin white circle is drawn around the one part that matters, "
-     "with a hairline white arrow leading out of it to a short handwritten white "
-     "label naming that part and nothing more.",
+     "frame edge to edge, one face or object cropped by the frame. A single "
+     "crisp thin white circle is drawn around the one part that matters, with "
+     "one short handwritten white arrow and a one-word white label naming that "
+     "part and nothing more.",
      "lower left"),
     ("scale",
-     "Composition: {subject}, staged on a steel laboratory table so that one "
-     "element towers over the other and the size difference is absurd, both under "
-     "the same hard raking light. A hairline white double-headed measuring arrow "
-     "spans between them like an unlabelled technical drawing dimension line.",
-     "lower left"),
+     "Composition: {subject}, the small thing perched on the laboratory bench "
+     "surface in the immediate foreground in huge macro detail while the large "
+     "thing towers behind it in the dark haze, both under the same warm side "
+     "light, so the size difference reads instantly. No arrows, no labels.",
+     "upper left"),
     ("autopsy",
-     "Composition: {subject}, sliced clean through in cross-section like a museum "
-     "cutaway so the mechanism inside is exposed, the cut face lit bright cyan "
-     "while the outside stays in deep shadow. Hairline white leader lines run "
-     "from three interior structures out into the dark, each ending in the plain "
-     "handwritten name of that structure.",
+     "Composition: {subject}, one real museum cutaway specimen photographed "
+     "like a war-surgeon textbook plate: matte bone and tissue under warm "
+     "practical light, the cut face a flat pale surface with visible grain, "
+     "nothing glowing, nothing translucent. ONE hairline white leader line from "
+     "the cut face out into the dark ends in the plain handwritten name of "
+     "that structure.",
      "lower right"),
     ("specimen",
-     "Composition: {subject} in severe profile, rim-lit from behind, filling the "
-     "frame edge to edge with a single tight beam and nothing else in shot -- a "
-     "museum type-specimen photograph. Faint unlabelled white measurement ticks "
-     "and a plain scale bar are drawn along the bottom of the dark air.",
+     "Composition: {subject} in severe side profile, cropped by the frame "
+     "edges, filling the frame like a Real Science cover -- a museum "
+     "type-specimen photograph under one warm side light with concrete wall "
+     "barely visible behind. No arrows, no ticks, no labels at all.",
      "lower left"),
     ("witness",
      "Composition: one enormous living reptilian eye with a vertical slit pupil "
      "fills the left third of the frame in razor focus, staring directly down the "
-     "lens, and behind it out of focus in the dark sits {subject} on a steel "
-     "table. A hairline white arrow crosses the gap between them.",
+     "lens, wet and reflective, and behind it out of focus in the dark sits "
+     "{subject} on the bench surface. No arrows, no labels.",
      "right third"),
 )
 
@@ -215,15 +228,26 @@ def text_clause(job, pos):
     words = thumb_words(job)
     big = " ".join(words)
     accent = accent_word(words)
+    # Sizes are spelled out as fractions because the host otherwise promotes
+    # the FIRST text it reads (the kicker) to the biggest: the kicker is a
+    # small eyebrow line, the headline is the ONLY enormous element, and the
+    # two never share a size.
     clause = (
         ' Overlaid ON TOP of the photograph in the %s, razor-sharp crisp clean '
-        'correctly-spelled lettering and NOTHING else: a small tight line of bold '
-        'white sans-serif capitals reading "%s", and directly beneath it in '
-        'ENORMOUS bold condensed sans-serif capitals "%s" in pure white'
-        % (pos, thumb_kicker(job), big))
+        'correctly-spelled lettering and NOTHING else: the headline "%s" in '
+        'ENORMOUS bold condensed sans-serif capitals, each letter about one '
+        'quarter of the frame height, in pure white'
+        % (pos, big))
     if accent and accent in big and accent != big:
-        clause += ', with the word "%s" in bright yellow' % accent
-    return clause + ". The type overlaps the subject and takes the scene's light."
+        clause += ', with ONLY the word "%s" in bright yellow' % accent
+    clause += (
+        '. Above the headline, a TINY eyebrow line of small bold white '
+        'sans-serif capitals reading "%s", letters no taller than one '
+        'twelfth of the frame height, one single line, never cropped. '
+        'The eyebrow stays small; the headline stays huge. '
+        'The type overlaps the subject and takes the scene\'s light.'
+        % thumb_kicker(job))
+    return clause
 
 
 def art_prompt(job):
