@@ -811,7 +811,7 @@ class TestTopics:
         assert len(after) == 11
         assert all(t["used"] is False for t in after)
         assert after[1]["topic"] == "new 0"
-        assert "SCALED" in seen["system"]
+        assert "Kronvex" in seen["system"]
         assert "old" in seen["user"] and "{existing}" not in seen["user"]
 
     def test_refill_accepts_a_prelisted_result_and_fenced_text(self, tf):
@@ -1002,17 +1002,14 @@ class TestBuildProject:
         # the second img runs to the end of the scene: 24.0 - 9.6
         assert 'id="b0_4" class="beat-img clip" data-start="9.600" data-duration="14.400"' in page
 
-    def test_img_drift_rides_the_image_and_the_punch_rides_the_wrapper(self, tmp_path):
-        """Two tweens on one element's scale fight; the wrapper split is the fix."""
+    def test_img_is_a_hard_cut_with_a_tiny_settle_and_nothing_else(self, tmp_path):
+        """v3: no punch overshoot, no drift. One blink, one 0.18s settle."""
         _, _, page = build(tmp_path, demo_job())
-        assert ("tl.fromTo('#b0_0',{opacity:0},{opacity:1,duration:0.050,ease:'none'},0.000);"
+        assert ("tl.fromTo('#b0_0',{opacity:0},{opacity:1,duration:0.030,ease:'none'},0.000);"
                 in page)
-        # The cut lands oversized, snaps back, then drifts -- sequential, so the
-        # two scale tweens on the <img> never overlap.
-        assert ("tl.fromTo('#b0_0',{scale:1.17},{scale:1.03,duration:0.280,"
-                "ease:'power4.out'},0.000);") in page
-        assert ("tl.to('#b0_0',{scale:1.10,duration:9.320,ease:'power2.out'},0.280);"
-                in page)
+        # The cut settles from 1.06 to 1 and then never moves again.
+        assert ("tl.fromTo('#b0_0',{scale:1.06},{scale:1,duration:0.180,"
+                "ease:'power2.out'},0.000);") in page
         # ...and the snap zoom rides the wrapper, never the image.
         assert "tl.to('#w0_0',{scale:1.200,duration:0.080,ease:'expo.out'},7.200);" in page
         assert ("tl.to('#w0_0',{scale:1,duration:0.620,ease:'elastic.out(1,0.55)'},7.280);"
@@ -1127,9 +1124,9 @@ class TestBuildProject:
         assert "avatar-alt" not in page and "expression" not in page
         assert os.path.isfile(os.path.join(proj, "assets", "avatar", "croc.png"))
         # ceil(24/1.2)-1 = 19 extra plays: GSAP counts repeat as repeats, not plays
-        assert ("tl.fromTo('#avatar',{y:0},{y:-10,duration:1.200,yoyo:true,repeat:19,"
+        assert ("tl.fromTo('#avatar',{y:0},{y:-5,duration:1.200,yoyo:true,repeat:19,"
                 "ease:'sine.inOut'},0.000);") in page
-        assert ("tl.fromTo('#avatar',{y:0},{y:-10,duration:1.200,yoyo:true,repeat:14,"
+        assert ("tl.fromTo('#avatar',{y:0},{y:-5,duration:1.200,yoyo:true,repeat:14,"
                 "ease:'sine.inOut'},24.000);") in page
 
     def test_a_missing_avatar_is_loud_but_not_fatal(self, tmp_path, monkeypatch):
@@ -1157,7 +1154,7 @@ class TestBuildProject:
         _, _, page = build(tmp_path, demo_job())
         # pop exists and lands on beat 1 at 2.4; whoosh and zap have no file
         assert ('<audio id="fx1" class="clip" data-start="2.400" data-duration="0.400" '
-                'data-track-index="4" data-volume="0.5" src="assets/audio/pop.mp3"></audio>'
+                'data-track-index="4" data-volume="0.22" src="assets/audio/pop.mp3"></audio>'
                 in page)
         assert "whoosh" not in page and "zap" not in page
 
@@ -1826,13 +1823,15 @@ class TestValidate:
         assert any("beat 1" in p for p in validate(beats))
 
     def test_too_many_img_and_meme_beats_are_reported(self):
-        """Four pictures in a nine-beat scene is over budget; the cap is 3 there."""
+        """Five pictures in a twelve-beat scene is over budget; the cap is 4 there."""
         from pipeline.beats import validate
-        beats = self._legal() + [{"i": 4, "kind": "img", "prompt": "b"},
-                                 {"i": 5, "kind": "img", "prompt": "c"},
-                                 {"i": 6, "kind": "img", "prompt": "d"},
-                                 {"i": 7, "kind": "meme", "prompt": "m", "caption": "A"},
-                                 {"i": 8, "kind": "meme", "prompt": "m2", "caption": "B"}]
+        beats = self._legal() + [{"i": 5, "kind": "img", "prompt": "b"},
+                                 {"i": 6, "kind": "img", "prompt": "c"},
+                                 {"i": 7, "kind": "img", "prompt": "d"},
+                                 {"i": 8, "kind": "img", "prompt": "e"},
+                                 {"i": 9, "kind": "meme", "prompt": "m", "caption": "A"},
+                                 {"i": 10, "kind": "meme", "prompt": "m2", "caption": "B"},
+                                 {"i": 11, "kind": "meme", "prompt": "m3", "caption": "C"}]
         problems = " ".join(validate(beats))
         assert '"img"' in problems and '"meme"' in problems
 
@@ -1840,6 +1839,38 @@ class TestValidate:
         from pipeline.beats import validate
         beats = [{"i": 0, "kind": "img", "prompt": "a"}, {"i": 1, "kind": "zoom", "amount": 1.1}]
         assert any("type" in p and "stat" in p for p in validate(beats))
+
+    def test_photo_and_doodle_beats_validate_and_cap(self):
+        from pipeline import beats as beat_engine
+        from pipeline.beats import validate, normalise
+        assert "photo" in beat_engine.KINDS and "doodle" in beat_engine.KINDS
+        photo = normalise({"kind": "photo", "prompt": "a cheering crowd",
+                           "caption": "SO POPULAR", "counter": "31,957,4!?"},
+                          {}, 0)
+        assert photo["caption"] == "SO POPULAR" and photo["counter"] == "31,957,4!?"
+        assert photo["sfx"] == "none"  # hard cuts need no sound
+        doodle = normalise({"kind": "doodle", "prompt": "stick figures",
+                            "speech": "YEAH NOT SURE WHY"}, {}, 1)
+        assert doodle["speech"] == "YEAH NOT SURE WHY"
+        meme = normalise({"kind": "meme", "prompt": "filing paperwork",
+                          "template": "full"}, {}, 2)
+        assert meme["template"] == "full"
+        assert normalise({"kind": "meme", "prompt": "x", "template": "bogus"},
+                         {}, 3)["template"] == "split"
+        scene = ([{"i": 0, "kind": "img", "prompt": "a"}]
+                 + [{"i": i + 1, "kind": "photo", "prompt": "p%d" % i} for i in range(3)]
+                 + [{"i": 4, "kind": "type", "text": "A B"},
+                    {"i": 5, "kind": "stat", "value": "1", "label": "X"}])
+        assert any('"photo"' in p for p in validate(scene))
+
+    def test_base_layer_is_hard_cuts_with_no_drift(self):
+        from pipeline import compose
+        tags, tweens = compose.t_img("e", "w", "assets/x.jpg", 1.0, 2.0)
+        script = " ".join(tweens)
+        assert "0.030" in script  # the blink only
+        assert "power2.out" not in script or "1.10" not in script  # no drift/coast
+        _, photo_tw = compose.t_photo("e", "w", "assets/x.jpg", "CAP", "1!?", 1.0, 2.0)
+        assert "scale" not in " ".join(photo_tw)  # deadpan: zero motion
 
     def test_overlong_text_and_missing_prompts_are_reported(self):
         from pipeline.beats import validate

@@ -87,6 +87,21 @@ STYLE_NEGATIVE = (
     "white background, no grey background, no busy background, no collage, no "
     "split frames, no borders, no vignette frames, no rainbow palette."
 )
+# v3 Casually-native art. DOODLE is the opposite of the C4 specimen lock: a
+# deliberately dumb flat cartoon drawn FOR the joke -- stick figures, a pyramid
+# with labels, a speech bubble. PHOTO has no lock at all: the sarcasm is a
+# plain real-world photograph (crowd, mansion, smiling family), and any style
+# would blunt it.
+DOODLE_STYLE = (
+    "STYLE: crude flat cartoon doodle, thick black outlines, solid flat colors "
+    "on a plain white background, simple crooked stick figures with dot eyes, "
+    "hand-lettered labels, MS-paint meme energy, deliberately dumb and cheap, "
+    "no shading, no gradients, no photorealism, no 3d."
+)
+DOODLE_NEGATIVE = (
+    "NEGATIVE: no photorealism, no 3d render, no shading, no gradients, no "
+    "photograph, no dark background, no cinematic lighting."
+)
 # PART C5 v3. Reaction images are GENERATED, never downloaded -- a real meme frame
 # is someone else's copyright and would put the channel at risk.
 #
@@ -490,6 +505,91 @@ def meme_img(subject):
     except OSError as e:
         print("[adapters] could not cache the meme (%s) -- using it for this run only" % e)
     return data
+
+
+# ------------------------------------------------- v3 Casually-native art calls
+
+def doodle_prompt(subject, speech=""):
+    """Subject + the flat-cartoon lock, appended exactly once."""
+    subject = " ".join(str(subject or "").split()).replace(DOODLE_STYLE, " ")
+    subject = " ".join(subject.split()).strip().rstrip(",").rstrip(".")
+    if not subject:
+        subject = "a stick figure standing next to a pyramid labelled in stages"
+    text = "%s, %s %s" % (subject[:200], DOODLE_STYLE, DOODLE_NEGATIVE)
+    if speech and str(speech).strip():
+        text += " A hand-lettered speech bubble reads: \"%s\"." % str(speech).strip()[:60]
+    return text
+
+
+def image_plain(prompt, size="1920x1080"):
+    """A photo punch-in with NO style lock: the prompt goes over nearly raw.
+
+    Used for `photo` beats, where the joke is a plain real-world photograph and
+    any house style would blunt it. Only a small photographic tail is added so
+    the host returns a photo and not clip-art.
+    """
+    subject = " ".join(str(prompt or "").split())[:400] or "a crowd of people cheering"
+    text = ("%s. Real candid photograph, natural light, photojournalistic, "
+            "no illustration, no cartoon, no text, no watermark." % subject)
+    w, h = (str(size).split("x") + ["", ""])[:2]
+    return _call(dict(CONFIG.get("image") or {}),
+                 {"prompt": text, "negative": "", "size": size,
+                  "width": w, "height": h}, kind="image")
+
+
+def image_doodle(prompt, speech="", size="1920x1080"):
+    """A flat-cartoon joke diagram. Bytes; format via last_format('image')."""
+    w, h = (str(size).split("x") + ["", ""])[:2]
+    return _call(dict(CONFIG.get("image") or {}),
+                 {"prompt": doodle_prompt(prompt, speech), "negative": "",
+                  "size": size, "width": w, "height": h}, kind="image")
+
+
+# --------------------------------- same-croc memes (upload consistency in action)
+#
+# Random crocs every meme is exactly the slurry feel the operator hates. The fix
+# is api-usage.md's upload feature: assets/avatar/croc.png (the channel mascot,
+# same file the video composites) is uploaded ONCE, the public URL is cached in
+# assets/avatar/croc.url, and every croc meme is an edit_image OF that mascot --
+# same character, new situation, every time. Falls back to text generation when
+# the upload or the edit fails, so consistency never costs a meme.
+
+AVATAR_REF = os.path.join(REPO, "assets", "avatar", "croc.png")
+AVATAR_URL_CACHE = os.path.join(REPO, "assets", "avatar", "croc.url")
+
+
+def avatar_ref_url():
+    """Public URL of the mascot PNG, uploaded once and cached in git."""
+    try:
+        with open(AVATAR_URL_CACHE, encoding="utf-8") as fh:
+            url = fh.read().strip()
+        if url.startswith("http"):
+            return url
+    except OSError:
+        pass
+    url = media_upload(AVATAR_REF)
+    try:
+        with open(AVATAR_URL_CACHE, "w", encoding="utf-8") as fh:
+            fh.write(url.strip() + "\n")
+    except OSError as e:
+        print("[adapters] could not cache avatar url (%s) -- re-upload next run" % e)
+    return url
+
+
+def meme_croc(situation):
+    """The mascot IN a situation, via edit_image on the uploaded avatar.
+
+    Raises on failure so the caller falls back to meme_img (text generation).
+    """
+    situation = " ".join(str(situation or "").split())[:200]
+    if not situation:
+        raise RuntimeError("meme_croc needs a situation")
+    url = avatar_ref_url()
+    return edit_image(
+        url, "Keep this exact same green cartoon crocodile character -- same design, "
+        "same face, same proportions. Place him into this situation, played "
+        "completely straight like a deadpan snapshot: %s. Flat cartoon style, "
+        "plain simple background, no caption text." % situation)
 
 
 # ------------------------------------------------- upload + consistency (media API v2)

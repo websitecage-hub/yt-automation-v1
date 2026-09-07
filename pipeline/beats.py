@@ -40,9 +40,19 @@ MIN_GAP = 0.55         # two beats may never land closer together than this
 # weight below describes the gap from beat 0 to beat 1.
 RHYTHM = (0.62, 0.62, 1.45, 0.72, 0.72, 0.72, 1.62, 0.68, 0.85)
 
-# The six locked templates. compose.py owns one verbatim GSAP tween per kind;
+# The eight locked templates. compose.py owns one verbatim GSAP tween per kind;
 # the director may only choose a kind and fill its slots.
-KINDS = ("img", "type", "stat", "meme", "zoom", "arrow")
+#
+# v3 adds the two Casually-native kinds and stops animating the base layer:
+#   photo   an ironic REAL photograph, full-bleed, HARD CUT, zero motion. The
+#           sarcasm is the photo itself (a crowd, a mansion, a stock-smile
+#           family) plus an optional <=6-word caption or a dumb counter.
+#   doodle  a deliberately dumb flat-cartoon diagram drawn FOR the joke: stick
+#           figures, a labelled pyramid, a speech bubble. MS-paint energy.
+# plus three meme presenters (split = side box, full = fullscreen slam,
+# stamp = caption bar slammed over the dimmed base). The LLM picks all of this
+# per beat; Python only enforces the caps and the clock.
+KINDS = ("img", "type", "stat", "meme", "zoom", "arrow", "photo", "doodle")
 
 # Composition law from PART C3 / prompt §7.2.
 #
@@ -58,8 +68,15 @@ KINDS = ("img", "type", "stat", "meme", "zoom", "arrow")
 IMG_FLOOR = 2          # the v2 cap: what a 4-6 beat scene still gets
 IMG_CEIL = 5           # ...and the most any single scene may ever ask for
 BEATS_PER_IMG = 3.0    # one new picture per this many beats, between the bounds
-MAX_MEME = 1           # at most one reaction beat per scene
-MIN_PUNCH = 3          # at least this many 'type'/'stat' beats carry the words
+MAX_MEME = 2           # v3: memes are the show, not the garnish (was 1)
+MAX_PHOTO = 2          # ironic photo punch-ins per scene
+MAX_DOODLE = 2         # flat-cartoon joke diagrams per scene
+MIN_PUNCH = 2          # at least this many 'type'/'stat' beats carry the words (was 3)
+
+# Meme presenters: how the cutaway lands. split = side box sliding in (the old
+# default), full = fullscreen slam that owns the frame for its hold, stamp = a
+# huge caption bar slammed over the dimmed base layer.
+MEME_TEMPLATES = ("split", "full", "stamp")
 
 
 def img_cap(n):
@@ -70,14 +87,21 @@ MAX_TYPE_WORDS = 5
 MAX_STAT_VALUE = 12    # characters
 MAX_LABEL_WORDS = 3
 MAX_CAPTION_WORDS = 4
+MAX_PHOTO_CAPTION_WORDS = 6   # photo captions get one more beat than meme captions
+MAX_COUNTER_CHARS = 12        # the dumb on-photo counter ("31,957,4!?")
+MAX_SPEECH_WORDS = 8          # doodle speech-bubble text
 
 COLORS = ("yellow", "green", "red", "blue")
 DIRS = ("left", "right", "center")
 SFX = ("whoosh", "pop", "zap", "confetti", "none")
 
-# C3's "Default SFX" column.
-DEFAULT_SFX = {"img": "whoosh", "type": "pop", "stat": "pop",
-               "meme": "whoosh", "zoom": "zap", "arrow": "none"}
+# C3's "Default SFX" column, v3: almost everything is silent. The operator's
+# note was that the bed of whooshes is annoying -- a hard cut NEEDS no sound to
+# read as a cut, and the voice + one pop per number carries the rhythm. Only
+# the stat keeps its pop; the verdict confetti is chosen per beat, not default.
+DEFAULT_SFX = {"img": "none", "type": "none", "stat": "pop",
+               "meme": "none", "zoom": "none", "arrow": "none",
+               "photo": "none", "doodle": "none"}
 
 # Snap-zoom depth. v2 topped out at 1.25, which at 1080p is a nudge nobody
 # registers; a punch-in has to be visible in one frame to read as emphasis.
@@ -223,6 +247,23 @@ def normalise(spec, scene, index):
     elif kind == "meme":
         subject = " ".join(str(spec.get("prompt") or "").split())
         beat["caption"] = _words(spec.get("caption"), MAX_CAPTION_WORDS)
+        beat["template"] = _pick(spec.get("template"), MEME_TEMPLATES, "split")
+        if not subject:
+            kind, beat["kind"] = "zoom", "zoom"
+        else:
+            beat["prompt"] = subject[:200]
+    elif kind == "photo":
+        subject = " ".join(str(spec.get("prompt") or "").split())
+        beat["caption"] = _words(spec.get("caption"), MAX_PHOTO_CAPTION_WORDS)
+        beat["counter"] = " ".join(str(spec.get("counter") or "").split())[:MAX_COUNTER_CHARS]
+        if not subject:
+            kind, beat["kind"] = "zoom", "zoom"
+        else:
+            beat["prompt"] = subject[:200]
+    elif kind == "doodle":
+        subject = " ".join(str(spec.get("prompt") or "").split())
+        beat["speech"] = _words(spec.get("speech") or spec.get("caption"),
+                                MAX_SPEECH_WORDS)
         if not subject:
             kind, beat["kind"] = "zoom", "zoom"
         else:
@@ -270,7 +311,11 @@ def validate(beats):
         problems.append('at most %d "img" beats in a %d-beat scene (got %d)'
                         % (cap, len(beats), tally["img"]))
     if tally["meme"] > MAX_MEME:
-        problems.append('at most %d "meme" beat per scene (got %d)' % (MAX_MEME, tally["meme"]))
+        problems.append('at most %d "meme" beats per scene (got %d)' % (MAX_MEME, tally["meme"]))
+    if tally["photo"] > MAX_PHOTO:
+        problems.append('at most %d "photo" beats per scene (got %d)' % (MAX_PHOTO, tally["photo"]))
+    if tally["doodle"] > MAX_DOODLE:
+        problems.append('at most %d "doodle" beats per scene (got %d)' % (MAX_DOODLE, tally["doodle"]))
     punch = tally["type"] + tally["stat"]
     if punch < MIN_PUNCH:
         problems.append('at least %d "type" or "stat" beats per scene (got %d)'
@@ -284,6 +329,12 @@ def validate(beats):
                             % (i, MAX_STAT_VALUE))
         if beat.get("kind") in ("img", "meme") and not str(beat.get("prompt", "")).strip():
             problems.append('beat %d %r needs a subject prompt' % (i, beat.get("kind")))
+        if beat.get("kind") == "photo" and not str(beat.get("prompt", "")).strip():
+            problems.append('beat %d "photo" needs a real-world photo subject' % i)
+        if beat.get("kind") == "photo" and len(str(beat.get("caption", "")).split()) > MAX_PHOTO_CAPTION_WORDS:
+            problems.append('beat %d "photo" caption must be <=%d words' % (i, MAX_PHOTO_CAPTION_WORDS))
+        if beat.get("kind") == "doodle" and not str(beat.get("prompt", "")).strip():
+            problems.append('beat %d "doodle" needs a cartoon-gag description' % i)
     return problems
 
 
@@ -332,8 +383,9 @@ def autofix(beats, scene):
                         "sfx": DEFAULT_SFX["img"]}
 
     # Rules 2 and 3: cap the expensive kinds, demoting extras to zoom.
-    seen = {"img": 0, "meme": 0}
-    caps = {"img": img_cap(len(beats)), "meme": MAX_MEME}
+    seen = {"img": 0, "meme": 0, "photo": 0, "doodle": 0}
+    caps = {"img": img_cap(len(beats)), "meme": MAX_MEME,
+            "photo": MAX_PHOTO, "doodle": MAX_DOODLE}
     for beat in beats:
         kind = beat.get("kind")
         if kind in seen:

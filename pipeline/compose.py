@@ -54,7 +54,9 @@ TRACK_VOICE, TRACK_MUSIC, TRACK_SFX = 2, 3, 4
 TRACK_BRAND = 5
 
 MUSIC_VOL = "0.12"          # C3: the bed sits under a fast voice, never with it
-SFX_VOL = "0.5"
+SFX_VOL = "0.22"            # v3: was 0.5 and annoying. SFX are seasoning, and the
+                            # defaults are now almost all "none" -- when one fires
+                            # it should tick, not slap.
 SFX_DUR = 0.4
 DEFAULT_TRACK_LEN = 150.0   # used only when ffprobe is unavailable
 
@@ -68,7 +70,7 @@ MEME_HOLD = 2.2             # meme out at T+2.2 (v2: 3.0)
 STAT_BEATS = 2              # C3 stat: "hold 2 beats"
 FADE = 0.3
 BOB_PERIOD = 1.2            # C3 avatar idle bob
-BOB_RISE = -10
+BOB_RISE = -5               # v3: was -10. The croc breathes, it does not bounce.
 VERDICT_TAIL = 20.0         # the stamp owns the last 20 seconds
 
 # The speed ramp. A still image pushed 1.03 -> 1.10 on a decelerating ease starts
@@ -104,6 +106,18 @@ html,body{margin:0;padding:0;background:var(--bg)}
 div.beat-img{background-size:cover;background-position:center}
 .beat-meme{z-index:70}
 .beat-meme img{display:block;width:100%}
+.beat-meme-full{position:absolute;inset:0;z-index:65;opacity:0}
+.beat-meme-full img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.beat-meme-stamp{position:absolute;left:0;right:0;bottom:12%;z-index:66;text-align:center;
+  font:900 92px 'Display',sans-serif;color:var(--ink);text-shadow:0 5px 0 #000;opacity:0}
+.beat-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
+.beat-photo-cap{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);
+  font:900 64px 'Display',sans-serif;color:var(--ink);text-shadow:0 4px 0 #000;
+  white-space:nowrap}
+.beat-photo-count{position:absolute;right:90px;top:90px;font:400 44px 'Mono',monospace;
+  color:var(--yellow);background:rgba(0,0,0,.55);padding:8px 22px}
+.beat-doodle{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  background:#fff;opacity:0}
 #avatar{pointer-events:none}
 .arrow-glyph{width:0;height:0;border-style:solid;margin:0 auto 12px}
 .arrow-left{border-width:26px 44px 26px 0;border-color:transparent var(--red) transparent transparent}
@@ -180,22 +194,15 @@ def _clip(el, cls, start, dur, track, inner="", style=""):
 # because the overshoot is what the eye reads as force.
 
 def t_img(el, wrap, src, t, vis):
-    """`img`: near-hard cut in 3 frames, a scale snap, then a decelerating push.
+    """`img`: a HARD CUT with a 0.03s blink and a tiny settle. Nothing else.
 
-    v2 crossfaded over 0.150s with a linear 1.02->1.06 drift. Fireship-style
-    editing does not dissolve -- it cuts, and the cut is the joke. The 0.05s
-    opacity ramp is there only to stop a single-frame flash of black between
-    images.
-
-    The kinetic part is two SEQUENTIAL scale tweens, never overlapping: the shot
-    lands oversized at PUNCH_IN and snaps back to DRIFT_FROM in 0.28s on
-    power4.out, then drifts on to DRIFT_TO across the rest of its window on
-    power2.out. That is the brief's speed ramp -- arrive fast, coast slow. It is
-    deliberately not a translate: the wrapper clips to the frame, so any x offset
-    would expose a bare strip at the edge, whereas scale >= 1.03 always overfills.
-
-    The drift rides the <img> and any punch-in rides the wrapper, so the two
-    never fight over `scale` -- a single element cannot serve both tweens.
+    v3 killed the drift and the punch-in overshoot. The operator's note was
+    exact: the video felt systematic because EVERY cut arrived the same way --
+    overshoot, snap, coast. A hard cut is sarcastic precisely because it does
+    nothing: one frame this, next frame that. The 0.03s ramp exists only to stop
+    a single-frame black flash. Scale never exceeds 1.06 and never moves after
+    the first 0.18s, so the base layer reads as a sequence of stills that slam
+    into each other -- which is the whole Casually grammar.
     """
     if MEDIA_MODE == "bgdiv":
         inner = ('<div id="%s" class="beat-img clip" data-start="%.3f" data-duration="%.3f" '
@@ -206,13 +213,53 @@ def t_img(el, wrap, src, t, vis):
                  'data-track-index="%d" src="%s" alt="">'
                  % (el, t, vis, TRACK_ART, _esc(src)))
     tag = '<div id="%s" class="beat-wrap">%s</div>' % (wrap, inner)
-    snap = round(min(0.280, max(0.060, vis * 0.5)), 3)
     return [tag], [
-        "tl.fromTo('#%s',{opacity:0},{opacity:1,duration:0.050,ease:'none'},%.3f);" % (el, t),
-        "tl.fromTo('#%s',{scale:%.2f},{scale:%.2f,duration:%.3f,ease:'power4.out'},%.3f);"
-        % (el, PUNCH_IN, DRIFT_FROM, snap, t),
-        "tl.to('#%s',{scale:%.2f,duration:%.3f,ease:'power2.out'},%.3f);"
-        % (el, DRIFT_TO, round(max(0.1, vis - snap), 3), round(t + snap, 3)),
+        "tl.fromTo('#%s',{opacity:0},{opacity:1,duration:0.030,ease:'none'},%.3f);" % (el, t),
+        "tl.fromTo('#%s',{scale:1.06},{scale:1,duration:0.180,ease:'power2.out'},%.3f);"
+        % (el, t),
+    ]
+
+
+def t_photo(el, wrap, src, caption, counter, t, vis):
+    """`photo`: the deadpan punch-in. Instant cut, ZERO motion, full-bleed.
+
+    No scale tween at all -- not even the img settle. A real photograph that
+    simply REPLACES the frame is the driest joke in the system (Casually's
+    crowd shots, the mansion, the counter). An optional caption stamps
+    underneath and a dumb counter ticks top-right; both are static text, no pop.
+    """
+    inner = ('<img id="%s" class="beat-photo clip" data-start="%.3f" data-duration="%.3f" '
+             'data-track-index="%d" src="%s" alt="">'
+             % (el, t, vis, TRACK_ART, _esc(src)))
+    if caption:
+        inner += ('<div id="%s" class="beat-photo-cap clip" data-start="%.3f" '
+                  'data-duration="%.3f" data-track-index="%d">%s</div>'
+                  % (el + "c", t, vis, TRACK_OVERLAY, _esc(caption)))
+    if counter:
+        inner += ('<div id="%s" class="beat-photo-count clip" data-start="%.3f" '
+                  'data-duration="%.3f" data-track-index="%d">%s</div>'
+                  % (el + "n", t, vis, TRACK_OVERLAY, _esc(counter)))
+    tag = '<div id="%s" class="beat-wrap">%s</div>' % (wrap, inner)
+    return [tag], [
+        "tl.fromTo('#%s',{opacity:0},{opacity:1,duration:0.020,ease:'none'},%.3f);" % (el, t),
+    ]
+
+
+def t_doodle(el, wrap, src, t, vis):
+    """`doodle`: hard cut to the flat-cartoon gag, one small pop for charm.
+
+    Doodles are drawn FOR the joke, so they arrive like a whiteboard reveal: a
+    0.12s scale settle from 1.10 and then nothing. The white background IS the
+    punch -- a blast of flat daylight in the middle of the black specimen art.
+    """
+    inner = ('<img id="%s" class="beat-doodle clip" data-start="%.3f" data-duration="%.3f" '
+             'data-track-index="%d" src="%s" alt="">'
+             % (el, t, vis, TRACK_ART, _esc(src)))
+    tag = '<div id="%s" class="beat-wrap">%s</div>' % (wrap, inner)
+    return [tag], [
+        "tl.fromTo('#%s',{opacity:0},{opacity:1,duration:0.030,ease:'none'},%.3f);" % (el, t),
+        "tl.fromTo('#%s',{scale:1.10},{scale:1,duration:0.120,ease:'power2.out'},%.3f);"
+        % (el, t),
     ]
 
 
@@ -266,18 +313,40 @@ def t_stat(el, value, label, t, vis, shake_sel=None):
     return tags, tweens
 
 
-def t_meme(el, src, caption, t, vis):
-    """`meme`: slams in from the right in 0.22s, over-rotated, out at MEME_HOLD.
+def t_meme(el, src, caption, t, vis, template="split"):
+    """`meme`: three presenters, picked per beat by the director.
 
-    The cutaway is the juxtaposition gag the brief asks for, so it should arrive
-    like an interruption -- further off-frame than v2 (560 vs 400px), more tilt,
-    and gone in 2.2s before the audience finishes deciding whether it was fair.
+    split (default): the classic -- a side box slamming in from the right,
+    over-rotated, out at MEME_HOLD. A joke told next to the lecture.
+    full: the interruption -- fullscreen slam in 0.12s, owns the whole frame
+    for its hold. For the moments the video STOPS being a lecture.
+    stamp: the caption IS the gag -- the base dims under a huge caption bar
+    slammed across the lower third. No picture at all beyond `src` dimmed.
     """
+    template = str(template or "split").strip().lower()
+    if template not in ("split", "full", "stamp"):
+        template = "split"
     inner = '<img src="%s" alt="">' % _esc(src)
     if caption:
         inner += '<div class="beat-meme-cap">%s</div>' % _esc(caption)
-    tag = _clip(el, "beat-meme", t, vis, TRACK_OVERLAY, inner)
     out = round(min(FADE, max(0.05, vis)), 3)
+    if template == "full":
+        tag = _clip(el, "beat-meme-full", t, vis, TRACK_OVERLAY, inner)
+        return [tag], [
+            "tl.fromTo('#%s',{scale:1.25,opacity:0},{scale:1,opacity:1,"
+            "duration:0.120,ease:'power4.out'},%.3f);" % (el, t),
+            "tl.to('#%s',{opacity:0,duration:%.3f,ease:'power2.in'},%.3f);"
+            % (el, out, round(t + vis - out, 3)),
+        ]
+    if template == "stamp":
+        tag = _clip(el, "beat-meme-stamp", t, vis, TRACK_OVERLAY, _esc(caption or ""))
+        return [tag], [
+            "tl.fromTo('#%s',{scale:1.6,opacity:0},{scale:1,opacity:1,"
+            "duration:0.140,ease:'back.out(2.8)'},%.3f);" % (el, t),
+            "tl.to('#%s',{opacity:0,duration:%.3f,ease:'power2.in'},%.3f);"
+            % (el, out, round(t + vis - out, 3)),
+        ]
+    tag = _clip(el, "beat-meme", t, vis, TRACK_OVERLAY, inner)
     return [tag], [
         "tl.fromTo('#%s',{x:560,opacity:0,rotation:11},{x:0,opacity:1,rotation:0,"
         "duration:0.220,ease:'back.out(2.4)'},%.3f);" % (el, t),
@@ -389,9 +458,12 @@ def scene_layer(i, t0, dur, beats, media, state):
     memes = (media or {}).get("meme") or {}
     beats = [b for b in (beats or []) if isinstance(b, dict)]
     times = [round(t0 + _num(b.get("t")), 3) for b in beats]
-    # Where the base layer changes next: an img beat holds the screen until
-    # another img replaces it, never until merely the next beat of any kind.
-    swaps = [n for n, b in enumerate(beats) if b.get("kind") == "img" and art.get(n)]
+    # Where the base layer changes next: a full-bleed beat (img/photo/doodle)
+    # holds the screen until another full-bleed beat replaces it, never until
+    # merely the next beat of any kind.
+    swaps = [n for n, b in enumerate(beats)
+             if str(b.get("kind") or "").strip().lower() in ("img", "photo", "doodle")
+             and art.get(n)]
     live = state.get("live")
 
     for n, b in enumerate(beats):
@@ -399,10 +471,17 @@ def scene_layer(i, t0, dur, beats, media, state):
         t = times[n]
         kind = str(b.get("kind") or "").strip().lower()
 
-        if kind == "img" and art.get(j):
+        if kind in ("img", "photo", "doodle") and art.get(j):
             after = next((times[k] for k in swaps if k > n), end)
             el, wrap = "b%d_%d" % (i, j), "w%d_%d" % (i, j)
-            tg, tw = t_img(el, wrap, art[j], t, round(max(0.3, after - t), 3))
+            span = round(max(0.3, after - t), 3)
+            if kind == "photo":
+                tg, tw = t_photo(el, wrap, art[j], b.get("caption"), b.get("counter"),
+                                 t, span)
+            elif kind == "doodle":
+                tg, tw = t_doodle(el, wrap, art[j], t, span)
+            else:
+                tg, tw = t_img(el, wrap, art[j], t, span)
             tags += tg
             tweens += tw
             live = "#" + wrap
@@ -420,7 +499,8 @@ def scene_layer(i, t0, dur, beats, media, state):
             tweens += tw
         elif kind == "meme" and memes.get(j):
             vis = _hold(t, MEME_HOLD, end)
-            tg, tw = t_meme("m%d_%d" % (i, j), memes[j], b.get("caption"), t, vis)
+            tg, tw = t_meme("m%d_%d" % (i, j), memes[j], b.get("caption"), t, vis,
+                            b.get("template"))
             tags += tg
             tweens += tw
         elif kind == "zoom" and live:
@@ -676,16 +756,18 @@ def copy_scene_media(job, work_dir, assets, scenes):
             if not isinstance(beat, dict):
                 continue
             kind = str(beat.get("kind") or "").lower()
-            if kind not in ("img", "meme"):
+            if kind not in ("img", "meme", "photo", "doodle"):
                 continue
-            stem = "%s%s_%d_%d" % ("i" if kind == "img" else "m", job_id, i, j)
+            stem = "%s%s_%d_%d" % ({"img": "i", "meme": "m", "photo": "p",
+                                    "doodle": "d"}[kind], job_id, i, j)
             for ext in ("jpg", "png", "jpeg", "webp", "gif"):
                 src = os.path.join(work_dir, "%s.%s" % (stem, ext))
                 if not os.path.exists(src):
                     continue
-                name = "%s%d_%d.%s" % ("b" if kind == "img" else "m", i, j, ext)
+                name = "%s%d_%d.%s" % ({"img": "b", "meme": "m", "photo": "b",
+                                       "doodle": "b"}[kind], i, j, ext)
                 if _copy(src, os.path.join(assets, name), "%s beat %d.%d" % (kind, i, j)):
-                    (art if kind == "img" else memes)[j] = "assets/" + name
+                    (art if kind != "meme" else memes)[j] = "assets/" + name
                 break
             else:
                 print("[compose] scene %d beat %d (%s) has no art in %s -- beat degrades"

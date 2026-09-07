@@ -5,8 +5,8 @@
     "method": "POST",
     "form": {
       "text": "{text}",
-      "ttsSteps": 2,
-      "emotionExaggeration": 0.3,
+      "ttsSteps": 10,
+      "emotionExaggeration": 0.0,
       "ttsSeed": 0,
       "threads": 4
     },

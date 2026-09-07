@@ -138,7 +138,7 @@ def _voice_path(job, work_dir, i):
 
 def _beat_art(job, work_dir, i, j, kind):
     """Beat (i, j)'s still, if it has already been bought. Resume skips those."""
-    head = "m" if kind == "meme" else "i"
+    head = {"meme": "m", "photo": "p", "doodle": "d"}.get(kind, "i")
     return _find(work_dir, "%s%s_%d_%d" % (head, job.get("id", ""), i, j), IMAGE_EXT)
 
 
@@ -355,7 +355,7 @@ def stage_visuals(job, work_dir):
     for i, scene in enumerate(job.get("scenes") or []):
         for j, beat in enumerate(scene.get("beats") or []):
             kind = beat.get("kind")
-            if kind not in ("img", "meme") or not beat.get("prompt"):
+            if kind not in ("img", "meme", "photo", "doodle") or not beat.get("prompt"):
                 continue
             if _beat_art(job, work_dir, i, j, kind):
                 continue
@@ -366,9 +366,11 @@ def stage_visuals(job, work_dir):
         job["stage"] = "render"
         return job
 
-    print("[run] visuals: %d beats to render (%d img, %d meme)"
+    print("[run] visuals: %d beats to render (%d img, %d meme, %d photo, %d doodle)"
           % (len(jobs_todo), sum(1 for x in jobs_todo if x[2] == "img"),
-             sum(1 for x in jobs_todo if x[2] == "meme")))
+             sum(1 for x in jobs_todo if x[2] == "meme"),
+             sum(1 for x in jobs_todo if x[2] == "photo"),
+             sum(1 for x in jobs_todo if x[2] == "doodle")))
     done = {"ok": 0, "fail": 0}
     with futures.ThreadPoolExecutor(max_workers=ART_WORKERS) as pool:
         pending = {pool.submit(_render_beat_art, job, work_dir, *task): task for task in jobs_todo}
@@ -386,11 +388,35 @@ def stage_visuals(job, work_dir):
 
 
 def _render_beat_art(job, work_dir, i, j, kind, prompt_text):
-    """One beat's art: the C4 style lock for img, the C5 meme cache for meme."""
+    """One beat's art.
+
+    img gets the C4 specimen lock, photo goes over nearly raw (the joke is the
+    plain photo), doodle gets the flat-cartoon lock, and meme first tries the
+    same-croc consistency edit (mascot uploaded once, re-posed per gag) before
+    falling back to a from-text generation.
+    """
     if kind == "meme":
-        data = adapters.meme_img(prompt_text)
+        try:
+            data = adapters.meme_croc(prompt_text)
+            print("[run] meme %d.%d via same-croc edit" % (i, j))
+        except Exception as e:
+            print("[run] meme %d.%d croc-edit failed (%s) -- text fallback" % (i, j, e))
+            data = adapters.meme_img(prompt_text)
         fmt = adapters.last_format("image") or "png"
         dst = os.path.join(work_dir, "m%s_%d_%d.jpg" % (job["id"], i, j))
+    elif kind == "photo":
+        data = adapters.image_plain(prompt_text, "1920x1080")
+        fmt = adapters.last_format("image") or "jpg"
+        dst = os.path.join(work_dir, "p%s_%d_%d.jpg" % (job["id"], i, j))
+    elif kind == "doodle":
+        try:
+            beat = ((job.get("scenes") or [])[i].get("beats") or [])[j]
+        except (IndexError, AttributeError):
+            beat = {}
+        data = adapters.image_doodle(prompt_text, (beat or {}).get("speech", ""),
+                                     "1920x1080")
+        fmt = adapters.last_format("image") or "jpg"
+        dst = os.path.join(work_dir, "d%s_%d_%d.jpg" % (job["id"], i, j))
     else:
         data = adapters.image_styled(prompt_text, "1920x1080")
         fmt = adapters.last_format("image") or "jpg"
