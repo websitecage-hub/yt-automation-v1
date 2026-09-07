@@ -1,5 +1,5 @@
-# CHANNEL BIBLE — SCALED (v2 zoomer edition)
-**Channel:** SCALED · hosted by Professor Croc
+# CHANNEL BIBLE — KRONVEX (v2 zoomer edition)
+**Channel:** KRONVEX · hosted by Professor Croc
 **Niche:** Real biology as power systems, taught Fireship-style. Every living thing
 gets stat-checked; the human body is the running storyline. The viewer's question:
 "how powerful could I become if I actually tried?"

@@ -501,15 +501,15 @@ def _paste_avatar(img, lesson):
 
 
 def _draw_wordmark(draw):
-    """SCALED, small, top-left — the corner mark every reference thumbnail has.
+    """KRONVEX, small, top-left — the corner mark every reference thumbnail has.
 
     Deliberately tiny. On the baked path the host has already drawn the headline;
     this is the channel signature, not a caption, and anything bigger competes
     with the type it is supposed to be standing next to.
     """
     font = _font(PIXEL, 22)
-    tw, th = _size(draw, "SCALED", font)
-    draw.text((MARGIN, MARGIN), "SCALED", font=font, fill=INK,
+    tw, th = _size(draw, "KRONVEX", font)
+    draw.text((MARGIN, MARGIN), "KRONVEX", font=font, fill=INK,
               stroke_width=4, stroke_fill=BLACK)
     draw.rectangle((MARGIN, MARGIN + th + 9, MARGIN + tw, MARGIN + th + 13), fill=GREEN)
 
