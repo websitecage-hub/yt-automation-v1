@@ -5,20 +5,25 @@ crash-only state machine: the repo is the database, each video is one JSON file
 in data/videos/ carrying a `stage`, and every stage saves before the next
 begins -- so a killed run resumes exactly where it stopped on the next call.
 
-Stages: idea -> voice -> srt -> visuals -> html -> render -> upload -> thumbnail
--> done. Producing (idea..render) needs the creative/code/voice/image keys; the
-YouTube stages degrade to logged no-ops when credentials are absent (see
-pipeline.upload.has_yt), so a keyless DRY_RUN still renders a finished mp4.
+Stages: idea -> voice -> srt -> beats -> visuals -> render -> upload ->
+thumbnail -> done. The order is load-bearing: voice must exist before srt can
+time it, srt before beats can snap to a word onset, and beats before visuals
+knows which stills to buy. Producing (idea..render) needs the creative/voice/
+image keys; the YouTube stages degrade to logged no-ops when credentials are
+absent (see pipeline.upload.has_yt), so a keyless DRY_RUN still renders an mp4.
 """
 
+import io
 import json
 import os
 import subprocess
 import sys
 import time
+from concurrent import futures
 from datetime import datetime, timezone
 
-from pipeline import adapters, htmlgen, llm, render, srt, topics, upload
+from pipeline import adapters, llm, render, srt, thumbnail, topics, upload
+from pipeline import beats as beat_engine
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VIDEOS = os.path.join(REPO, "data", "videos")
@@ -28,9 +33,13 @@ STRATEGY = os.path.join(REPO, "data", "strategy.json")
 STATUS = os.path.join(REPO, "STATUS.md")
 PAUSE = os.path.join(REPO, "data", "PAUSE")
 
-STAGES = ["idea", "voice", "srt", "visuals", "html", "render", "upload", "thumbnail", "done"]
+STAGES = ["idea", "voice", "srt", "beats", "visuals", "render", "upload", "thumbnail", "done"]
 SHELF = 5                 # stop producing once this many finished, unpublished videos wait
 CAPTION_PAD = 0.4         # scene duration = last word end + this much tail
+ART_WORKERS = 4           # concurrent image calls; each takes ~30s, the host allows 4
+STILL_W, STILL_H = 1920, 1080
+AUDIO_EXT = ("mp3", "wav", "m4a", "ogg", "flac")
+IMAGE_EXT = ("jpg", "jpeg", "png", "webp", "gif")
 RUN_BUDGET_MIN = int(os.getenv("RUN_BUDGET_MIN", "300"))
 
 # ---------------------------------------------------------------- store helpers
@@ -106,22 +115,78 @@ def _ffmpeg(*args):
     subprocess.run(["ffmpeg", "-y", *args], check=True, capture_output=True, text=True)
 
 
-def _save_media(data, fmt, dst, kind):
-    """Write provider bytes to dst, transcoding to mp3/jpg with ffmpeg if needed."""
-    want = "mp3" if kind == "audio" else "jpg"
-    if fmt == want or (want == "jpg" and fmt == "jpeg"):
-        with open(dst, "wb") as fh:
-            fh.write(data)
-        return dst
-    tmp = "%s.%s" % (dst, fmt or "bin")
-    with open(tmp, "wb") as fh:
-        fh.write(data)
+def _num(value, default=0.0):
     try:
-        _ffmpeg("-i", tmp, dst)
-    finally:
-        if os.path.exists(tmp):
-            os.remove(tmp)
-    return dst
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _find(work_dir, stem, exts):
+    """First work/{stem}.{ext} that exists, or None. Providers pick the container."""
+    for ext in exts:
+        path = os.path.join(work_dir, "%s.%s" % (stem, ext))
+        if os.path.exists(path) and os.path.getsize(path) > 0:
+            return path
+    return None
+
+
+def _voice_path(job, work_dir, i):
+    """Scene i's narration file, whatever container the TTS host returned."""
+    return _find(work_dir, "v%s_%d" % (job.get("id", ""), i), AUDIO_EXT)
+
+
+def _beat_art(job, work_dir, i, j, kind):
+    """Beat (i, j)'s still, if it has already been bought. Resume skips those."""
+    head = "m" if kind == "meme" else "i"
+    return _find(work_dir, "%s%s_%d_%d" % (head, job.get("id", ""), i, j), IMAGE_EXT)
+
+
+def audio_seconds(path):
+    """Duration of an audio file via ffprobe, or 0.0 when it cannot be read.
+
+    Only a fallback -- Whisper is the clock (C4). This exists so a scene whose
+    transcription failed still gets a duration that matches its real audio
+    instead of a guess from word count.
+    """
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+             "-of", "default=nw=1:nk=1", path],
+            check=True, capture_output=True, text=True).stdout
+        return round(_num(out.strip()), 3)
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        return 0.0
+
+
+def save_still(data, fmt, dst):
+    """Provider image bytes -> a 1920x1080 JPEG at dst, cover-cropped with Pillow.
+
+    Pillow rather than ffmpeg because Pillow is a declared dependency and ffmpeg
+    is only guaranteed on the runner. The crop is `cover`, never a stretch: the
+    art host returns 3:2 and a squashed subject is instantly visible on screen.
+    Unreadable bytes are written through untouched -- compose can still show
+    whatever the browser manages to decode.
+    """
+    try:
+        from PIL import Image
+        img = Image.open(io.BytesIO(data))
+        img = img.convert("RGB")
+        sw, sh = img.size
+        scale = max(STILL_W / float(sw or 1), STILL_H / float(sh or 1))
+        img = img.resize((max(1, int(sw * scale + 0.5)), max(1, int(sh * scale + 0.5))),
+                         Image.LANCZOS)
+        left = (img.size[0] - STILL_W) // 2
+        top = (img.size[1] - STILL_H) // 2
+        img.crop((left, top, left + STILL_W, top + STILL_H)).save(dst, "JPEG", quality=90)
+        return dst
+    except Exception as e:
+        raw = "%s.%s" % (os.path.splitext(dst)[0], fmt or "bin")
+        print("[run] Pillow could not normalise %s (%s) -- keeping the raw %s"
+              % (os.path.basename(dst), e, fmt or "bytes"))
+        with open(raw, "wb") as fh:
+            fh.write(data)
+        return raw
 
 
 # ---------------------------------------------------------------- stages
@@ -159,6 +224,8 @@ def stage_idea(jobs):
         "title": str(doc.get("title", "")),
         "description": str(doc.get("description", "")),
         "tags": doc.get("tags") or [],
+        "thumb_words": str(doc.get("thumb_words", "")),
+        "staircase": doc.get("staircase") or [],
         "thumbnail_prompt": str(doc.get("thumbnail_prompt", "")),
         "verdict": str(doc.get("verdict", "")),
         "extra_credit": str(doc.get("extra_credit", "")),
@@ -168,48 +235,167 @@ def stage_idea(jobs):
     return job
 
 def stage_voice(job, work_dir):
+    """One narration clip per scene, in Croc's cloned voice.
+
+    The provider's own container is kept (wav, mp3, ...) instead of transcoding:
+    the browser plays either, the renderer's ffmpeg accepts either, and skipping
+    the convert step removes a whole class of failure from the critical path.
+    """
     for i, scene in enumerate(job.get("scenes") or []):
-        dst = os.path.join(work_dir, "v%s_%d.mp3" % (job["id"], i))
-        if os.path.exists(dst):
+        if _voice_path(job, work_dir, i):
             continue
         data = adapters.tts(str(scene.get("text", "")))
-        _save_media(data, adapters.last_format("voice"), dst, "audio")
+        fmt = adapters.last_format("voice") or "mp3"
+        dst = os.path.join(work_dir, "v%s_%d.%s" % (job["id"], i, fmt))
+        with open(dst, "wb") as fh:
+            fh.write(data)
+        print("[run] voice %d/%d -> %s (%d bytes)"
+              % (i + 1, len(job.get("scenes") or []), os.path.basename(dst), len(data)))
     job["stage"] = "srt"
     return job
 
 
 def stage_srt(job, work_dir):
-    """Whisper is the only clock: each scene's dur is its last word end + a tail."""
+    """Whisper is the only clock: each scene's dur is its last word end + a tail.
+
+    Degrades twice over. No word list (no GROQ_KEY, a whisper outage) falls back
+    to the narration file's real length, which keeps the cut in sync and only
+    costs the word-snapping; no audio at all falls back to a reading-speed
+    estimate, which keeps the episode buildable.
+    """
     for i, scene in enumerate(job.get("scenes") or []):
-        mp3 = os.path.join(work_dir, "v%s_%d.mp3" % (job["id"], i))
-        words = srt.word_timeline(mp3)
-        with open(os.path.join(work_dir, "w%s_%d.json" % (job["id"], i)), "w", encoding="utf-8") as fh:
+        audio = _voice_path(job, work_dir, i)
+        words = []
+        if audio:
+            try:
+                words = srt.word_timeline(audio)
+            except Exception as e:
+                print("[run] whisper failed on scene %d (%s) -- beats fall on an even grid" % (i, e))
+        with open(os.path.join(work_dir, "w%s_%d.json" % (job["id"], i)), "w",
+                  encoding="utf-8") as fh:
             json.dump(words, fh)
+
         end = max((float(w.get("e", 0)) for w in words if isinstance(w, dict)), default=0.0)
-        if end:
-            scene["dur"] = round(end + CAPTION_PAD, 3)
-        else:
-            scene["dur"] = round(max(2.0, len(str(scene.get("text", "")).split()) / 2.5), 3)
+        if not end and audio:
+            end = audio_seconds(audio) or 0.0
+        if not end:
+            end = max(2.0, len(str(scene.get("text", "")).split()) / 2.5)
+        scene["dur"] = round(end + CAPTION_PAD, 3)
+    print("[run] clock: %d scenes, %.1fs total" % (len(job.get("scenes") or []),
+                                                   sum(_num(s.get("dur")) for s in job["scenes"])))
+    job["stage"] = "beats"
+    return job
+
+
+def stage_beats(job, work_dir):
+    """Ask the director WHAT each scene shows; Python has already decided WHEN.
+
+    The model never sees a timestamp and never writes motion -- it fills slots.
+    Every reply is validated, given exactly one chance to repair itself, and then
+    forced legal by autofix, so a bad reply costs one extra call at worst.
+    """
+    scenes = job.get("scenes") or []
+    system = llm.prompt("BEATS", "system")
+    template = llm.prompt("BEATS", "user")
+    staircase = ", ".join(str(x) for x in (job.get("staircase") or [])) or "(none)"
+    for i, scene in enumerate(scenes):
+        if scene.get("beats"):
+            continue
+        words = srt.scene_words(job, i, work_dir)
+        n = beat_engine.beat_count(scene.get("dur"))
+        user = template
+        for k, v in (("{i+1}", str(i + 1)), ("{title}", str(job.get("title", ""))),
+                     ("{act}", str(scene.get("act", ""))),
+                     ("{heading}", str(scene.get("heading", ""))),
+                     ("{text}", str(scene.get("text", ""))),
+                     ("{staircase}", staircase), ("{n}", str(n)),
+                     ("{img_cap}", str(beat_engine.img_cap(n)))):
+            user = user.replace(k, v)
+
+        specs = _beat_specs(system, user, i)
+        problems = beat_engine.validate(specs)
+        if problems:
+            print("[run] scene %d beats rejected (%s) -- one repair attempt"
+                  % (i, "; ".join(problems[:3])))
+            specs = _beat_specs(system, user + "\n\nYour last reply was invalid: "
+                               + "; ".join(problems) + ". Return corrected JSON only.", i)
+        scene["beats"] = beat_engine.build(scene, words, specs, n)
+        kinds = ", ".join("%s%s" % (b["kind"][0], "" if b["kind"] != "img" else "*")
+                          for b in scene["beats"])
+        print("[run] beats %d/%d: %d [%s]" % (i + 1, len(scenes), len(scene["beats"]), kinds))
     job["stage"] = "visuals"
     return job
 
 
+def _beat_specs(system, user, i):
+    """The director's beat list for one scene, or [] when it cannot be parsed.
+
+    [] is survivable: build() pads with zooms, so the scene still gets its pacing
+    and merely loses the model's content choices.
+    """
+    try:
+        doc = llm.llm(system, user, json_out=True)
+        if isinstance(doc, str):
+            doc = llm.parse_json(doc)
+        specs = doc.get("beats") if isinstance(doc, dict) else doc
+        return [b for b in (specs or []) if isinstance(b, dict)]
+    except Exception as e:
+        print("[run] scene %d beat call failed (%s) -- Python fills the slots" % (i, e))
+        return []
+
+
 def stage_visuals(job, work_dir):
+    """Render every img and meme beat. Four at a time -- each call takes ~30s.
+
+    Art failures are logged and skipped, never raised: compose degrades a beat
+    with no file into a punch-in on whatever is already on screen, so a partial
+    art outage still produces a finished episode.
+    """
+    jobs_todo = []
     for i, scene in enumerate(job.get("scenes") or []):
-        dst = os.path.join(work_dir, "i%s_%d.jpg" % (job["id"], i))
-        if os.path.exists(dst):
-            continue
-        data = adapters.image(str(scene.get("image_prompt", "")), "1920x1080")
-        _save_media(data, adapters.last_format("image"), dst, "image")
-    job["stage"] = "html"
-    return job
+        for j, beat in enumerate(scene.get("beats") or []):
+            kind = beat.get("kind")
+            if kind not in ("img", "meme") or not beat.get("prompt"):
+                continue
+            if _beat_art(job, work_dir, i, j, kind):
+                continue
+            jobs_todo.append((i, j, kind, str(beat["prompt"])))
 
+    if not jobs_todo:
+        print("[run] visuals: nothing to render")
+        job["stage"] = "render"
+        return job
 
-def stage_html(job, work_dir):
-    for i in range(len(job.get("scenes") or [])):
-        htmlgen.generate_scene(job, i, work_dir)
+    print("[run] visuals: %d beats to render (%d img, %d meme)"
+          % (len(jobs_todo), sum(1 for x in jobs_todo if x[2] == "img"),
+             sum(1 for x in jobs_todo if x[2] == "meme")))
+    done = {"ok": 0, "fail": 0}
+    with futures.ThreadPoolExecutor(max_workers=ART_WORKERS) as pool:
+        pending = {pool.submit(_render_beat_art, job, work_dir, *task): task for task in jobs_todo}
+        for fut in futures.as_completed(pending):
+            i, j, kind, _p = pending[fut]
+            try:
+                fut.result()
+                done["ok"] += 1
+            except Exception as e:
+                done["fail"] += 1
+                print("[run] %s beat %d.%d failed: %s" % (kind, i, j, e))
+    print("[run] visuals: %d rendered, %d failed" % (done["ok"], done["fail"]))
     job["stage"] = "render"
     return job
+
+
+def _render_beat_art(job, work_dir, i, j, kind, prompt_text):
+    """One beat's art: the C4 style lock for img, the C5 meme cache for meme."""
+    if kind == "meme":
+        data = adapters.meme_img(prompt_text)
+        fmt = adapters.last_format("image") or "png"
+        dst = os.path.join(work_dir, "m%s_%d_%d.jpg" % (job["id"], i, j))
+    else:
+        data = adapters.image_styled(prompt_text, "1920x1080")
+        fmt = adapters.last_format("image") or "jpg"
+        dst = os.path.join(work_dir, "i%s_%d_%d.jpg" % (job["id"], i, j))
+    return save_still(data, fmt, dst)
 
 
 def stage_render(job, work_dir):
@@ -230,7 +416,8 @@ def stage_upload(job, work_dir):
 
 
 def stage_thumbnail(job, work_dir):
-    thumb = upload.make_thumb(job, work_dir)
+    """The hybrid thumbnail: the model paints the scene, Pillow owns every word."""
+    thumb = thumbnail.make_thumbnail(job, work_dir)
     if thumb and job.get("video_id"):
         upload.set_thumbnail(job["video_id"], thumb)
     job["thumb"] = thumb
@@ -239,7 +426,7 @@ def stage_thumbnail(job, work_dir):
 
 
 STAGE_FN = {
-    "voice": stage_voice, "srt": stage_srt, "visuals": stage_visuals, "html": stage_html,
+    "voice": stage_voice, "srt": stage_srt, "beats": stage_beats, "visuals": stage_visuals,
     "render": stage_render, "upload": stage_upload, "thumbnail": stage_thumbnail,
 }
 

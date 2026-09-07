@@ -1,6 +1,25 @@
+# --- secrets: never, under any circumstances -------------------------------
+github-pat.txt
+*.pat
+.env
+
+# --- ephemeral: regenerated on demand, never the source of truth -----------
 work/
-*.mp4
-*.mp3
-assets/phrases/
 proj_*/
+*.mp4
 __pycache__/
+.pytest_cache/
+assets/phrases/
+
+# Generated narration is *.mp3/*.wav and lives in work/, which is already gone
+# above -- but the blanket rule below also caught the committed audio ASSETS.
+# Those are inputs, not outputs: the voice reference is cloned on every single
+# TTS call, and the sound effects are placed on every beat that asks for one, so
+# a runner without them fails the voice stage and renders a silent edit.
+*.mp3
+*.wav
+!assets/voice/*.mp3
+!assets/audio/sfx/*.mp3
+!assets/audio/sfx/*.wav
+!assets/audio/lofi/*.mp3
+!assets/audio/lofi/*.wav

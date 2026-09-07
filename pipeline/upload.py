@@ -12,9 +12,6 @@ the functions that touch the network, so this module imports cleanly on a box
 where they were never pip-installed and in every DRY_RUN.
 """
 import os
-import re
-
-from pipeline import adapters, llm
 
 # The OAuth env vars that must ALL be present (and non-empty) before we touch
 # the network. Secrets live only as these names; a literal token never appears.
@@ -74,36 +71,6 @@ def _service(kind="youtube"):
     return build(name, version, credentials=creds, cache_discovery=False)
 
 
-# --------------------------------------------------------------- helpers
-
-def _lesson_num(job):
-    """Zero-pad source: job['lesson'] or job['n'], defaulting to 1."""
-    for key in ("lesson", "n"):
-        try:
-            return int(job.get(key))
-        except (TypeError, ValueError):
-            continue
-    return 1
-
-
-def _shock_word(job):
-    """A short, shocking word or number for the thumbnail's one giant token.
-
-    An explicit job field wins; otherwise the first number in the packaging,
-    otherwise the first substantial word, otherwise the channel name.
-    """
-    for key in ("shock_word", "word", "hook_word"):
-        val = str(job.get(key) or "").strip()
-        if val:
-            return val
-    text = " ".join(str(job.get(k) or "") for k in ("title", "topic"))
-    num = re.search(r"\d[\d,\.]*%?", text)
-    if num:
-        return num.group(0)
-    words = [w for w in re.findall(r"[A-Za-z]+", text) if len(w) >= 4]
-    return words[0].upper() if words else "SCALED"
-
-
 # --------------------------------------------------------------- actions
 
 def upload_video(job, mp4_path, privacy="private"):
@@ -141,36 +108,6 @@ def upload_video(job, mp4_path, privacy="private"):
     except Exception as e:
         print("[upload] upload failed: %s -- returning None" % e)
         return None
-
-
-def make_thumb(job, work_dir):
-    """Render the 1280x720 thumbnail via the image API. Returns its path or None.
-
-    Offline-safe on purpose: this is only an image call, so it runs even in
-    DRY_RUN. The adapters call is guarded, so a down image provider degrades to
-    None (a video with no custom thumbnail) instead of a crash.
-    """
-    subject = job.get("title") or job.get("topic") or "the specimen"
-    prompt = (
-        llm.prompt("THUMBNAIL", "user")
-        .replace("{subject}", str(subject))
-        .replace("{word}", str(_shock_word(job)))
-        .replace("{NNN}", "%03d" % _lesson_num(job))
-    )
-    try:
-        data = adapters.image(prompt, "1280x720")
-    except Exception as e:
-        print("[upload] thumbnail generation failed: %s -- returning None" % e)
-        return None
-    if not data:
-        print("[upload] thumbnail came back empty -- returning None")
-        return None
-    os.makedirs(work_dir or ".", exist_ok=True)
-    out = os.path.join(work_dir or ".", "thumb_%s.jpg" % (job.get("id") or "job"))
-    with open(out, "wb") as fh:
-        fh.write(data)
-    print("[upload] thumbnail -> %s" % out)
-    return out
 
 
 def set_thumbnail(video_id, thumb_path):

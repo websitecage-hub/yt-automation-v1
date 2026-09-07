@@ -29,7 +29,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: pip install requests google-api-python-client google-auth
+      # pillow: compose crops every still to 1920x1080 and thumbnail.py paints the
+      # whole brand layer. Without it the visuals and thumbnail stages both die.
+      - run: pip install requests google-api-python-client google-auth pillow
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Produce
@@ -49,7 +51,7 @@ jobs:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           RUN_BUDGET_MIN: "300"
         run: python -m pipeline.run
-      - name: Upload preview (video + thumbnail + images)
+      - name: Upload preview (video + thumbnail + stills + narration)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -57,6 +59,11 @@ jobs:
           path: |
             work/**/*.mp4
             work/**/*.jpg
+            work/**/*.png
+            work/**/*.webp
+            work/**/*.mp3
+            work/**/*.wav
+            work/**/index.html
             data/videos/*.json
           if-no-files-found: warn
           retention-days: 14
@@ -65,6 +72,8 @@ jobs:
         run: |
           git config user.name "scaled-bot"
           git config user.email "scaled-bot@users.noreply.github.com"
-          git add data STATUS.md
+          # assets/memes is a cache, not an intermediate: committing it is what
+          # makes a meme survive to the next run instead of being re-bought.
+          git add data STATUS.md assets/memes || true
           git commit -m "produce: advance pipeline [skip ci]" || echo "nothing to commit"
           git push || echo "nothing to push"
