@@ -24,6 +24,7 @@ from datetime import datetime, timezone
 
 from pipeline import adapters, llm, render, srt, thumbnail, topics, upload
 from pipeline import beats as beat_engine
+from pipeline import qc
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VIDEOS = os.path.join(REPO, "data", "videos")
@@ -33,7 +34,8 @@ STRATEGY = os.path.join(REPO, "data", "strategy.json")
 STATUS = os.path.join(REPO, "STATUS.md")
 PAUSE = os.path.join(REPO, "data", "PAUSE")
 
-STAGES = ["idea", "voice", "srt", "beats", "visuals", "render", "upload", "thumbnail", "done"]
+STAGES = ["idea", "voice", "srt", "beats", "visuals", "render", "upload",
+          "thumbnail", "qc", "done"]
 SHELF = 5                 # stop producing once this many finished, unpublished videos wait
 CAPTION_PAD = 0.4         # scene duration = last word end + this much tail
 ART_WORKERS = 4           # concurrent image calls; each takes ~30s, the host allows 4
@@ -101,7 +103,7 @@ def next_lesson(jobs):
 
 def in_progress(jobs):
     for j in jobs:
-        if j.get("stage") not in (None, "done"):
+        if j.get("stage") not in (None, "done", "qc_failed"):
             return j
     return None
 
@@ -191,6 +193,31 @@ def save_still(data, fmt, dst):
 
 # ---------------------------------------------------------------- stages
 
+def _perf_summary():
+    """What the SCRIPT model gets as {perf}: real numbers, not a placeholder.
+
+    B3: this was hardcoded to "(no performance data yet)" even after learn.py
+    had written strategy. Now it reports the strategy file's notes plus the
+    last finished episodes' titles/lanes, or the placeholder only when the
+    channel genuinely has no history yet.
+    """
+    try:
+        strategy = json.loads(_read(STRATEGY, "{}") or "{}")
+    except ValueError:
+        strategy = {}
+    notes = str(strategy.get("notes") or "").strip()
+    jobs = [j for j in load_jobs() if j.get("stage") == "done"]
+    jobs.sort(key=lambda j: str(j.get("created", "")))
+    recent = ["#%s %s [%s]" % (j.get("lesson", "?"), str(j.get("title", ""))[:50],
+                               j.get("lane", "?")) for j in jobs[-5:]]
+    parts = []
+    if notes:
+        parts.append("PLAYBOOK NOTES: " + notes[:800])
+    if recent:
+        parts.append("LAST FINISHED: " + " | ".join(recent))
+    return " ".join(parts) or "(no performance data yet)"
+
+
 def stage_idea(jobs):
     """Pick a topic, write the 16-scene script, return a fresh job at 'voice'."""
     topics.refill(lambda s, u: llm.llm(s, u, json_out=True))
@@ -203,7 +230,7 @@ def stage_idea(jobs):
     user = llm.prompt("SCRIPT", "user")
     for k, v in (("{niche}", _read(NICHE, "SCALED -- biology as power stats")),
                  ("{strategy}", (_read(STRATEGY, "{}").strip() or "{}")),
-                 ("{perf}", "(no performance data yet)"),
+                 ("{perf}", _perf_summary()),
                  ("{used}", used),
                  ("{topic}", picked["topic"]),
                  ("{n}", str(n))):
@@ -264,16 +291,30 @@ def stage_srt(job, work_dir):
     estimate, which keeps the episode buildable.
     """
     for i, scene in enumerate(job.get("scenes") or []):
+        wpath = os.path.join(work_dir, "w%s_%d.json" % (job.get("id", ""), i))
         audio = _voice_path(job, work_dir, i)
-        words = []
-        if audio:
+        try:
+            reuse = os.path.getsize(wpath) > 2
+        except OSError:
+            reuse = False
+        if reuse:
+            # R3/C3: a previous run already paid Whisper for this scene. The
+            # w-file is the done-marker; only a 2-byte "[]" (a recorded
+            # failure) or a missing file re-transcribes.
             try:
-                words = srt.word_timeline(audio)
-            except Exception as e:
-                print("[run] whisper failed on scene %d (%s) -- beats fall on an even grid" % (i, e))
-        with open(os.path.join(work_dir, "w%s_%d.json" % (job["id"], i)), "w",
-                  encoding="utf-8") as fh:
-            json.dump(words, fh)
+                with open(wpath, encoding="utf-8") as fh:
+                    words = json.load(fh)
+            except (OSError, ValueError):
+                words = []
+        else:
+            words = []
+            if audio:
+                try:
+                    words = srt.word_timeline(audio)
+                except Exception as e:
+                    print("[run] whisper failed on scene %d (%s) -- beats fall on an even grid" % (i, e))
+            with open(wpath, "w", encoding="utf-8") as fh:
+                json.dump(words, fh)
 
         end = max((float(w.get("e", 0)) for w in words if isinstance(w, dict)), default=0.0)
         if not end and audio:
@@ -391,17 +432,22 @@ def _render_beat_art(job, work_dir, i, j, kind, prompt_text):
     """One beat's art.
 
     img gets the C4 specimen lock, photo goes over nearly raw (the joke is the
-    plain photo), doodle gets the flat-cartoon lock, and meme first tries the
-    same-croc consistency edit (mascot uploaded once, re-posed per gag) before
-    falling back to a from-text generation.
+    plain photo). doodle and meme are cast re-stagings first (same faces, same
+    world -- the Memeic rule), falling back to text generation when the cast
+    has no cached URL or the edit fails.
     """
     if kind == "meme":
         try:
-            data = adapters.meme_croc(prompt_text)
-            print("[run] meme %d.%d via same-croc edit" % (i, j))
+            data = adapters.cast_edit(prompt_text, "croc")
+            print("[run] meme %d.%d via cast edit (croc)" % (i, j))
         except Exception as e:
-            print("[run] meme %d.%d croc-edit failed (%s) -- text fallback" % (i, j, e))
-            data = adapters.meme_img(prompt_text)
+            print("[run] meme %d.%d cast edit failed (%s) -- text fallback" % (i, j, e))
+            try:
+                data = adapters.meme_croc(prompt_text)
+                print("[run] meme %d.%d via same-croc edit" % (i, j))
+            except Exception as e2:
+                print("[run] meme %d.%d croc-edit failed (%s) -- text fallback" % (i, j, e2))
+                data = adapters.meme_img(prompt_text)
         fmt = adapters.last_format("image") or "png"
         dst = os.path.join(work_dir, "m%s_%d_%d.jpg" % (job["id"], i, j))
     elif kind == "photo":
@@ -413,8 +459,15 @@ def _render_beat_art(job, work_dir, i, j, kind, prompt_text):
             beat = ((job.get("scenes") or [])[i].get("beats") or [])[j]
         except (IndexError, AttributeError):
             beat = {}
-        data = adapters.image_doodle(prompt_text, (beat or {}).get("speech", ""),
-                                     "1920x1080")
+        speech = str((beat or {}).get("speech", "") or "").strip()
+        situation = prompt_text + (", speech bubble reading \"%s\"" % speech[:60] if speech else "")
+        try:
+            data = adapters.cast_edit("The Guy and Croc: " + situation, "guy")
+            print("[run] doodle %d.%d via cast edit (guy)" % (i, j))
+        except Exception as e:
+            print("[run] doodle %d.%d cast edit failed (%s) -- text fallback" % (i, j, e))
+            data = adapters.image_doodle(prompt_text, (beat or {}).get("speech", ""),
+                                         "1920x1080")
         fmt = adapters.last_format("image") or "jpg"
         dst = os.path.join(work_dir, "d%s_%d_%d.jpg" % (job["id"], i, j))
     else:
@@ -436,7 +489,19 @@ def stage_upload(job, work_dir):
         # A fresh runner lost work/ between runs -- rebuild the mp4 before upload.
         print("[run] mp4 missing at upload -- re-rendering")
         job["mp4"] = render.render_video(job, work_dir)
-    job["video_id"] = upload.upload_video(job, job.get("mp4"))
+    if job.get("video_id"):
+        print("[run] already uploaded as %s -- skipping" % job["video_id"])
+    else:
+        # R1: adopt an orphan from a kill between upload and save before
+        # uploading anything new. The pre-upload save means a crash from here
+        # on still leaves a searchable marker on the channel.
+        found = upload.find_upload(job.get("id"))
+        if found:
+            job["video_id"] = found
+        else:
+            job["upload_started_at"] = _now()
+            save_job(job)
+            job["video_id"] = upload.upload_video(job, job.get("mp4"))
     job["stage"] = "thumbnail"
     return job
 
@@ -447,13 +512,35 @@ def stage_thumbnail(job, work_dir):
     if thumb and job.get("video_id"):
         upload.set_thumbnail(job["video_id"], thumb)
     job["thumb"] = thumb
-    job["stage"] = "done"
+    job["stage"] = "qc"
+    return job
+
+
+def stage_qc(job, work_dir):
+    """R7: numeric gates before anything ships. Failure quarantines the job.
+
+    A quarantined job (stage "qc_failed") is invisible to in_progress() and to
+    publish -- it waits for an operator, it never uploads, and it never loops.
+    """
+    ok, fails, warns = qc.check(job, work_dir)
+    for w in warns:
+        print("[run] qc warn: %s" % w)
+    if ok:
+        print("[run] qc passed")
+        job.pop("qc_reasons", None)
+        job["stage"] = "done"
+    else:
+        for f in fails:
+            print("[run] qc FAIL: %s" % f)
+        job["qc_reasons"] = fails
+        job["stage"] = "qc_failed"
     return job
 
 
 STAGE_FN = {
     "voice": stage_voice, "srt": stage_srt, "beats": stage_beats, "visuals": stage_visuals,
     "render": stage_render, "upload": stage_upload, "thumbnail": stage_thumbnail,
+    "qc": stage_qc,
 }
 
 # ---------------------------------------------------------------- driver
@@ -473,9 +560,13 @@ def write_status(job=None):
 
 
 def advance(job, deadline):
-    """Run stages until done or the budget runs out. Saves after every stage."""
+    """Run stages until done, quarantined, or the budget runs out.
+
+    Saves after every stage. A quarantined job (qc_failed) stops the machine
+    the same way a finished one does -- it just isn't DONE.
+    """
     os.makedirs(WORK, exist_ok=True)
-    while job.get("stage") != "done":
+    while job.get("stage") not in ("done", "qc_failed"):
         if time.time() >= deadline:
             print("[run] budget reached at stage %s -- resuming next run" % job.get("stage"))
             return False
@@ -487,6 +578,9 @@ def advance(job, deadline):
         fn(job, WORK)
         save_job(job)
         write_status(job)
+    if job.get("stage") == "qc_failed":
+        print("[run] %s QUARANTINED (see qc_reasons) -- needs an operator" % job.get("id"))
+        return True
     print("[run] %s DONE (LESSON #%03d)" % (job["id"], job.get("lesson", 0)))
     return True
 

@@ -87,9 +87,14 @@ def _video_id(job):
 
 
 def _go_public(video_id, job):
+    """Flip to public AND verify. Returns True only on verified public.
+
+    R2: the old code logged the failure and the caller marked published anyway,
+    parking videos private forever. Verification is one cheap videos.list read.
+    """
     if not video_id:
         print("[publish] %s has no video id -- cannot flip privacy" % job.get("id"))
-        return
+        return False
     try:
         from pipeline.upload import _service
         svc = _service("youtube")
@@ -97,9 +102,17 @@ def _go_public(video_id, job):
             part="status",
             body={"id": video_id, "status": {"privacyStatus": "public"}},
         ).execute()
-        print("[publish] %s -> public" % video_id)
+        got = svc.videos().list(part="status", id=video_id).execute()
+        items = got.get("items") or []
+        status = ((items[0].get("status") if items else {}) or {}).get("privacyStatus")
+        if status == "public":
+            print("[publish] %s -> public (verified)" % video_id)
+            return True
+        print("[publish] %s flip unverified (status=%s)" % (video_id, status))
+        return False
     except Exception as e:
         print("[publish] going public failed for %s: %s" % (video_id, e))
+        return False
 
 
 def _post_extra_credit(video_id, job):
@@ -124,9 +137,10 @@ def _post_extra_credit(video_id, job):
 def publish_one(videos_dir="data/videos"):
     """Publish the oldest finished job. Returns the job dict, or None if none.
 
-    Online: flip privacy to public and pin the extra-credit comment. DRY_RUN:
-    do everything but the network calls. Either way the job is marked published
-    and saved, so the queue drains once and only once.
+    Online: flip privacy to public (verified) and pin the extra-credit comment.
+    DRY_RUN: do everything but the network calls. The job is marked published
+    only on verified public or DRY_RUN -- a failed flip stays queued with a
+    publish_attempts counter instead of going private-forever-but-marked-live.
     """
     job, path = _oldest_done(videos_dir)
     if job is None:
@@ -135,12 +149,22 @@ def publish_one(videos_dir="data/videos"):
 
     video_id = _video_id(job)
     if has_yt():
-        _go_public(video_id, job)
-        _post_extra_credit(video_id, job)
-    else:
-        print("[publish] no creds / DRY_RUN -- marking %s published without network"
-              % job.get("id"))
+        if _go_public(video_id, job):
+            _post_extra_credit(video_id, job)
+            job["published"] = True
+            job["published_at"] = datetime.now(timezone.utc).isoformat()
+            job.pop("publish_attempts", None)
+            write_job(path, job)
+            print("[publish] %s published (video %s)" % (job.get("id"), video_id))
+            return job
+        job["publish_attempts"] = int(job.get("publish_attempts") or 0) + 1
+        write_job(path, job)
+        print("[publish] %s NOT published (attempt %d) -- stays queued"
+              % (job.get("id"), job["publish_attempts"]))
+        return job
 
+    print("[publish] no creds / DRY_RUN -- marking %s published without network"
+          % job.get("id"))
     job["published"] = True
     job["published_at"] = datetime.now(timezone.utc).isoformat()
     write_job(path, job)

@@ -136,21 +136,19 @@ def _http_post(url, headers, payload):
 
 def _post(base, model, key, system, user, temperature, max_tokens, json_out, dialect):
     if dialect == "meta":
-        # Meta AI thinking gateway: OpenAI-compatible /chat/completions, auth open
-        # (any key). It ignores temperature/response_format, so we send only the
-        # bare messages and lean on parse_json to recover any JSON the prompt asks
-        # for. system stays a system-role message.
-        payload = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-        }
-        headers = {"Authorization": "Bearer " + (key or "sk-anything"),
-                   "Content-Type": "application/json", "User-Agent": UA}
-        r = _http_post(base + "/chat/completions", headers, payload)
-        content = r.json()["choices"][0]["message"]["content"]
+        # Meta AI thinking gateway: its own /api/chat path understands long
+        # instruction-heavy prompts far better than the OpenAI-compatible
+        # /v1/chat/completions one (which truncates and roleplays instead of
+        # emitting the asked-for JSON). system + user go in one message;
+        # the reply's `text` holds the completion. Auth open.
+        payload = {"message": "%s\n\n%s" % (system, user)}
+        headers = {"Content-Type": "application/json", "User-Agent": UA}
+        root = base.rsplit("/v1", 1)[0]  # META_BASE ends in /v1; /api/chat lives at root
+        r = _http_post(root + "/api/chat", headers, payload)
+        try:
+            content = r.json().get("text", "")
+        except Exception:
+            raise RuntimeError("meta chat expected JSON, got: %s" % r.text[:200])
     elif dialect == "anthropic":
         # Anthropic Messages API: system is top-level, no response_format; we lean
         # on parse_json to recover the object the prompt already asks the model for.

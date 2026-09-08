@@ -139,6 +139,51 @@ the media API's upload features for anything that needs a stable subject. Both
 retry like every other call in the module and raise on exhaustion so callers
 fall through to the next tier. No key required — same keyless host.
 
+## 14. v4 Phase 1 — reliability (from docs/ARCHITECTURE.md)
+
+- **R1 upload idempotency:** every upload description carries `[kronvex:<job-id>]`;
+  `stage_upload` adopts orphans via `find_upload()` and saves state before
+  uploading, so a kill between upload and save can never duplicate a video.
+- **R2 publish verification:** `_go_public` re-reads `privacyStatus`; the job is
+  marked `published` only on verified public (or DRY_RUN). Failures stay queued
+  with a `publish_attempts` counter.
+- **R3 artifact restore:** produce restores/saves `work/` via `actions/cache`
+  (miss = regenerate as before); `stage_srt` reuses `w*.json` word files, so a
+  kill during render no longer re-pays Whisper or re-buys art.
+- **R4 one writer at a time:** all four workflows share `concurrency: scaled-state`;
+  the push step is pull---rebase + retry x3 and fails loudly if state didn't land.
+- **R7 QC gate:** new `pipeline/qc.py` (duration bounds, narration present, art
+  coverage >=70%, thumbnail >=30KB; Whisper gaps fail only when GROQ_KEY exists,
+  loudness is warn-only and read-only -- the voice is never touched per the
+  operator's rule). Failures quarantine to `qc_failed`, invisible to resume and
+  publish. New `qc` stage sits between `thumbnail` and `done`.
+- **`{perf}` un-hardcoded:** `stage_idea` now fills it from `strategy.json` notes
+  plus the last finished episodes; the placeholder survives only with no history.
+- **R11:** `github-pat.txt` moved out of the repo (`~/.config/kronvex/`); verified
+  it never appears in git history.
+
+## 15. v3 hard-cut edit + Memeic fast path (from docs/MEMEIC_QUALITY_PLAN.md)
+
+- New beat kinds `photo` (ironic real photo, zero motion) and `doodle`
+  (flat-cartoon gag); meme presenters `split|full|stamp`; caps photo/doodle<=2,
+  meme<=2; MIN_PUNCH 3->2; every scene must contain >=1 joke beat (autofix
+  converts a spare zoom to a captioned photo rather than shipping jokeless).
+- Base layer is hard cuts only: no drift, no overshoot (dead constants removed);
+  photo has zero motion at all; SFX defaults almost all `none`, volume 0.5->0.22.
+- Punchline hold: the last beat's onset pulls earlier so its window runs ~2x the
+  median (the laugh gets air).
+- "One Cast, One World": `tools/make_cast.py` built guy/world/sheet once
+  (committed under `assets/cast/` with `.url` sidecars); `cast_edit()` re-stages
+  them per gag; doodle/meme beats route through the cast first, text fallback
+  after. Photo beats stay raw irony.
+- Voice: pure clone (steps 10, exaggeration 0.0); render path verified
+  filter-free.
+- BEATS prompt rewritten as an output contract (JSON-only, exact keys, few-shot
+  examples, cast + setup->betrayal rules) after proving the thinking model
+  roleplays prose on loose prompts; `llm.py` meta dialect moved to native
+  `/api/chat` (the OpenAI-compatible path truncates long instructions);
+  `beats.normalise` tolerates subject/desc/factor aliases.
+
 ## Still outstanding
 
 `assets/audio/lofi/` is empty, so episodes render with no music bed. It needs a

@@ -77,8 +77,9 @@ VERDICT_TAIL = 20.0         # the stamp owns the last 20 seconds
 # fast and settles, so a static frame reads as motion arriving rather than a
 # slideshow sitting there. v2 used 1.02 -> 1.06 on ease:'none', which is a
 # linear crawl -- technically motion, invisible in practice.
-DRIFT_FROM, DRIFT_TO = 1.03, 1.10
-PUNCH_IN = 1.17             # every cut lands oversized and snaps back
+# v3 removed the drift/punch-in entirely (see t_img): every cut lands at 1.06
+# and settles to 1.0 once. The constants below are gone with it; zooms are the
+# only surviving scale motion and carry their own amount per beat.
 SHAKE = 9                   # px of camera shake on a stat hit
 
 FONT_FILES = ("display.woff2", "mono.woff2", "pixel.woff2")

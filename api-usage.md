@@ -173,3 +173,176 @@ curl -X POST https://media-gen-mcp.onrender.com/api/keys -H "Content-Type: appli
 `favorite_media(item_id, is_favorited)`, `delete_media(item_id)`, `media_status()`.
 
 Video tools are async: take the returned `job_id`, call `check_generation(job_id)` about every 20s until `done`.
+
+
+
+
+GROQ api key : (installed as the GROQ_KEY secret -- never committed; see below)
+mode name and details for groq: Whisper
+OpenAI
+whisper-large-v3
+
+
+Limits
+Requests
+20 / minute
+
+2K / day
+
+Release Stage
+production
+Released
+September 3, 2023
+
+
+and here is teh voice api docs:
+
+# Chatterbox TTS — API Usage Guide
+
+Self-hosted zero-shot voice cloning / text-to-speech server. Call it over HTTP
+from any AI agent, script, or app. Web UI also available at `http://localhost:3000/`.
+
+---
+
+## Base URL
+
+Public URL (reachable from any AI agent / external service):
+
+    https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev
+
+Local URL (same machine):
+
+    http://localhost:3000
+
+Start / restart the server anytime with:
+
+    bash /home/user/pro1/project/keepalive.sh
+
+Check it is alive (public):
+
+    curl -s https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev/api/health
+    # {"ready":true,"binary":true,"t3":true,"s3gen":true,"version":"1.0.0","engine":"chatterbox-turbo-gguf + crispasr"}
+
+> Use `--noproxy '*'` if your shell has `HTTP_PROXY` set (this workspace does).
+> The public host is a Cloud Workstations preview tunnel that forwards to the
+> same server on port 3000 — localhost works too when running on the machine.
+
+---
+
+## Endpoints
+
+| Method | Path                   | Purpose                                        |
+|--------|------------------------|------------------------------------------------|
+| GET    | `/api/health`          | server + model health check                   |
+| POST   | `/api/tts`             | speech synthesis (default voice)              |
+| POST   | `/api/clone`           | voice cloning (voice file required)           |
+| GET    | `/outputs/<id>.wav`    | download the generated WAV (auto-deletes)     |
+| DELETE | `/outputs/<id>.wav`    | force-delete an output                        |
+
+### Request fields (multipart/form-data, or JSON for `/api/tts`)
+
+| Field                | Type    | Default | Notes                                  |
+|----------------------|---------|---------|----------------------------------------|
+| `text`               | string  | —       | **required**, max 30,000 chars         |
+| `voice` / `audio`    | file    | —       | required for `/api/clone`; wav/mp3/flac/ogg/webm, max 25 MB |
+| `ttsSteps`           | int     | 2       | 2 = turbo (fast), higher = slower/better |
+| `emotionExaggeration`| float   | 0.5     | 0 = flat, 1 = very expressive          |
+| `ttsSeed`            | int     | 0       | seed for reproducible output            |
+| `threads`            | int     | 2       | CPU threads for the C++ runtime        |
+
+---
+
+## Example: bare TTS (curl)
+
+    curl --noproxy '*' -X POST https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev/api/tts \
+         -F 'text=[narration] Hello world, this is a test.'
+    # {"ok":true,"jobId":"abc123","url":"/outputs/abc123.wav","chunks":1}
+
+    curl --noproxy '*' -o out.wav https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev/outputs/abc123.wav
+
+Or as JSON (no voice file):
+
+    curl --noproxy '*' -X POST https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev/api/tts \
+         -H 'Content-Type: application/json' \
+         -d '{"text":"Hello world","ttsSteps":2,"emotionExaggeration":0.5}'
+
+## Example: voice cloning (curl)
+
+    curl --noproxy '*' -X POST https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev/api/clone \
+         -F 'text=The quick brown fox jumps over the lazy dog.' \
+         -F 'voice=@/path/to/reference.wav'
+    # {"ok":true,"jobId":"xyz789","url":"/outputs/xyz789.wav","chunks":2,"clonedFrom":"reference.wav"}
+
+    curl --noproxy '*' -o clone.wav https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev/outputs/xyz789.wav
+
+---
+
+## Example: Python (AI agent friendly)
+
+```python
+import requests
+
+BASE = "https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev"
+PROXIES = {"http": None, "https": None}  # skip wireproxy
+
+# 1. health
+r = requests.get(f"{BASE}/api/health", proxies=PROXIES)
+assert r.json()["ready"], "server not ready"
+
+# 2. synthesize (default voice)
+r = requests.post(f"{BASE}/api/tts",
+                  data={"text": "Hello from the agent.", "ttsSteps": 2},
+                  proxies=PROXIES)
+job = r.json()
+wav = requests.get(f"{BASE}{job['url']}", proxies=PROXIES).content
+
+# 3. clone a voice from a reference clip
+with open("reference.wav", "rb") as f:
+    r = requests.post(f"{BASE}/api/clone",
+                      data={"text": "Line delivered in a cloned voice."},
+                      files={"voice": f},
+                      proxies=PROXIES)
+job = r.json()
+wav = requests.get(f"{BASE}{job['url']}", proxies=PROXIES).content
+open("cloned.wav", "wb").write(wav)
+```
+
+## Example: Node.js
+
+```js
+const base = "https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev";
+const FormData = require("form-data"); // or use fetch + FormData (Node 22)
+const fd = new FormData();
+fd.append("text", "Hello from a Node agent.");
+fd.append("voice", require("fs").createReadStream("reference.wav"));
+const res = await fetch(base + "/api/clone", { method: "POST", body: fd });
+const job = await res.json();
+// then download: fetch(base + job.url)
+```
+
+---
+
+## Notes for AI agents
+
+- **Output is one-shot**: the WAV auto-deletes as soon as the download (GET)
+  finishes, and a janitor removes anything older than 10 minutes. Save the file
+  immediately.
+- **Long text is fine**: anything up to 30,000 chars is chunked and stitched
+  server-side; you get a single WAV back.
+- **Cloning**: feed 5–30 s of clean, single-speaker audio (wav/mp3/flac/ogg).
+  Noise or multiple speakers degrade quality.
+- **Emotion tags** can be embedded in `text`: `[laugh]`, `[sigh]`, `[angry]`,
+  `[happy]`, `[whispering]`, `[narration]`, `[dramatic]`, `[surprised]`, and
+  more — e.g. `"[laugh] That's funny!"`.
+- **Speed**: ~5 s for one short sentence, ~30 s for 5 sentences on this CPU
+  box. Long jobs are sequential.
+- **Ethical use**: this service suppresses the AI-disclosure prefix. Do not
+  use it to impersonate anyone without consent.
+
+## Layout
+
+- `project/src/server.js` — Express app (HTTP + WebSocket)
+- `project/src/crispasr.js` — chunking, WAV concat, C++ wrapper
+- `project/public/index.html` — web UI
+- `models/` — Chatterbox GGUF models
+- `CrispASR/build/bin/crispasr` — C++ inference binary

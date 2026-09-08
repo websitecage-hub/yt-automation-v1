@@ -72,6 +72,9 @@ MAX_MEME = 2           # v3: memes are the show, not the garnish (was 1)
 MAX_PHOTO = 2          # ironic photo punch-ins per scene
 MAX_DOODLE = 2         # flat-cartoon joke diagrams per scene
 MIN_PUNCH = 2          # at least this many 'type'/'stat' beats carry the words (was 3)
+# Every scene needs at least one joke beat -- a scene of pure specimen cards
+# with no betrayal is the repetitive feel the operator complained about.
+JOKE_KINDS = ("photo", "doodle", "meme")
 
 # Meme presenters: how the cutaway lands. split = side box sliding in (the old
 # default), full = fullscreen slam that owns the frame for its hold, stamp = a
@@ -226,7 +229,8 @@ def normalise(spec, scene, index):
     beat = {"i": index, "kind": kind}
 
     if kind == "img":
-        subject = " ".join(str(spec.get("prompt") or spec.get("subject") or "").split())
+        subject = " ".join(str(spec.get("prompt") or spec.get("subject")
+                               or spec.get("desc") or "").split())
         if not subject:
             subject = " ".join(str(scene.get("heading") or scene.get("text") or "").split())
         if not subject:
@@ -245,7 +249,8 @@ def normalise(spec, scene, index):
         if not beat["value"]:
             kind, beat["kind"] = "zoom", "zoom"
     elif kind == "meme":
-        subject = " ".join(str(spec.get("prompt") or "").split())
+        subject = " ".join(str(spec.get("prompt") or spec.get("subject")
+                               or spec.get("desc") or "").split())
         beat["caption"] = _words(spec.get("caption"), MAX_CAPTION_WORDS)
         beat["template"] = _pick(spec.get("template"), MEME_TEMPLATES, "split")
         if not subject:
@@ -253,7 +258,8 @@ def normalise(spec, scene, index):
         else:
             beat["prompt"] = subject[:200]
     elif kind == "photo":
-        subject = " ".join(str(spec.get("prompt") or "").split())
+        subject = " ".join(str(spec.get("prompt") or spec.get("subject")
+                               or spec.get("desc") or "").split())
         beat["caption"] = _words(spec.get("caption"), MAX_PHOTO_CAPTION_WORDS)
         beat["counter"] = " ".join(str(spec.get("counter") or "").split())[:MAX_COUNTER_CHARS]
         if not subject:
@@ -261,7 +267,8 @@ def normalise(spec, scene, index):
         else:
             beat["prompt"] = subject[:200]
     elif kind == "doodle":
-        subject = " ".join(str(spec.get("prompt") or "").split())
+        subject = " ".join(str(spec.get("prompt") or spec.get("subject")
+                               or spec.get("desc") or "").split())
         beat["speech"] = _words(spec.get("speech") or spec.get("caption"),
                                 MAX_SPEECH_WORDS)
         if not subject:
@@ -274,7 +281,7 @@ def normalise(spec, scene, index):
 
     if kind == "zoom":
         try:
-            amount = float(spec.get("amount", 1.18))
+            amount = float(spec.get("amount", spec.get("factor", 1.18)))
         except (TypeError, ValueError):
             amount = 1.18
         beat["amount"] = round(min(ZOOM_MAX, max(ZOOM_MIN, amount)), 3)
@@ -320,6 +327,8 @@ def validate(beats):
     if punch < MIN_PUNCH:
         problems.append('at least %d "type" or "stat" beats per scene (got %d)'
                         % (MIN_PUNCH, punch))
+    if not any(tally[k] for k in JOKE_KINDS):
+        problems.append('at least 1 photo/doodle/meme beat per scene (the joke)')
     for beat in beats:
         i = beat.get("i", 0) + 1
         if beat.get("kind") == "type" and len(str(beat.get("text", "")).split()) > MAX_TYPE_WORDS:
@@ -394,6 +403,20 @@ def autofix(beats, scene):
                 beat.clear()
                 beat.update({"kind": "zoom", "amount": 1.18, "sfx": DEFAULT_SFX["zoom"]})
 
+    # Rule 3b: no jokeless scenes. A spare zoom becomes an ironic photo of the
+    # scene's own subject -- never as sharp as the director's gag, but a cut
+    # with a caption beats a third straight specimen card.
+    if not any(b.get("kind") in JOKE_KINDS for b in beats):
+        for beat in reversed(beats):
+            if beat.get("kind") == "zoom":
+                phrase = _phrase(scene, set()) or "SO RELATABLE"
+                beat.clear()
+                beat.update({"kind": "photo",
+                             "prompt": "ironic real-world photograph of " + subject[:180],
+                             "caption": phrase, "counter": "",
+                             "sfx": DEFAULT_SFX["photo"]})
+                break
+
     # Rule 4: the words have to land somewhere.
     used = {str(b.get("text", "")) for b in beats if b.get("kind") == "type"}
     for beat in beats:
@@ -432,4 +455,21 @@ def build(scene, words, specs, n=None):
         beat["t"] = times[i]
         beat["end"] = round(times[i + 1], 3) if i + 1 < len(times) else round(
             float(scene.get("dur") or times[i]), 3)
+    # Memeic micro-rule: the punchline (last) beat holds ~2x the median window.
+    # The laugh needs air. Pull its onset earlier when there is room -- never
+    # past the previous beat's MIN_GAP, never changing the scene's end.
+    if len(staged) > 2:
+        try:
+            dur = float(scene.get("dur") or 0.0)
+        except (TypeError, ValueError):
+            dur = 0.0
+        wins = [staged[k + 1]["t"] - staged[k]["t"] for k in range(len(staged) - 1)]
+        wins.append(max(0.0, dur - staged[-1]["t"]))
+        med = sorted(wins)[len(wins) // 2]
+        if med > 0 and wins[-1] < 2 * med:
+            floor_t = staged[-2]["t"] + MIN_GAP
+            want_t = max(floor_t, dur - 2 * med)
+            if want_t < staged[-1]["t"] - 0.05:
+                staged[-1]["t"] = round(want_t, 3)
+                staged[-1]["end"] = round(dur, 3)
     return staged

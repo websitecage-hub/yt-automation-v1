@@ -29,6 +29,16 @@ SCOPES = [
 DEFAULT_CATEGORY = "27"
 
 
+def job_marker(job_id):
+    """Deterministic idempotency tag embedded in every upload's description.
+
+    R1: a kill between a successful upload and the state save must never produce
+    a duplicate video. The marker makes an orphan upload findable, so the resume
+    path adopts it instead of uploading again.
+    """
+    return "[kronvex:%s]" % str(job_id or "unknown")
+
+
 def _dry_run():
     return (os.getenv("DRY_RUN") or "").strip().lower() in _TRUTHY
 
@@ -86,8 +96,9 @@ def upload_video(job, mp4_path, privacy="private"):
 
     body = {
         "snippet": {
-            "title": (str(job.get("title") or "SCALED"))[:100],
-            "description": str(job.get("description") or ""),
+            "title": (str(job.get("title") or "Kronvex"))[:100],
+            "description": (str(job.get("description") or "").rstrip() + "\n\n"
+                            + job_marker(job.get("id"))),
             "tags": list(job.get("tags") or []),
             "categoryId": str(job.get("categoryId") or DEFAULT_CATEGORY),
         },
@@ -108,6 +119,35 @@ def upload_video(job, mp4_path, privacy="private"):
     except Exception as e:
         print("[upload] upload failed: %s -- returning None" % e)
         return None
+
+
+def find_upload(job_id, limit=25):
+    """Adopt an orphan: the newest own video whose description carries our marker.
+
+    R1 resume path. Returns the videoId or None (also None in DRY_RUN / without
+    creds / on any API failure — the caller then uploads normally).
+    """
+    if not has_yt():
+        return None
+    marker = job_marker(job_id)
+    try:
+        svc = _service("youtube")
+        mine = svc.search().list(part="id", forMine=True, type="video",
+                                 order="date", maxResults=min(50, max(1, limit)),
+                                 ).execute().get("items") or []
+        ids = [it.get("id", {}).get("videoId") for it in mine]
+        ids = [v for v in ids if v][:limit]
+        if not ids:
+            return None
+        details = svc.videos().list(part="id,snippet", id=",".join(ids)).execute()
+        for item in details.get("items") or []:
+            if marker in str(((item.get("snippet") or {}).get("description")) or ""):
+                print("[upload] adopted orphan upload %s for job %s"
+                      % (item.get("id"), job_id))
+                return item.get("id")
+    except Exception as e:
+        print("[upload] orphan search failed (%s) -- uploading normally" % e)
+    return None
 
 
 def set_thumbnail(video_id, thumb_path):

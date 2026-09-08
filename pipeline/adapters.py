@@ -592,6 +592,53 @@ def meme_croc(situation):
         "plain simple background, no caption text." % situation)
 
 
+# ------------------------------------------------- the recurring cast (Memeic)
+#
+# "One Cast, One World": every joke visual is a re-staging of the same faces in
+# the same world via edit_image, so the show reads as drawn by one cartoonist
+# instead of generated fresh every beat. Cast files live in assets/cast/ with
+# .url sidecars (same pattern as the avatar cache); tools/make_cast.py builds
+# them once. Raises on any failure so callers fall back to text generation.
+
+CAST_DIR = os.path.join(REPO, "assets", "cast")
+CAST_WHO = ("croc", "guy", "world", "sheet")
+
+
+def cast_url(who="guy"):
+    """Public URL of a cast asset, from its committed .url sidecar."""
+    who = str(who or "guy").strip().lower()
+    if who not in CAST_WHO:
+        who = "guy"
+    if who == "croc":
+        return avatar_ref_url()
+    path = os.path.join(CAST_DIR, {"guy": "guy", "world": "world",
+                                   "sheet": "cast_sheet"}.get(who, "guy") + ".url")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            url = fh.read().strip()
+        if url.startswith("http"):
+            return url
+    except OSError:
+        pass
+    raise RuntimeError("cast %r has no cached url -- run tools/make_cast.py" % who)
+
+
+def cast_edit(situation, who="guy"):
+    """Re-stage the recurring cast: edit_image(cast_url, situation) -> bytes.
+
+    The director never invents characters; every doodle/meme is THESE faces in
+    a new humiliating situation. Raises so the caller falls back to text art.
+    """
+    situation = " ".join(str(situation or "").split())[:200]
+    if not situation:
+        raise RuntimeError("cast_edit needs a situation")
+    return edit_image(
+        cast_url(who), "Same characters, same flat cartoon style, same plain "
+        "off-white world -- change ONLY the situation, played completely "
+        "straight: %s. Thick black outlines, solid flat colors, no shading, "
+        "no photorealism, no caption text." % situation)
+
+
 # ------------------------------------------------- upload + consistency (media API v2)
 #
 # The media host grew an upload endpoint and an edit tool. Uploading an episode's

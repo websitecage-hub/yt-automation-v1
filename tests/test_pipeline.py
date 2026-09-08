@@ -61,7 +61,14 @@ def dialect_resp(url, content):
     """Reply in whichever dialect the URL implies, so chain-order tests work."""
     if "/v1/messages" in url:
         return FakeResp(payload=anthropic_msg(content))
+    if "/api/chat" in url:
+        return FakeResp(payload={"text": content, "model": "meta-ai-thinking"})
     return FakeResp(payload=chat(content))
+
+
+def meta_chat_url(llm):
+    """Where the meta dialect posts: /api/chat at the host root, not under /v1."""
+    return llm.META_BASE.rsplit("/v1", 1)[0] + "/api/chat"
 
 
 # ==========================================================================
@@ -80,15 +87,15 @@ class TestLLM:
         calls = []
 
         def fake_post(url, **kw):
-            calls.append((url, kw["json"]["model"], kw["headers"]))
-            return FakeResp(payload=chat("Base stats first."))
+            calls.append((url, kw["json"].get("model"), kw["headers"]))
+            return FakeResp(payload={"text": "Base stats first.", "model": "meta-ai-thinking"})
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("sys", "user") == "Base stats first."
         assert len(calls) == 1
         url, model, headers = calls[0]
-        assert url == llm.META_BASE + "/chat/completions"   # Meta is the keyless primary
-        assert model == "meta-ai-thinking"
+        assert url == meta_chat_url(llm)   # Meta is the keyless primary
+        assert model is None               # /api/chat takes a bare message, no model
         assert "Mozilla/" in headers["User-Agent"]
 
     def test_code_chain_starts_at_meta(self, monkeypatch):
@@ -96,27 +103,27 @@ class TestLLM:
         seen = {}
 
         def fake_post(url, **kw):
-            seen.update(url=url, **kw["json"])
-            return FakeResp(payload=chat("tl.to('#s0-a',{opacity:1},0.5);"))
+            seen.update(url=url, message=kw["json"]["message"])
+            return FakeResp(payload={"text": "tl.to('#s0-a',{opacity:1},0.5);"})
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         llm.llm_code("sys", "user")
-        assert seen["url"] == llm.META_BASE + "/chat/completions"
-        assert seen["model"] == "meta-ai-thinking"
+        assert seen["url"] == meta_chat_url(llm)
+        assert "sys" in seen["message"] and "user" in seen["message"]
 
     def test_first_provider_fails_second_is_used(self, monkeypatch):
         llm = self._mod(monkeypatch)
-        models = []
+        urls = []
 
         def fake_post(url, **kw):
-            models.append(kw["json"]["model"])
-            if len(models) == 1:
+            urls.append(url)
+            if len(urls) == 1:
                 return FakeResp(status=400, text="meta down")  # non-retryable -> next provider
             return dialect_resp(url, "second answer")
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "second answer"
-        assert models == ["meta-ai-thinking", "claude-opus-4-8"]
+        assert urls == [meta_chat_url(llm), llm.TABI_BASE + "/v1/messages"]
 
     def test_retryable_status_is_retried_on_same_provider(self, monkeypatch):
         llm = self._mod(monkeypatch)
@@ -126,7 +133,7 @@ class TestLLM:
             n["i"] += 1
             if n["i"] == 1:
                 return FakeResp(status=503, text="try later")  # retryable -> retry, don't fall through
-            return FakeResp(payload=chat("ok"))
+            return dialect_resp(url, "ok")
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "ok"
@@ -140,7 +147,7 @@ class TestLLM:
             n["i"] += 1
             if n["i"] == 1:
                 raise llm.requests.RequestException("connection reset")
-            return FakeResp(payload=chat("recovered"))
+            return dialect_resp(url, "recovered")
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "recovered"
@@ -150,18 +157,17 @@ class TestLLM:
         # Only GROQ has a key. Meta (keyless) is tried first; make it fail so the
         # chain must skip the empty-key providers (tabi/nim/gemini) and land on groq.
         llm = self._mod(monkeypatch, keys=("GROQ_KEY",))
-        models = []
+        urls = []
 
         def fake_post(url, **kw):
-            m = kw["json"]["model"]
-            models.append(m)
-            if m == "meta-ai-thinking":
+            urls.append(url)
+            if url == meta_chat_url(llm):
                 return FakeResp(status=400, text="meta down")
             return FakeResp(payload=chat("groq only"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "groq only"
-        assert models == ["meta-ai-thinking", "openai/gpt-oss-120b"]
+        assert urls == [meta_chat_url(llm), llm.GROQ_BASE + "/chat/completions"]
 
     def test_all_down_raises(self, monkeypatch):
         llm = self._mod(monkeypatch)
@@ -173,23 +179,23 @@ class TestLLM:
         # Meta needs no key, so even with every key empty it is still tried (and is
         # the only provider tried); the keyed providers are all skipped.
         llm = self._mod(monkeypatch, keys=())
-        models = []
+        urls = []
 
         def fake_post(url, **kw):
-            models.append(kw["json"]["model"])
+            urls.append(url)
             return FakeResp(status=400, text="meta down")
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         with pytest.raises(RuntimeError, match="all LLM providers down"):
             llm.llm("s", "u")
-        assert models == ["meta-ai-thinking"]
+        assert urls == [meta_chat_url(llm)]
 
     def test_json_out_sets_response_format_on_openai_dialect(self, monkeypatch):
         llm = self._mod(monkeypatch, keys=("GROQ_KEY",))
         seen = {}
 
         def fake_post(url, **kw):
-            if kw["json"]["model"] == "meta-ai-thinking":
+            if url == meta_chat_url(llm):
                 return FakeResp(status=400, text="meta down")   # fall through to groq
             seen.update(kw["json"])
             return FakeResp(payload=chat('{"verdict":"APEX"}'))
@@ -203,7 +209,7 @@ class TestLLM:
         seen = {}
 
         def fake_post(url, **kw):
-            if kw["json"]["model"] == "meta-ai-thinking":
+            if url == meta_chat_url(llm):
                 return FakeResp(status=400, text="meta down")   # fall through to tabi
             seen.update(url=url, **kw["json"])
             return FakeResp(payload=anthropic_msg('{"verdict":"APEX"}'))
@@ -235,16 +241,16 @@ class TestLLM:
 
     def test_unparseable_json_is_a_provider_failure(self, monkeypatch):
         llm = self._mod(monkeypatch)
-        models = []
+        urls = []
 
         def fake_post(url, **kw):
-            models.append(kw["json"]["model"])
-            if len(models) == 1:
+            urls.append(url)
+            if len(urls) == 1:
                 return dialect_resp(url, "I'm afraid I can't do that.")  # meta: non-JSON
             return dialect_resp(url, '{"ok":true}')                      # tabi: JSON
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u", json_out=True) == {"ok": True}
-        assert len(models) == 2
+        assert len(urls) == 2
 
     def test_providers_health_reflects_env(self, monkeypatch):
         monkeypatch.setenv("TABI_KEY", "x")
@@ -265,9 +271,9 @@ class TestLLM:
         seen = []
 
         def fake_post(url, **kw):
-            m = kw["json"]["model"]
+            m = kw["json"].get("model")
             seen.append((url, m))
-            if m == "meta-ai-thinking":
+            if url == meta_chat_url(llm):
                 return FakeResp(status=400, text="meta down")      # skip past meta
             if [u for u, _ in seen].count(llm.TABI_BASE + "/v1/messages") == 1:
                 return FakeResp(status=403, text="cloudflare")     # first tabi key blocked
@@ -278,7 +284,7 @@ class TestLLM:
         # meta fails, then a per-key block on TABI_KEY falls through to TABI_KEY2
         # (still opus, still the anthropic /v1/messages endpoint) before NIM.
         assert seen == [
-            (llm.META_BASE + "/chat/completions", "meta-ai-thinking"),
+            (meta_chat_url(llm), None),
             (llm.TABI_BASE + "/v1/messages", "claude-opus-4-8"),
             (llm.TABI_BASE + "/v1/messages", "claude-opus-4-8"),
         ]
@@ -1806,7 +1812,9 @@ class TestValidate:
                 {"i": 1, "kind": "type", "text": "BITE FORCE"},
                 {"i": 2, "kind": "stat", "value": "3700 PSI", "label": "JAW"},
                 {"i": 3, "kind": "type", "text": "NERFED"},
-                {"i": 4, "kind": "zoom", "amount": 1.18}]
+                {"i": 4, "kind": "zoom", "amount": 1.18},
+                {"i": 5, "kind": "meme", "prompt": "filing paperwork",
+                 "caption": "ADULTING", "template": "split"}]
 
     def test_a_legal_scene_reports_nothing(self):
         from pipeline.beats import validate
@@ -1980,7 +1988,7 @@ class TestStageMachine:
     def test_stage_order_is_the_dependency_order(self):
         from pipeline import run
         assert run.STAGES == ["idea", "voice", "srt", "beats", "visuals",
-                              "render", "upload", "thumbnail", "done"]
+                              "render", "upload", "thumbnail", "qc", "done"]
         # voice before srt (nothing to time), srt before beats (nothing to snap
         # to), beats before visuals (we don't know which stills to buy).
         for earlier, later in (("voice", "srt"), ("srt", "beats"),
@@ -2099,3 +2107,186 @@ class TestStageMachine:
             {"kind": "img", "prompt": "a jaw"}, {"kind": "meme", "prompt": "a croc"}]}]}
         run.stage_visuals(job, str(tmp_path))
         assert job["stage"] == "render"
+
+
+# ==========================================================================
+# v4 Phase 1 — reliability (R1/R2/R3/R7) and the un-hardcoded {perf}
+# ==========================================================================
+
+class TestUploadIdempotency:
+    def test_marker_is_deterministic_per_job(self):
+        from pipeline.upload import job_marker
+        assert job_marker("2026-01-01-x") == "[kronvex:2026-01-01-x]"
+        assert job_marker("2026-01-01-x") == job_marker("2026-01-01-x")
+
+    def test_find_upload_adopts_orphan_by_marker(self, monkeypatch):
+        from pipeline import upload
+        monkeypatch.setenv("YT_REFRESH_TOKEN", "r")
+        monkeypatch.setenv("YT_CLIENT_ID", "c")
+        monkeypatch.setenv("YT_CLIENT_SECRET", "s")
+
+        class Search:
+            def list(self, **k):
+                class Ex:
+                    def execute(self):
+                        return {"items": [{"id": {"videoId": "vid9"}},
+                                          {"id": {"videoId": "vid8"}}]}
+                return Ex()
+
+        class Videos:
+            def list(self, **k):
+                class Ex:
+                    def execute(self):
+                        return {"items": [
+                            {"id": "vid9", "snippet": {"description": "hello"}},
+                            {"id": "vid8", "snippet": {"description": "x [kronvex:J1] y"}}]}
+                return Ex()
+
+        class Svc:
+            def search(self):
+                return Search()
+
+            def videos(self):
+                return Videos()
+
+        monkeypatch.setattr(upload, "_service", lambda kind="youtube": Svc())
+        assert upload.find_upload("J1") == "vid8"
+
+    def test_find_upload_returns_none_without_match_or_creds(self, monkeypatch):
+        from pipeline import upload
+        for v in ("YT_REFRESH_TOKEN", "YT_CLIENT_ID", "YT_CLIENT_SECRET"):
+            monkeypatch.delenv(v, raising=False)
+        assert upload.find_upload("J1") is None
+
+
+class TestPublishVerification:
+    def _yt(self, monkeypatch, public_after=True):
+        monkeypatch.setenv("YT_REFRESH_TOKEN", "r")
+        monkeypatch.setenv("YT_CLIENT_ID", "c")
+        monkeypatch.setenv("YT_CLIENT_SECRET", "s")
+        from pipeline import upload
+        state = {"status": "private"}
+
+        class Videos:
+            def update(self, **k):
+                if public_after:
+                    state["status"] = "public"
+
+                class Ex:
+                    def execute(self):
+                        return {}
+                return Ex()
+
+            def list(self, **k):
+                class Ex:
+                    def execute(self):
+                        return {"items": [{"status": {"privacyStatus": state["status"]}}]}
+                return Ex()
+
+        class Comments:
+            def insert(self, **k):
+                class Ex:
+                    def execute(self):
+                        return {}
+                return Ex()
+
+        class Svc:
+            def videos(self):
+                return Videos()
+
+            def commentThreads(self):
+                return Comments()
+
+        monkeypatch.setattr(upload, "_service", lambda kind="youtube": Svc())
+
+    def test_verified_public_marks_published(self, tmp_path, monkeypatch):
+        from pipeline import publish
+        self._yt(monkeypatch, public_after=True)
+        d = str(tmp_path)
+        job = {"id": "J1", "stage": "done", "video_id": "vid1", "extra_credit": "Extra credit: x"}
+        publish.write_job(d + "/J1.json", job)
+        out = publish.publish_one(d)
+        assert out["published"] is True and "publish_attempts" not in out
+
+    def test_failed_flip_stays_queued_with_attempts(self, tmp_path, monkeypatch):
+        from pipeline import publish
+        self._yt(monkeypatch, public_after=False)
+        d = str(tmp_path)
+        job = {"id": "J1", "stage": "done", "video_id": "vid1"}
+        publish.write_job(d + "/J1.json", job)
+        out = publish.publish_one(d)
+        assert out.get("published") is not True
+        assert out["publish_attempts"] == 1
+
+
+class TestQCGate:
+    def _job(self, dur=100.0, beats=None):
+        beats = beats if beats is not None else [
+            {"kind": "img", "prompt": "a jaw"}, {"kind": "type", "text": "BIG"}]
+        return {"id": "J1", "thumb": "", "scenes": [{"dur": dur, "beats": beats}]}
+
+    def test_good_episode_passes(self, tmp_path):
+        from pipeline import qc
+        d = str(tmp_path)
+        open(d + "/vJ1_0.wav", "wb").write(b"\x00" * 100)
+        open(d + "/iJ1_0_0.jpg", "wb").write(b"\x00" * 100)
+        open(d + "/J1_thumb.jpg", "wb").write(b"\x00" * (31 * 1024))
+        open(d + "/wJ1_0.json", "w").write('[{"s":0,"e":1,"w":"hi"}]')
+        ok, fails, _warns = qc.check(self._job(), d)
+        assert ok and not fails
+
+    def test_short_duration_missing_audio_and_thumb_fail(self, tmp_path):
+        from pipeline import qc
+        d = str(tmp_path)
+        ok, fails, _warns = qc.check(self._job(dur=3.0), d)
+        assert not ok
+        blob = " ".join(fails)
+        assert "duration" in blob and "narration" in blob and "thumbnail" in blob
+
+    def test_low_art_coverage_fails(self, tmp_path):
+        from pipeline import qc
+        d = str(tmp_path)
+        open(d + "/vJ1_0.wav", "wb").write(b"\x00" * 100)
+        open(d + "/J1_thumb.jpg", "wb").write(b"\x00" * (31 * 1024))
+        beats = ([{"kind": "img", "prompt": "p%d" % i} for i in range(4)]
+                 + [{"kind": "type", "text": "A B"}])
+        ok, fails, _warns = qc.check(self._job(beats=beats), d)
+        assert not ok and any("coverage" in f for f in fails)
+
+    def test_whisper_gaps_warn_without_key_fail_with_key(self, tmp_path, monkeypatch):
+        from pipeline import qc
+        d = str(tmp_path)
+        open(d + "/vJ1_0.wav", "wb").write(b"\x00" * 100)
+        open(d + "/iJ1_0_0.jpg", "wb").write(b"\x00" * 100)
+        open(d + "/J1_thumb.jpg", "wb").write(b"\x00" * (31 * 1024))
+        open(d + "/wJ1_0.json", "w").write("[]")
+        monkeypatch.delenv("GROQ_KEY", raising=False)
+        ok, _fails, warns = qc.check(self._job(), d)
+        assert ok and warns
+        monkeypatch.setenv("GROQ_KEY", "k")
+        ok2, fails2, _w2 = qc.check(self._job(), d)
+        assert not ok2 and any("word timings" in f for f in fails2)
+
+
+class TestSrtResumeAndPerf:
+    def test_stage_srt_reuses_word_file(self, tmp_path):
+        from pipeline import run
+        d = str(tmp_path)
+        words = [{"s": 0.0, "e": 1.5, "w": "hi"}]
+        open(d + "/wJ1_0.json", "w").write(__import__("json").dumps(words))
+        job = {"id": "J1", "stage": "srt", "scenes": [{"text": "hi there"}]}
+        run.stage_srt(job, d)
+        assert job["scenes"][0]["dur"] == round(1.5 + run.CAPTION_PAD, 3)
+        assert job["stage"] == "beats"
+
+    def test_perf_summary_empty_when_no_history(self, tmp_path, monkeypatch):
+        from pipeline import run
+        monkeypatch.setattr(run, "VIDEOS", str(tmp_path))
+        monkeypatch.setattr(run, "STRATEGY", str(tmp_path / "strategy.json"))
+        assert run._perf_summary() == "(no performance data yet)"
+
+    def test_qc_failed_jobs_do_not_resume(self):
+        from pipeline import run
+        jobs = [{"id": "q", "stage": "qc_failed"}, {"id": "v", "stage": "voice"}]
+        assert run.in_progress(jobs)["id"] == "v"
+        assert run.in_progress([{"id": "q", "stage": "qc_failed"}]) is None
