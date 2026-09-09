@@ -2267,3 +2267,51 @@ class TestScriptValidation:
         except RuntimeError as e:
             assert "invalid after repair" in str(e)
         assert len(calls) == 2, "exactly one repair attempt"
+
+
+class TestLocalVoice:
+    def test_tts_uses_local_clone_by_default(self, monkeypatch):
+        from pipeline import adapters
+        from pipeline import voice_local
+        monkeypatch.setitem(adapters.CONFIG, "voice", {"engine": "local"})
+        called = {}
+
+        def fake_clone(text, ref=None, exaggeration=0.0):
+            called["text"] = text
+            return b"RIFFWAVE", 24000
+
+        monkeypatch.setattr(voice_local, "clone", fake_clone)
+        data = adapters.tts("hello there")
+        assert data == b"RIFFWAVE"
+        assert called["text"] == "hello there"
+        assert adapters.last_format("voice") == "wav"
+
+    def test_engine_env_switches_to_api(self, monkeypatch):
+        from pipeline import adapters
+        monkeypatch.setitem(adapters.CONFIG, "voice", {})
+        monkeypatch.setenv("SCALED_VOICE", "api")
+        assert adapters._voice_engine() == "api"
+        monkeypatch.delenv("SCALED_VOICE", raising=False)
+        assert adapters._voice_engine() == "local"
+
+    def test_local_clone_refuses_empty_text(self):
+        from pipeline import voice_local
+        try:
+            voice_local.clone("   ")
+            assert False, "should have raised"
+        except RuntimeError as e:
+            assert "empty text" in str(e)
+
+    def test_local_clone_needs_packages(self, monkeypatch):
+        # Without torch installed the error must name the fix, not a traceback.
+        from pipeline import voice_local
+        monkeypatch.setitem(__import__("sys").modules, "chatterbox.tts", None)
+        voice_local._model["instance"] = None
+        try:
+            voice_local.clone("hello", ref="tests/test_pipeline.py")
+            raised = None
+        except RuntimeError as e:
+            raised = str(e)
+        finally:
+            voice_local._model["instance"] = None
+        assert raised and ("pip install" in raised or "missing" in raised.lower())

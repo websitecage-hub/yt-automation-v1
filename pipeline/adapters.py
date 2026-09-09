@@ -391,8 +391,25 @@ def _call(cfg, subs, kind="voice"):
     raise RuntimeError("%s provider failed after %d attempts: %s" % (kind, RETRIES, last))
 
 
+def _voice_engine():
+    """Which TTS backend: "local" (default, runner CPU, no key) or "api".
+
+    Set in config/apis.json (`voice.engine`) or via SCALED_VOICE. The API path
+    is kept as a fallback for boxes that cannot run torch.
+    """
+    cfg = CONFIG.get("voice") or {}
+    return str(cfg.get("engine") or os.getenv("SCALED_VOICE") or "local").strip().lower()
+
+
 def tts(text):
     """Narration audio for one scene. Bytes; format via last_format('voice')."""
+    if _voice_engine() == "local":
+        from pipeline import voice_local
+        data, _sr = voice_local.clone(text)
+        _LAST_FORMAT["kind"] = "wav"
+        _LAST_FORMAT["voice"] = "wav"
+        print("[adapters] voice ok: %d bytes (wav, local clone)" % len(data))
+        return data
     cfg = CONFIG.get("voice") or {}
     return _call(cfg, {"text": text, "voice_id": cfg.get("voice_id", "")}, kind="voice")
 

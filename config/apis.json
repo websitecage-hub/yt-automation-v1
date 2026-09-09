@@ -1,5 +1,6 @@
 {
   "voice": {
+    "engine": "local",
     "base": "https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev",
     "path": "/api/clone",
     "method": "POST",
