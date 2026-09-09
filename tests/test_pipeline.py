@@ -920,7 +920,7 @@ def beat(kind, t, **kw):
 
 
 def demo_job(**kw):
-    """Two scenes, 42s total, exercising all six beat kinds at least once.
+    """Two scenes, 42s total, exercising all four beat kinds at least once.
 
     Beat times are written by hand rather than through beats.plan_times so a
     change to the pacing formula cannot silently rewrite what these assertions
@@ -932,17 +932,18 @@ def demo_job(**kw):
         "scenes": [
             {"act": "HOOK", "heading": "SEALED", "text": "Your brain seals your strength.",
              "dur": 24.0, "beats": [
-                 beat("img", 0.0, prompt="a brain in a vice", sfx="whoosh"),
-                 beat("type", 2.4, text="SEALED", color="yellow", sfx="pop"),
-                 beat("stat", 4.8, value="97%", label="CAPPED", sfx="none"),
-                 beat("zoom", 7.2, amount=1.2, sfx="zap"),
-                 beat("img", 9.6, prompt="a motor neuron firing"),
-                 beat("meme", 12.0, prompt="a crocodile unimpressed", caption="SURE BUDDY"),
-                 beat("arrow", 14.4, label="RIGHT HERE", dir="left"),
+                 beat("scene", 0.0, prompt="a brain in a vice"),
+                 beat("scene", 2.4, prompt="a motor neuron firing", text="SEALED",
+                      value="97%", label="CAPPED", sfx="pop"),
+                 beat("photo", 4.8, prompt="a cheering crowd", caption="SO LOVED",
+                      counter="31,957,4!?"),
+                 beat("zoom", 7.2, amount=1.2),
+                 beat("scene", 9.6, prompt="a jaw on a desk"),
+                 beat("meme", 12.0, prompt="a crocodile unimpressed"),
              ]},
             {"act": "PROMISE", "heading": "GRIP", "text": "It bites.", "dur": 18.0, "beats": [
-                beat("img", 0.0, prompt="a jaw"),
-                beat("type", 2.4, text="IT BITES", color="green"),
+                beat("scene", 0.0, prompt="a jaw"),
+                beat("zoom", 2.4, amount=1.2),
             ]},
         ],
     }
@@ -957,10 +958,9 @@ def build(tmp_path, job, media=True):
         for i, scene in enumerate(job.get("scenes") or []):
             (tmp_path / ("v%s_%d.mp3" % (job["id"], i))).write_bytes(b"ID3mp3")
             for j, b in enumerate(scene.get("beats") or []):
-                if b.get("kind") == "img":
-                    (tmp_path / ("i%s_%d_%d.jpg" % (job["id"], i, j))).write_bytes(b"\xff\xd8\xff")
-                elif b.get("kind") == "meme":
-                    (tmp_path / ("m%s_%d_%d.png" % (job["id"], i, j))).write_bytes(b"\x89PNG\r\n")
+                head = {"scene": "s", "photo": "p", "meme": "m"}.get(b.get("kind"))
+                if head:
+                    (tmp_path / ("%s%s_%d_%d.jpg" % (head, job["id"], i, j))).write_bytes(b"\xff\xd8\xff")
     proj, total = compose.build_project(job, str(tmp_path))
     page = open(os.path.join(proj, "index.html"), encoding="utf-8").read()
     return proj, total, page
@@ -999,82 +999,40 @@ class TestBuildProject:
         for tag, attrs in timed:
             assert re.search(r'\bid="', attrs), (tag, attrs)
 
-    def test_img_beat_holds_until_the_next_img_not_the_next_beat(self, tmp_path):
-        """Beat 0's art is the base layer through four overlays until beat 4 replaces it."""
+    def test_frame_holds_until_the_next_frame_not_the_next_beat(self, tmp_path):
+        """Every frame holds until the next frame replaces it (all full-bleed)."""
         _, _, page = build(tmp_path, demo_job())
         assert ('<img id="b0_0" class="beat-img clip" data-start="0.000" '
-                'data-duration="9.600" data-track-index="0" src="assets/b0_0.jpg" alt="">') in page
+                'data-duration="2.400" data-track-index="0" src="assets/b0_0.jpg" alt="">') in page
         assert '<div id="w0_0" class="beat-wrap">' in page
-        # the second img runs to the end of the scene: 24.0 - 9.6
-        assert 'id="b0_4" class="beat-img clip" data-start="9.600" data-duration="14.400"' in page
+        # the photo at 4.8 runs until the next frame at 9.6 (zoom owns no frame)
+        assert 'id="b0_2" class="beat-img clip" data-start="4.800" data-duration="4.800"' in page
+        assert 'id="b0_4" class="beat-img clip" data-start="9.600" data-duration="2.400"' in page
+        assert 'id="b0_5" class="beat-img clip" data-start="12.000" data-duration="12.000"' in page
 
-    def test_img_is_a_hard_cut_with_a_tiny_settle_and_nothing_else(self, tmp_path):
-        """v3: no punch overshoot, no drift. One blink, one 0.18s settle."""
+    def test_frame_is_a_hard_cut_and_nothing_else(self, tmp_path):
+        """v4: one 0.02s blink. No scale, no drift, no settle -- static frames."""
         _, _, page = build(tmp_path, demo_job())
-        assert ("tl.fromTo('#b0_0',{opacity:0},{opacity:1,duration:0.030,ease:'none'},0.000);"
+        assert ("tl.fromTo('#b0_0',{opacity:0},{opacity:1,duration:0.020,ease:'none'},0.000);"
                 in page)
-        # The cut settles from 1.06 to 1 and then never moves again.
-        assert ("tl.fromTo('#b0_0',{scale:1.06},{scale:1,duration:0.180,"
-                "ease:'power2.out'},0.000);") in page
         # ...and the snap zoom rides the wrapper, never the image.
-        assert "tl.to('#w0_0',{scale:1.200,duration:0.080,ease:'expo.out'},7.200);" in page
-        assert ("tl.to('#w0_0',{scale:1,duration:0.620,ease:'elastic.out(1,0.55)'},7.280);"
+        assert "tl.to('#w0_2',{scale:1.200,duration:0.080,ease:'expo.out'},7.200);" in page
+        assert ("tl.to('#w0_2',{scale:1,duration:0.620,ease:'elastic.out(1,0.55)'},7.280);"
                 in page)
 
-    def test_type_beat_is_a_coloured_overlay_that_leaves_fast(self, tmp_path):
+    def test_scene_photo_and_meme_all_render_as_full_frames(self, tmp_path):
+        """No overlays exist anymore: every visual beat is a full-bleed frame."""
         _, _, page = build(tmp_path, demo_job())
-        assert ('<div id="t0_1" class="beat-type clip" data-start="2.400" data-duration="1.450" '
-                'data-track-index="1" style="color:var(--yellow)">SEALED</div>') in page
-        assert ("tl.fromTo('#t0_1',{scale:0.32,opacity:0,y:26},{scale:1.06,opacity:1,y:0,"
-                "duration:0.160,ease:'back.out(3.6)'},2.400);") in page
-        assert "tl.to('#t0_1',{scale:1,duration:0.180,ease:'power2.out'},2.560);" in page
-        assert "tl.to('#t0_1',{opacity:0,duration:0.300,ease:'power1.in'},3.550);" in page
-
-    def test_stat_beat_holds_two_beats_and_labels_below(self, tmp_path):
-        """STAT_BEATS=2, so 4.8 holds until beat 4 at 9.6 -- a 4.8s window."""
-        _, _, page = build(tmp_path, demo_job())
-        assert ('<div id="s0_2" class="beat-stat-num clip" data-start="4.800" '
-                'data-duration="4.800"') in page
-        assert ">97%<" in page
-        assert ('<div id="s0_2l" class="beat-stat-lbl clip" data-start="4.800" '
-                'data-duration="4.800"') in page
-        assert ">CAPPED<" in page
-        assert ("tl.fromTo('#s0_2l',{opacity:0,y:18},{opacity:1,y:0,duration:0.220,"
-                "ease:'power3.out'},4.880);") in page
-
-    def test_stat_shakes_the_frame_behind_it_and_lands_back_at_zero(self, tmp_path):
-        """The number is the punchline, so it gets the one impact effect there is."""
-        _, _, page = build(tmp_path, demo_job())
-        # An ODD repeat with yoyo would finish on the `from` values and leave the
-        # art 9px off-centre for the rest of the scene; repeat:4 = 5 passes = ends
-        # on `to`, so no corrective tween is needed.
-        assert ("tl.fromTo('#w0_0',{x:-9,y:4},{x:0,y:0,duration:0.050,yoyo:true,repeat:4,"
-                "ease:'none'},4.800);") in page
-        assert "tl.set('#w0_0',{x:0" not in page
-
-    def test_meme_beat_slides_in_and_out_and_uses_its_own_file(self, tmp_path):
-        _, _, page = build(tmp_path, demo_job())
-        assert 'id="m0_5" class="beat-meme clip" data-start="12.000" data-duration="2.200"' in page
-        assert '<img src="assets/m0_5.png" alt="">' in page
-        assert '<div class="beat-meme-cap">SURE BUDDY</div>' in page
-        assert ("tl.fromTo('#m0_5',{x:560,opacity:0,rotation:11},{x:0,opacity:1,rotation:0,"
-                "duration:0.220,ease:'back.out(2.4)'},12.000);") in page
-        assert "tl.to('#m0_5',{x:560,opacity:0,duration:0.300,ease:'power2.in'},13.900);" in page
-
-    def test_arrow_beat_is_a_css_triangle_never_a_glyph(self, tmp_path):
-        """Press Start 2P has no arrow codepoints -- a glyph would render as tofu."""
-        _, _, page = build(tmp_path, demo_job())
-        assert 'id="a0_6" class="beat-arrow clip" data-start="14.400"' in page
-        assert 'style="left:180px;top:44%;text-align:center"' in page
-        assert '<div class="arrow-glyph arrow-left"></div>RIGHT HERE' in page
-        assert ("tl.fromTo('#a0_6',{rotation:-7},{rotation:7,duration:0.090,yoyo:true,repeat:3,"
-                "ease:'none'},14.580);") in page
+        assert 'id="b0_2" class="beat-img clip" data-start="4.800"' in page   # photo
+        assert 'id="b0_5" class="beat-img clip" data-start="12.000"' in page  # meme
+        assert "beat-type" not in page and "beat-stat" not in page
+        assert "beat-arrow" not in page and "beat-meme" not in page
 
     def test_beat_times_are_absolute_across_scenes(self, tmp_path):
-        """Scene 1 starts at 24.0, so its beat at t=2.4 lands at 26.4."""
+        """Scene 1 starts at 24.0, so its frame at t=0 lands at 24.0."""
         _, _, page = build(tmp_path, demo_job())
         assert 'id="b1_0" class="beat-img clip" data-start="24.000" data-duration="18.000"' in page
-        assert 'id="t1_1" class="beat-type clip" data-start="26.400"' in page
+        assert 'id="b1_1" class="beat-img clip" data-start="26.400"' not in page  # zoom has no element
 
     def test_zoom_with_nothing_on_screen_emits_nothing(self, tmp_path):
         """A zoom is a tween on live art, so it is also the safe landing spot for
@@ -1088,27 +1046,17 @@ class TestBuildProject:
         _, _, page = build(tmp_path, demo_job(), media=False)
         assert "assets/b0_0.jpg" not in page
         assert 'class="beat-img' not in page
-        assert 'id="t0_1"' in page                     # text beats need no files at all
         # A beat that lost its art keeps its SOUND -- that is the whole point of
-        # degrading per beat. (This used to assert no <audio> at all, which only
-        # passed while assets/audio/sfx/ was empty.)
-        assert 'src="assets/audio/whoosh.wav"' in page
+        # degrading per beat.
+        assert 'src="assets/audio/pop.wav"' in page
         assert "narration" not in page                 # ...but no voice was copied
-
-    def test_bgdiv_media_mode(self, tmp_path, monkeypatch):
-        from pipeline import compose
-        monkeypatch.setattr(compose, "MEDIA_MODE", "bgdiv")
-        _, _, page = build(tmp_path, demo_job())
-        assert '<div id="b0_0" class="beat-img clip"' in page
-        assert "background-image:url(assets/b0_0.jpg)" in page
-        assert '<img id="b0_0"' not in page            # beats are divs here; the avatar stays an img
 
     def test_narration_is_one_clip_per_scene_in_the_voice_lane(self, tmp_path):
         proj, _, page = build(tmp_path, demo_job())
         assert ('<audio id="v0" class="clip" data-start="0.000" data-duration="24.000" '
                 'data-track-index="2" src="assets/a0.mp3"></audio>') in page
         assert 'id="v1" class="clip" data-start="24.000" data-duration="18.000"' in page
-        for name in ("a0.mp3", "a1.mp3", "b0_0.jpg", "m0_5.png"):
+        for name in ("a0.mp3", "a1.mp3", "b0_0.jpg", "b0_5.jpg"):
             assert os.path.isfile(os.path.join(proj, "assets", name)), name
 
     def test_narration_keeps_the_providers_container(self, tmp_path):
@@ -1158,11 +1106,10 @@ class TestBuildProject:
         (fx / "pop.mp3").write_bytes(b"ID3pop")
         monkeypatch.setattr(compose, "SFX_DIR", str(fx))
         _, _, page = build(tmp_path, demo_job())
-        # pop exists and lands on beat 1 at 2.4; whoosh and zap have no file
-        assert ('<audio id="fx1" class="clip" data-start="2.400" data-duration="0.400" '
+        # pop exists and lands on the baked-text scene beat at 2.4
+        assert ('<audio id="fx0" class="clip" data-start="2.400" data-duration="0.400" '
                 'data-track-index="4" data-volume="0.22" src="assets/audio/pop.mp3"></audio>'
                 in page)
-        assert "whoosh" not in page and "zap" not in page
 
     def test_music_is_segmented_back_to_back_at_low_volume(self, tmp_path, monkeypatch):
         from pipeline import compose
@@ -1193,11 +1140,12 @@ class TestBuildProject:
                 'data-track-index="5">LESSON #007</div>') in page
         assert page.count('id="lesson-chip"') == 1
 
-    def test_html_is_escaped_so_a_script_flavoured_beat_cannot_inject(self, tmp_path):
-        job = demo_job()
-        job["scenes"][0]["beats"][1]["text"] = '</div><script>alert("x")</script>'
+    def test_html_is_escaped_so_a_script_flavoured_verdict_cannot_inject(self, tmp_path):
+        job = demo_job(verdict='</div><script>alert("x")</script>')
         _, _, page = build(tmp_path, job)
-        assert "<script>alert" not in page and "&lt;script&gt;alert" in page
+        # verdicts render uppercased; the escaping must survive the casing
+        assert "<script>alert" not in page and "<SCRIPT>ALERT" not in page
+        assert "&lt;SCRIPT&gt;ALERT" in page
 
     def test_build_is_byte_identical_across_runs(self, tmp_path):
         _, _, first = build(tmp_path, demo_job())
@@ -1636,19 +1584,19 @@ def grid(step, count, start=0.0):
 
 class TestBeatCount:
     @pytest.mark.parametrize("dur,expected", [
-        (0, 4), (1.0, 4), (7.6, 4),           # floor(7.6/1.9)=4, at the floor
-        (12.0, 6), (24.0, 12),
-        (38.0, 20), (60.0, 20), (600.0, 20),  # clamped at BEAT_MAX
+        (0, 3), (1.0, 3), (7.6, 3),           # floor(7.6/3.0)=2, at the floor
+        (12.0, 4), (24.0, 8),
+        (38.0, 12), (60.0, 12), (600.0, 12),  # clamped at BEAT_MAX
     ])
     def test_clamped_to_four_through_twenty(self, dur, expected):
         from pipeline.beats import beat_count
         assert beat_count(dur) == expected
 
     def test_junk_duration_degrades_to_the_minimum(self):
-        from pipeline.beats import beat_count
-        assert beat_count(None) == 4
-        assert beat_count("abc") == 4
-        assert beat_count(-5) == 4
+        from pipeline.beats import beat_count, BEAT_MIN
+        assert beat_count(None) == BEAT_MIN
+        assert beat_count("abc") == BEAT_MIN
+        assert beat_count(-5) == BEAT_MIN
 
 
 class TestPlanTimes:
@@ -1730,41 +1678,27 @@ class TestNormalise:
         assert normalise({}, {}, 0)["kind"] == "zoom"
         assert normalise("garbage", {}, 0)["kind"] == "zoom"
 
-    def test_type_text_is_capped_at_five_words_and_uppercased(self):
-        from pipeline.beats import normalise, MAX_TYPE_WORDS
-        beat = normalise({"kind": "type", "text": "one two three four five six seven"}, {}, 1)
-        assert beat["kind"] == "type"
-        assert beat["text"] == "ONE TWO THREE FOUR FIVE"
-        assert len(beat["text"].split()) == MAX_TYPE_WORDS
+    def test_scene_baked_text_is_capped_and_uppercased(self):
+        from pipeline.beats import normalise, MAX_CAPTION_WORDS
+        beat = normalise({"kind": "scene", "prompt": "the guy",
+                          "text": "one two three four five six"}, {}, 1)
+        assert beat["kind"] == "scene"
+        assert beat["text"] == "ONE TWO THREE FOUR"
+        assert len(beat["text"].split()) == MAX_CAPTION_WORDS
 
-    def test_type_colour_is_whitelisted(self):
-        from pipeline.beats import normalise, COLORS
-        assert normalise({"kind": "type", "text": "GO", "color": "green"}, {}, 0)["color"] == "green"
-        assert normalise({"kind": "type", "text": "GO", "color": "chartreuse"},
-                         {}, 0)["color"] in COLORS
-
-    def test_type_with_no_text_degrades(self):
+    def test_scene_baked_number_capped_label_at_two_words(self):
         from pipeline.beats import normalise
-        assert normalise({"kind": "type", "text": "   "}, {}, 0)["kind"] == "zoom"
+        beat = normalise({"kind": "scene", "prompt": "croc pointing",
+                          "value": "3700000000000 psi",
+                          "label": "bite force of doom"}, {}, 2)
+        assert len(beat["value"]) <= 14
+        assert beat["label"] == "BITE FORCE"
 
-    def test_stat_value_capped_at_twelve_chars_label_at_three_words(self):
+    def test_meme_needs_a_situation(self):
         from pipeline.beats import normalise
-        beat = normalise({"kind": "stat", "value": "3700000000000 psi",
-                          "label": "bite force of doom bigly"}, {}, 2)
-        assert len(beat["value"]) <= 12
-        assert beat["label"] == "BITE FORCE OF"
-
-    def test_stat_missing_value_degrades(self):
-        from pipeline.beats import normalise
-        assert normalise({"kind": "stat", "label": "x"}, {}, 0)["kind"] == "zoom"
-
-    def test_meme_needs_a_subject_and_clips_the_caption(self):
-        from pipeline.beats import normalise
-        beat = normalise({"kind": "meme", "prompt": "crocodile at the gym",
-                          "caption": "one two three four five"}, {}, 0)
-        assert beat["kind"] == "meme"
-        assert len(beat["caption"].split()) <= 4
-        assert normalise({"kind": "meme", "caption": "hi"}, {}, 0)["kind"] == "zoom"
+        beat = normalise({"kind": "meme", "prompt": "crocodile doing taxes"}, {}, 0)
+        assert beat["kind"] == "meme" and beat["prompt"] == "crocodile doing taxes"
+        assert normalise({"kind": "meme"}, {}, 0)["kind"] == "zoom"
 
     def test_no_beat_carries_an_expression(self):
         """Croc is one static PNG -- nothing in the pipeline swaps his face."""
@@ -1772,10 +1706,10 @@ class TestNormalise:
         beat = normalise({"kind": "meme", "prompt": "p", "expression": "fire"}, {}, 0)
         assert "expression" not in beat
 
-    def test_img_falls_back_to_the_scene_heading(self):
+    def test_scene_falls_back_to_the_scene_heading(self):
         from pipeline.beats import normalise
-        beat = normalise({"kind": "img"}, {"heading": "The Bite"}, 0)
-        assert beat["kind"] == "img" and beat["prompt"] == "The Bite"
+        beat = normalise({"kind": "scene"}, {"heading": "The Bite"}, 0)
+        assert beat["kind"] == "scene" and beat["prompt"] == "The Bite"
 
     def test_zoom_amount_is_clamped_to_the_legal_range(self):
         from pipeline.beats import normalise, ZOOM_MIN, ZOOM_MAX
@@ -1783,22 +1717,24 @@ class TestNormalise:
         assert normalise({"kind": "zoom", "amount": 0.2}, {}, 0)["amount"] == ZOOM_MIN
         assert ZOOM_MIN <= normalise({"kind": "zoom", "amount": "junk"}, {}, 0)["amount"] <= ZOOM_MAX
 
-    def test_arrow_direction_is_whitelisted(self):
-        from pipeline.beats import normalise, DIRS
-        assert normalise({"kind": "arrow", "label": "here", "dir": "left"}, {}, 0)["dir"] == "left"
-        assert normalise({"kind": "arrow", "label": "here", "dir": "up"}, {}, 0)["dir"] in DIRS
+    def test_photo_caption_and_counter_are_capped(self):
+        from pipeline.beats import normalise
+        beat = normalise({"kind": "photo", "prompt": "a crowd",
+                          "caption": "one two three four five six seven",
+                          "counter": "123456789012345678"}, {}, 0)
+        assert len(beat["caption"].split()) <= 6
+        assert len(beat["counter"]) <= 12
 
     def test_default_sfx_comes_from_the_kind(self):
         from pipeline.beats import normalise, DEFAULT_SFX
-        for kind, spec in (("img", {"prompt": "p"}), ("type", {"text": "GO"}),
-                           ("stat", {"value": "9"}), ("zoom", {}),
-                           ("arrow", {"label": "L"})):
+        for kind, spec in (("scene", {"prompt": "p"}), ("photo", {"prompt": "p"}),
+                           ("meme", {"prompt": "p"}), ("zoom", {})):
             spec["kind"] = kind
             assert normalise(spec, {}, 0)["sfx"] == DEFAULT_SFX[kind]
 
     def test_bogus_sfx_falls_back_to_the_default(self):
         from pipeline.beats import normalise, SFX
-        assert normalise({"kind": "type", "text": "GO", "sfx": "airhorn"}, {}, 0)["sfx"] in SFX
+        assert normalise({"kind": "scene", "prompt": "p", "sfx": "airhorn"}, {}, 0)["sfx"] in SFX
 
     def test_unknown_slots_are_dropped(self):
         from pipeline.beats import normalise
@@ -1808,13 +1744,13 @@ class TestNormalise:
 
 class TestValidate:
     def _legal(self):
-        return [{"i": 0, "kind": "img", "prompt": "a skull"},
-                {"i": 1, "kind": "type", "text": "BITE FORCE"},
-                {"i": 2, "kind": "stat", "value": "3700 PSI", "label": "JAW"},
-                {"i": 3, "kind": "type", "text": "NERFED"},
-                {"i": 4, "kind": "zoom", "amount": 1.18},
-                {"i": 5, "kind": "meme", "prompt": "filing paperwork",
-                 "caption": "ADULTING", "template": "split"}]
+        return [{"i": 0, "kind": "scene", "prompt": "the guy staring at a graph"},
+                {"i": 1, "kind": "scene", "prompt": "croc pointing",
+                 "text": "SOLD IT", "value": "160", "label": "POUNDS"},
+                {"i": 2, "kind": "photo", "prompt": "a cheering crowd",
+                 "caption": "SO LOVED", "counter": "31,957,4!?"},
+                {"i": 3, "kind": "zoom", "amount": 1.18},
+                {"i": 4, "kind": "meme", "prompt": "filing paperwork"}]
 
     def test_a_legal_scene_reports_nothing(self):
         from pipeline.beats import validate
@@ -1824,70 +1760,56 @@ class TestValidate:
         from pipeline.beats import validate
         assert validate([]) and validate(None)
 
-    def test_first_beat_must_be_img(self):
+    def test_first_beat_must_be_scene(self):
         from pipeline.beats import validate
         beats = self._legal()
-        beats[0] = {"i": 0, "kind": "type", "text": "NOPE"}
+        beats[0] = {"i": 0, "kind": "zoom", "amount": 1.2}
         assert any("beat 1" in p for p in validate(beats))
 
-    def test_too_many_img_and_meme_beats_are_reported(self):
-        """Five pictures in a twelve-beat scene is over budget; the cap is 4 there."""
+    def test_too_many_memes_are_reported(self):
         from pipeline.beats import validate
-        beats = self._legal() + [{"i": 5, "kind": "img", "prompt": "b"},
-                                 {"i": 6, "kind": "img", "prompt": "c"},
-                                 {"i": 7, "kind": "img", "prompt": "d"},
-                                 {"i": 8, "kind": "img", "prompt": "e"},
-                                 {"i": 9, "kind": "meme", "prompt": "m", "caption": "A"},
-                                 {"i": 10, "kind": "meme", "prompt": "m2", "caption": "B"},
-                                 {"i": 11, "kind": "meme", "prompt": "m3", "caption": "C"}]
+        beats = self._legal() + [{"i": 5, "kind": "meme", "prompt": "m2"},
+                                 {"i": 6, "kind": "meme", "prompt": "m3"}]
         problems = " ".join(validate(beats))
-        assert '"img"' in problems and '"meme"' in problems
+        assert '"meme"' in problems
 
-    def test_too_few_word_beats_is_reported(self):
+    def test_a_jokeless_scene_is_reported(self):
         from pipeline.beats import validate
-        beats = [{"i": 0, "kind": "img", "prompt": "a"}, {"i": 1, "kind": "zoom", "amount": 1.1}]
-        assert any("type" in p and "stat" in p for p in validate(beats))
+        beats = [{"i": 0, "kind": "scene", "prompt": "a"},
+                 {"i": 1, "kind": "zoom", "amount": 1.1}]
+        assert any("the joke" in p for p in validate(beats))
 
-    def test_photo_and_doodle_beats_validate_and_cap(self):
+    def test_scene_photo_meme_slots_validate(self):
         from pipeline import beats as beat_engine
         from pipeline.beats import validate, normalise
-        assert "photo" in beat_engine.KINDS and "doodle" in beat_engine.KINDS
+        assert set(beat_engine.KINDS) == {"scene", "photo", "meme", "zoom"}
         photo = normalise({"kind": "photo", "prompt": "a cheering crowd",
                            "caption": "SO POPULAR", "counter": "31,957,4!?"},
                           {}, 0)
         assert photo["caption"] == "SO POPULAR" and photo["counter"] == "31,957,4!?"
         assert photo["sfx"] == "none"  # hard cuts need no sound
-        doodle = normalise({"kind": "doodle", "prompt": "stick figures",
-                            "speech": "YEAH NOT SURE WHY"}, {}, 1)
-        assert doodle["speech"] == "YEAH NOT SURE WHY"
-        meme = normalise({"kind": "meme", "prompt": "filing paperwork",
-                          "template": "full"}, {}, 2)
-        assert meme["template"] == "full"
-        assert normalise({"kind": "meme", "prompt": "x", "template": "bogus"},
-                         {}, 3)["template"] == "split"
-        scene = ([{"i": 0, "kind": "img", "prompt": "a"}]
-                 + [{"i": i + 1, "kind": "photo", "prompt": "p%d" % i} for i in range(3)]
-                 + [{"i": 4, "kind": "type", "text": "A B"},
-                    {"i": 5, "kind": "stat", "value": "1", "label": "X"}])
-        assert any('"photo"' in p for p in validate(scene))
+        scene = normalise({"kind": "scene", "prompt": "the guy",
+                           "text": "SOLD IT", "value": "160 LBF", "label": "YOURS"}, {}, 1)
+        assert scene["text"] == "SOLD IT" and scene["value"] == "160 LBF"
+        joke_free = ([{"i": 0, "kind": "scene", "prompt": "a"}]
+                     + [{"i": i + 1, "kind": "zoom", "amount": 1.2} for i in range(2)])
+        assert any("the joke" in p for p in validate(joke_free))
 
-    def test_base_layer_is_hard_cuts_with_no_drift(self):
+    def test_frames_are_hard_cuts_with_zero_motion(self):
         from pipeline import compose
-        tags, tweens = compose.t_img("e", "w", "assets/x.jpg", 1.0, 2.0)
+        tags, tweens = compose.t_frame("e", "w", "assets/x.jpg", 1.0, 2.0)
         script = " ".join(tweens)
-        assert "0.030" in script  # the blink only
-        assert "power2.out" not in script or "1.10" not in script  # no drift/coast
-        _, photo_tw = compose.t_photo("e", "w", "assets/x.jpg", "CAP", "1!?", 1.0, 2.0)
-        assert "scale" not in " ".join(photo_tw)  # deadpan: zero motion
+        assert "0.020" in script  # the blink only
+        assert "scale" not in script  # deadpan: zero motion
 
     def test_overlong_text_and_missing_prompts_are_reported(self):
         from pipeline.beats import validate
-        beats = [{"i": 0, "kind": "img", "prompt": ""},
-                 {"i": 1, "kind": "type", "text": "a b c d e f g"},
-                 {"i": 2, "kind": "stat", "value": "x" * 40, "label": "L"}]
+        beats = [{"i": 0, "kind": "scene", "prompt": ""},
+                 {"i": 1, "kind": "scene", "prompt": "x",
+                  "text": "a b c d e f g", "value": "x" * 40}]
         problems = " ".join(validate(beats))
-        assert "subject prompt" in problems and "<=5 words" in problems
-        assert "<=12 characters" in problems
+        assert "situation prompt" in problems and "<=4 words" in problems
+        assert "<=14 characters" in problems
 
 
 class TestAutofix:
@@ -1897,48 +1819,36 @@ class TestAutofix:
     def test_output_always_passes_validate(self):
         from pipeline.beats import autofix, validate
         wrecked = [{"i": 0, "kind": "zoom"}, {"i": 1, "kind": "zoom"},
-                   {"i": 2, "kind": "arrow", "label": "X"}, {"i": 3, "kind": "zoom"}]
+                   {"i": 2, "kind": "zoom"}, {"i": 3, "kind": "zoom"}]
         assert validate(autofix(wrecked, self.SCENE)) == []
 
-    def test_an_existing_img_beat_is_promoted_not_duplicated(self):
+    def test_an_existing_scene_beat_is_promoted_not_duplicated(self):
         from pipeline.beats import autofix
-        beats = [{"i": 0, "kind": "type", "text": "A"}, {"i": 1, "kind": "img", "prompt": "keep me"},
-                 {"i": 2, "kind": "stat", "value": "9", "label": "L"}]
+        beats = [{"i": 0, "kind": "zoom", "amount": 1.2},
+                 {"i": 1, "kind": "scene", "prompt": "keep me"},
+                 {"i": 2, "kind": "photo", "prompt": "crowd"}]
         out = autofix(beats, self.SCENE)
-        assert out[0]["kind"] == "img" and out[0]["prompt"] == "keep me"
-        assert sum(1 for b in out if b["kind"] == "img") == 1
+        assert out[0]["kind"] == "scene" and out[0]["prompt"] == "keep me"
+        assert sum(1 for b in out if b["kind"] == "scene") == 1
 
-    def test_excess_expensive_beats_become_zooms(self):
-        from pipeline.beats import autofix, img_cap, MAX_MEME
-        beats = [{"i": i, "kind": "img", "prompt": "p%d" % i} for i in range(5)]
-        beats += [{"i": 5 + i, "kind": "meme", "prompt": "m", "caption": "C"} for i in range(3)]
+    def test_excess_memes_become_zooms(self):
+        from pipeline.beats import autofix, MAX_MEME
+        beats = [{"i": i, "kind": "meme", "prompt": "m%d" % i} for i in range(4)]
         out = autofix(beats, self.SCENE)
-        assert sum(1 for b in out if b["kind"] == "img") <= img_cap(len(out))
         assert sum(1 for b in out if b["kind"] == "meme") <= MAX_MEME
 
-    def test_the_art_budget_grows_with_the_scene(self):
-        """A 20-beat scene may change picture five times; a 4-beat scene, twice.
-
-        The flat v2 cap of two stamped eighteen cards over two static pictures.
-        """
-        from pipeline.beats import img_cap, IMG_FLOOR, IMG_CEIL
-        assert img_cap(4) == IMG_FLOOR
-        assert img_cap(6) == IMG_FLOOR
-        assert img_cap(10) == 3
-        assert img_cap(12) == 4
-        assert img_cap(20) == IMG_CEIL
-        assert img_cap(0) == IMG_FLOOR and img_cap(None) == IMG_FLOOR
-
-    def test_manufactured_type_beats_prefer_a_phrase_with_a_number(self):
-        from pipeline.beats import autofix
-        out = autofix([{"i": 0, "kind": "img", "prompt": "a"}, {"i": 1, "kind": "zoom"},
-                       {"i": 2, "kind": "zoom"}], self.SCENE)
-        typed = [b["text"] for b in out if b["kind"] == "type"]
-        assert typed and any(any(c.isdigit() for c in t) for t in typed)
+    def test_a_jokeless_scene_gets_an_ironic_photo(self):
+        """Rule 3: a spare zoom becomes the betrayal rather than more straight art."""
+        from pipeline.beats import autofix, validate
+        beats = [{"i": 0, "kind": "scene", "prompt": "a"},
+                 {"i": 1, "kind": "zoom", "amount": 1.2}]
+        out = autofix(beats, self.SCENE)
+        assert validate(out) == []
+        assert any(b["kind"] == "photo" for b in out)
 
     def test_indices_are_renumbered_and_sfx_always_present(self):
         from pipeline.beats import autofix, SFX
-        out = autofix([{"i": 9, "kind": "img", "prompt": "a"}, {"i": 4, "kind": "zoom"},
+        out = autofix([{"i": 9, "kind": "scene", "prompt": "a"}, {"i": 4, "kind": "zoom"},
                        {"i": 1, "kind": "zoom"}], self.SCENE)
         assert [b["i"] for b in out] == list(range(len(out)))
         assert all(b["sfx"] in SFX for b in out)
@@ -1964,21 +1874,30 @@ class TestBuild:
 
     def test_every_beat_carries_a_window(self):
         from pipeline.beats import build
-        out = build(self.SCENE, grid(0.4, 60), [{"kind": "img", "prompt": "p"}])
+        out = build(self.SCENE, grid(0.4, 60), [{"kind": "scene", "prompt": "p"}])
         assert all("t" in b and "end" in b for b in out)
         assert all(b["end"] >= b["t"] for b in out)
         assert out[-1]["end"] == 24.0
 
     def test_result_is_always_legal_and_opens_on_art(self):
         from pipeline.beats import build, validate
-        out = build(self.SCENE, grid(0.4, 60), [{"kind": "arrow", "label": "X"}])
-        assert out[0]["kind"] == "img"
+        out = build(self.SCENE, grid(0.4, 60), [{"kind": "zoom", "amount": 1.2}])
+        assert out[0]["kind"] == "scene"
         assert validate(out) == []
 
     def test_deterministic(self):
         from pipeline.beats import build
-        specs = [{"kind": "img", "prompt": "p"}, {"kind": "type", "text": "BIG"}]
+        specs = [{"kind": "scene", "prompt": "p"}, {"kind": "photo", "prompt": "q"}]
         assert build(self.SCENE, grid(0.31, 70), specs) == build(self.SCENE, grid(0.31, 70), specs)
+
+    def test_punchline_beat_holds_about_twice_the_median(self):
+        from pipeline.beats import build
+        out = build(self.SCENE, grid(0.4, 60),
+                    [{"kind": "scene", "prompt": "p"}] * 3 + [{"kind": "photo", "prompt": "q"}])
+        wins = [out[k + 1]["t"] - out[k]["t"] for k in range(len(out) - 1)]
+        med = sorted(wins)[len(wins) // 2]
+        last = 24.0 - out[-1]["t"]
+        assert last >= min(2 * med, 24.0 - out[-2]["t"] - 0.55) - 0.01
 
 
 # ==========================================================================
@@ -2012,12 +1931,13 @@ class TestStageMachine:
         assert run._voice_path(job, str(tmp_path), 0) is None
         (tmp_path / "v2026-09-03-jaw_0.wav").write_bytes(b"RIFF....WAVE")
         assert run._voice_path(job, str(tmp_path), 0).endswith("_0.wav")
-        (tmp_path / "i2026-09-03-jaw_1_2.webp").write_bytes(b"RIFF....WEBP")
-        assert run._beat_art(job, str(tmp_path), 1, 2, "img").endswith("_1_2.webp")
-        # memes carry an m prefix so they never collide with the img at the same index
+        (tmp_path / "s2026-09-03-jaw_1_2.webp").write_bytes(b"RIFF....WEBP")
+        assert run._beat_art(job, str(tmp_path), 1, 2, "scene").endswith("_1_2.webp")
+        # memes carry an m prefix so they never collide with the scene at the same index
         assert run._beat_art(job, str(tmp_path), 1, 2, "meme") is None
         (tmp_path / "m2026-09-03-jaw_1_2.png").write_bytes(b"\x89PNG\r\n")
         assert run._beat_art(job, str(tmp_path), 1, 2, "meme").endswith("_1_2.png")
+        assert run._beat_art(job, str(tmp_path), 1, 2, "zoom") is None
 
     def test_a_zero_byte_file_does_not_count_as_done(self, tmp_path):
         """A killed run can leave an empty file; resuming past it renders silent."""
@@ -2070,11 +1990,11 @@ class TestStageMachine:
 
         def fake_llm(system, user, json_out=False, **kw):
             seen.append(user)
-            if len(seen) == 1:                      # illegal: no img, no punch
+            if len(seen) == 1:                      # illegal: no scene, no joke
                 return {"beats": [{"kind": "zoom"}, {"kind": "zoom"}]}
-            return {"beats": [{"kind": "img", "prompt": "a jaw"},
-                              {"kind": "type", "text": "SEALED"},
-                              {"kind": "stat", "value": "160", "label": "LBF"},
+            return {"beats": [{"kind": "scene", "prompt": "a jaw"},
+                              {"kind": "photo", "prompt": "a crowd"},
+                              {"kind": "meme", "prompt": "a croc"},
                               {"kind": "zoom", "amount": 1.2}]}
 
         monkeypatch.setattr(llm, "llm", fake_llm)
@@ -2099,12 +2019,19 @@ class TestStageMachine:
 
     def test_stage_visuals_never_raises_when_the_art_host_is_down(self, tmp_path, monkeypatch):
         from pipeline import adapters, run
-        monkeypatch.setattr(adapters, "image_styled",
+        monkeypatch.setattr(adapters, "image_world",
+                            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("host down")))
+        monkeypatch.setattr(adapters, "cast_edit",
+                            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("host down")))
+        monkeypatch.setattr(adapters, "meme_croc",
                             lambda *a, **k: (_ for _ in ()).throw(RuntimeError("host down")))
         monkeypatch.setattr(adapters, "meme_img",
                             lambda *a, **k: (_ for _ in ()).throw(RuntimeError("host down")))
+        monkeypatch.setattr(adapters, "image_plain",
+                            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("host down")))
         job = {"id": "j", "scenes": [{"beats": [
-            {"kind": "img", "prompt": "a jaw"}, {"kind": "meme", "prompt": "a croc"}]}]}
+            {"kind": "scene", "prompt": "a jaw"}, {"kind": "meme", "prompt": "a croc"},
+            {"kind": "photo", "prompt": "a crowd"}]}]}
         run.stage_visuals(job, str(tmp_path))
         assert job["stage"] == "render"
 
@@ -2222,14 +2149,15 @@ class TestPublishVerification:
 class TestQCGate:
     def _job(self, dur=100.0, beats=None):
         beats = beats if beats is not None else [
-            {"kind": "img", "prompt": "a jaw"}, {"kind": "type", "text": "BIG"}]
+            {"kind": "scene", "prompt": "a jaw"}, {"kind": "photo", "prompt": "crowd"}]
         return {"id": "J1", "thumb": "", "scenes": [{"dur": dur, "beats": beats}]}
 
     def test_good_episode_passes(self, tmp_path):
         from pipeline import qc
         d = str(tmp_path)
         open(d + "/vJ1_0.wav", "wb").write(b"\x00" * 100)
-        open(d + "/iJ1_0_0.jpg", "wb").write(b"\x00" * 100)
+        open(d + "/sJ1_0_0.jpg", "wb").write(b"\x00" * 100)
+        open(d + "/pJ1_0_1.jpg", "wb").write(b"\x00" * 100)
         open(d + "/J1_thumb.jpg", "wb").write(b"\x00" * (31 * 1024))
         open(d + "/wJ1_0.json", "w").write('[{"s":0,"e":1,"w":"hi"}]')
         ok, fails, _warns = qc.check(self._job(), d)
@@ -2248,8 +2176,8 @@ class TestQCGate:
         d = str(tmp_path)
         open(d + "/vJ1_0.wav", "wb").write(b"\x00" * 100)
         open(d + "/J1_thumb.jpg", "wb").write(b"\x00" * (31 * 1024))
-        beats = ([{"kind": "img", "prompt": "p%d" % i} for i in range(4)]
-                 + [{"kind": "type", "text": "A B"}])
+        beats = ([{"kind": "scene", "prompt": "p%d" % i} for i in range(4)]
+                 + [{"kind": "zoom", "amount": 1.2}])
         ok, fails, _warns = qc.check(self._job(beats=beats), d)
         assert not ok and any("coverage" in f for f in fails)
 
@@ -2257,7 +2185,8 @@ class TestQCGate:
         from pipeline import qc
         d = str(tmp_path)
         open(d + "/vJ1_0.wav", "wb").write(b"\x00" * 100)
-        open(d + "/iJ1_0_0.jpg", "wb").write(b"\x00" * 100)
+        open(d + "/sJ1_0_0.jpg", "wb").write(b"\x00" * 100)
+        open(d + "/pJ1_0_1.jpg", "wb").write(b"\x00" * 100)
         open(d + "/J1_thumb.jpg", "wb").write(b"\x00" * (31 * 1024))
         open(d + "/wJ1_0.json", "w").write("[]")
         monkeypatch.delenv("GROQ_KEY", raising=False)

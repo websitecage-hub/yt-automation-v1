@@ -1,28 +1,26 @@
-"""Beat Engine v2 — bakes a job into a Hyperframes project: index.html + a paused
+"""Beat Engine v4 — bakes a job into a Hyperframes project: index.html + a paused
 GSAP timeline.
 
-This is the core, and the whole point of v2 is the division of labour: the LLM
-picked WHAT each beat shows (six slots, `pipeline/beats.py`), Python decides WHEN
-every beat fires (the Whisper word clock, also `beats.py`), and this module owns
-HOW it moves. There is exactly one locked tween template per beat kind, written
-out here verbatim from PART C3. No model ever emits animation code again, so a
-bad LLM day can only make the *content* weaker -- never the motion, the pacing,
-or the render.
+The division of labour: the LLM picks WHAT each beat shows (four slots,
+`pipeline/beats.py`), Python decides WHEN every beat fires (the Whisper word
+clock, also `beats.py`), and this module owns HOW it appears. There are two
+templates: a full-frame hard cut, and a snap zoom. No model ever emits
+animation code, so a bad LLM day can only make the *content* weaker -- never
+the pacing or the render.
 
-Layering follows C2 and is done with DOM order plus the two z-indexes below:
-  base   full-bleed art, one `img` beat crossfading into the next   (track 0)
-  mid    type / stat / arrow overlays                               (track 1)
-  top    the avatar PNG, and memes above it while they are on screen
+Layering, by DOM order:
+  base   full-bleed cartoon frames, one hard-cutting into the next (track 0)
+  top    the avatar PNG, the lesson chip, the verdict stamp
 
 Two facts about the renderer are load-bearing and were confirmed on this machine
 with `hyperframes lint` (see the PART I register):
   * the root element needs a duration source, so `data-duration` is emitted;
   * every timed media element needs an `id` or its audio renders SILENT.
 
-Everything degrades instead of failing: a missing art file turns its beat into a
-punch-in on whatever is already on screen, a missing avatar prints a loud banner,
-an empty `assets/audio/lofi/` just means no music. The same job always bakes a
-byte-identical index.html -- there is no randomness anywhere in this module.
+Everything degrades instead of failing: a missing art file drops its beat, a
+missing avatar prints a loud banner, an empty `assets/audio/lofi/` just means
+no music. The same job always bakes a byte-identical index.html -- there is no
+randomness anywhere in this module.
 """
 import hashlib
 import html as html_mod
@@ -43,9 +41,7 @@ SFX_DIR = os.path.join(REPO, "assets", "audio", "sfx")
 
 W, H, FPS = 1920, 1080, 60
 
-# VERIFY-ON-FIRST-RUN #2 -- `<img class="clip">` lints and renders clean here, so
-# "img" is the default; "bgdiv" is the coded alternative, switchable by env.
-MEDIA_MODE = (os.getenv("HF_MEDIA_MODE") or "img").strip().lower() or "img"
+# VERIFY-ON-FIRST-RUN #2 -- `<img class="clip">` lints and renders clean here.
 
 # Lanes. Audio kinds need their own index each: narration, music and SFX all play
 # at once, and clips that overlap inside one lane are what makes a track drop out.
@@ -54,33 +50,14 @@ TRACK_VOICE, TRACK_MUSIC, TRACK_SFX = 2, 3, 4
 TRACK_BRAND = 5
 
 MUSIC_VOL = "0.12"          # C3: the bed sits under a fast voice, never with it
-SFX_VOL = "0.22"            # v3: was 0.5 and annoying. SFX are seasoning, and the
-                            # defaults are now almost all "none" -- when one fires
-                            # it should tick, not slap.
+SFX_VOL = "0.22"            # seasoning, not slaps; almost every beat is silent
 SFX_DUR = 0.4
 DEFAULT_TRACK_LEN = 150.0   # used only when ffprobe is unavailable
 
-# Holds, retuned for the retention edit. v2's 2.0s type / 3.0s meme were set when
-# beats landed every 2.4s; at the new ~1.6s median they would still be on screen
-# when the next two beats fire, stacking overlays and reading as clutter. A card
-# that leaves before you finish reading it is the point -- it makes the viewer
-# lean in, and it is why fast channels flash text rather than posting it.
-TYPE_HOLD = 1.45            # type/arrow out at T+1.45 (v2: 2.0)
-MEME_HOLD = 2.2             # meme out at T+2.2 (v2: 3.0)
-STAT_BEATS = 2              # C3 stat: "hold 2 beats"
 FADE = 0.3
 BOB_PERIOD = 1.2            # C3 avatar idle bob
-BOB_RISE = -5               # v3: was -10. The croc breathes, it does not bounce.
+BOB_RISE = -5               # The croc breathes, it does not bounce.
 VERDICT_TAIL = 20.0         # the stamp owns the last 20 seconds
-
-# The speed ramp. A still image pushed 1.03 -> 1.10 on a decelerating ease starts
-# fast and settles, so a static frame reads as motion arriving rather than a
-# slideshow sitting there. v2 used 1.02 -> 1.06 on ease:'none', which is a
-# linear crawl -- technically motion, invisible in practice.
-# v3 removed the drift/punch-in entirely (see t_img): every cut lands at 1.06
-# and settles to 1.0 once. The constants below are gone with it; zooms are the
-# only surviving scale motion and carry their own amount per beat.
-SHAKE = 9                   # px of camera shake on a stat hit
 
 FONT_FILES = ("display.woff2", "mono.woff2", "pixel.woff2")
 SFX_NAMES = tuple(n for n in beat_engine.SFX if n != "none")
@@ -102,28 +79,11 @@ AVATAR_BANNER = """
 # Everything config/style.css (PART E1) does not cover. E1 is verbatim and owns
 # the look of each beat class; this owns the plumbing those classes need.
 COMPOSITION_CSS = """
-html,body{margin:0;padding:0;background:var(--bg)}
+html,body{margin:0;padding:0;background:#FFF8EE}
+#stage{background:#FFF8EE}
 .beat-wrap{position:absolute;inset:0;overflow:hidden}
 div.beat-img{background-size:cover;background-position:center}
-.beat-meme{z-index:70}
-.beat-meme img{display:block;width:100%}
-.beat-meme-full{position:absolute;inset:0;z-index:65;opacity:0}
-.beat-meme-full img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.beat-meme-stamp{position:absolute;left:0;right:0;bottom:12%;z-index:66;text-align:center;
-  font:900 92px 'Display',sans-serif;color:var(--ink);text-shadow:0 5px 0 #000;opacity:0}
-.beat-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0}
-.beat-photo-cap{position:absolute;left:50%;bottom:8%;transform:translateX(-50%);
-  font:900 64px 'Display',sans-serif;color:var(--ink);text-shadow:0 4px 0 #000;
-  white-space:nowrap}
-.beat-photo-count{position:absolute;right:90px;top:90px;font:400 44px 'Mono',monospace;
-  color:var(--yellow);background:rgba(0,0,0,.55);padding:8px 22px}
-.beat-doodle{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
-  background:#fff;opacity:0}
 #avatar{pointer-events:none}
-.arrow-glyph{width:0;height:0;border-style:solid;margin:0 auto 12px}
-.arrow-left{border-width:26px 44px 26px 0;border-color:transparent var(--red) transparent transparent}
-.arrow-right{border-width:26px 0 26px 44px;border-color:transparent transparent transparent var(--red)}
-.arrow-down{border-width:44px 26px 0 26px;border-color:var(--red) transparent transparent transparent}
 """
 
 
@@ -159,22 +119,6 @@ def load_style():
     return css.replace("../assets/fonts/", "assets/fonts/")
 
 
-def _hold(t, want, end):
-    """How long an overlay stays up: `want` seconds, clipped to the scene end.
-
-    Nothing may be mid-animation when a scene ends -- the next scene repaints the
-    base layer, and a half-faded overlay from the previous scene reads as a bug.
-    """
-    return round(max(0.3, min(want, max(0.3, end - t))), 3)
-
-
-def _fade_out(sel, t, vis):
-    """The tween that clears an overlay at the end of its visible window."""
-    d = round(min(FADE, max(0.05, vis)), 3)
-    return ("tl.to('%s',{opacity:0,duration:%.3f,ease:'power1.in'},%.3f);"
-            % (sel, d, round(t + vis - d, 3)))
-
-
 def _clip(el, cls, start, dur, track, inner="", style=""):
     """One timed element. The id is mandatory: without it the renderer cannot
     discover the clip, and for audio that means it renders SILENT."""
@@ -183,178 +127,24 @@ def _clip(el, cls, start, dur, track, inner="", style=""):
             % (el, cls, start, dur, track, (' style="%s"' % style) if style else "", inner))
 
 
-# ------------------------------------------------------- the six C3 templates
-# One locked tween template per beat kind. These are the only place motion is
-# defined; nothing else in the factory may animate.
-#
-# Retuned for the retention brief the operator supplied. Every number below moved
-# in the same direction and for the same reason: v2's easings were *tasteful* --
-# 0.15s crossfades, linear drifts, a 1.18 zoom over 0.18s -- and tasteful motion
-# on a 60fps timeline is motion nobody notices. A punch has to complete in ~5
-# frames to register as a hit rather than a transition, and it has to overshoot,
-# because the overshoot is what the eye reads as force.
+# ------------------------------------------------------- the v4 templates
+# Two templates. That is the whole edit: a full-frame hard cut, and a snap
+# zoom the director asks for by name. v3 had eight presenters with overshoots,
+# drifts, slides and wiggles, and every cut arriving the same way is exactly
+# what made the video feel systematic. A Casually cut does nothing -- one frame
+# this, next frame that -- so the templates do nothing: a 0.02s blink against
+# black-flash, then a dead-static hold. The joke is the picture, the timing is
+# the voice, the motion is one idle bob and the occasional yanked zoom.
 
-def t_img(el, wrap, src, t, vis):
-    """`img`: a HARD CUT with a 0.03s blink and a tiny settle. Nothing else.
-
-    v3 killed the drift and the punch-in overshoot. The operator's note was
-    exact: the video felt systematic because EVERY cut arrived the same way --
-    overshoot, snap, coast. A hard cut is sarcastic precisely because it does
-    nothing: one frame this, next frame that. The 0.03s ramp exists only to stop
-    a single-frame black flash. Scale never exceeds 1.06 and never moves after
-    the first 0.18s, so the base layer reads as a sequence of stills that slam
-    into each other -- which is the whole Casually grammar.
-    """
-    if MEDIA_MODE == "bgdiv":
-        inner = ('<div id="%s" class="beat-img clip" data-start="%.3f" data-duration="%.3f" '
-                 'data-track-index="%d" style="background-image:url(%s)"></div>'
-                 % (el, t, vis, TRACK_ART, _esc(src)))
-    else:
-        inner = ('<img id="%s" class="beat-img clip" data-start="%.3f" data-duration="%.3f" '
-                 'data-track-index="%d" src="%s" alt="">'
-                 % (el, t, vis, TRACK_ART, _esc(src)))
-    tag = '<div id="%s" class="beat-wrap">%s</div>' % (wrap, inner)
-    return [tag], [
-        "tl.fromTo('#%s',{opacity:0},{opacity:1,duration:0.030,ease:'none'},%.3f);" % (el, t),
-        "tl.fromTo('#%s',{scale:1.06},{scale:1,duration:0.180,ease:'power2.out'},%.3f);"
-        % (el, t),
-    ]
-
-
-def t_photo(el, wrap, src, caption, counter, t, vis):
-    """`photo`: the deadpan punch-in. Instant cut, ZERO motion, full-bleed.
-
-    No scale tween at all -- not even the img settle. A real photograph that
-    simply REPLACES the frame is the driest joke in the system (Casually's
-    crowd shots, the mansion, the counter). An optional caption stamps
-    underneath and a dumb counter ticks top-right; both are static text, no pop.
-    """
-    inner = ('<img id="%s" class="beat-photo clip" data-start="%.3f" data-duration="%.3f" '
+def t_frame(el, wrap, src, t, vis):
+    """Every visual beat (scene/photo/meme): full-bleed, instant, static."""
+    inner = ('<img id="%s" class="beat-img clip" data-start="%.3f" data-duration="%.3f" '
              'data-track-index="%d" src="%s" alt="">'
              % (el, t, vis, TRACK_ART, _esc(src)))
-    if caption:
-        inner += ('<div id="%s" class="beat-photo-cap clip" data-start="%.3f" '
-                  'data-duration="%.3f" data-track-index="%d">%s</div>'
-                  % (el + "c", t, vis, TRACK_OVERLAY, _esc(caption)))
-    if counter:
-        inner += ('<div id="%s" class="beat-photo-count clip" data-start="%.3f" '
-                  'data-duration="%.3f" data-track-index="%d">%s</div>'
-                  % (el + "n", t, vis, TRACK_OVERLAY, _esc(counter)))
     tag = '<div id="%s" class="beat-wrap">%s</div>' % (wrap, inner)
     return [tag], [
         "tl.fromTo('#%s',{opacity:0},{opacity:1,duration:0.020,ease:'none'},%.3f);" % (el, t),
     ]
-
-
-def t_doodle(el, wrap, src, t, vis):
-    """`doodle`: hard cut to the flat-cartoon gag, one small pop for charm.
-
-    Doodles are drawn FOR the joke, so they arrive like a whiteboard reveal: a
-    0.12s scale settle from 1.10 and then nothing. The white background IS the
-    punch -- a blast of flat daylight in the middle of the black specimen art.
-    """
-    inner = ('<img id="%s" class="beat-doodle clip" data-start="%.3f" data-duration="%.3f" '
-             'data-track-index="%d" src="%s" alt="">'
-             % (el, t, vis, TRACK_ART, _esc(src)))
-    tag = '<div id="%s" class="beat-wrap">%s</div>' % (wrap, inner)
-    return [tag], [
-        "tl.fromTo('#%s',{opacity:0},{opacity:1,duration:0.030,ease:'none'},%.3f);" % (el, t),
-        "tl.fromTo('#%s',{scale:1.10},{scale:1,duration:0.120,ease:'power2.out'},%.3f);"
-        % (el, t),
-    ]
-
-
-def t_type(el, text, color, t, vis):
-    """`type`: 0.16s overshoot pop from 0.32 scale, then a settle. Out at TYPE_HOLD.
-
-    v2 popped from 0.6 over 0.25s on back.out(2). Starting nearer zero and landing
-    in ten frames on a harder back ease is what makes bold text feel *stamped*
-    rather than faded up. The second tween lets the overshoot fall back so the
-    card does not sit oversized for its whole hold.
-    """
-    tag = _clip(el, "beat-type", t, vis, TRACK_OVERLAY, _esc(text),
-                "color:var(--%s)" % (color if color in beat_engine.COLORS else "yellow"))
-    return [tag], [
-        "tl.fromTo('#%s',{scale:0.32,opacity:0,y:26},{scale:1.06,opacity:1,y:0,"
-        "duration:0.160,ease:'back.out(3.6)'},%.3f);" % (el, t),
-        "tl.to('#%s',{scale:1,duration:0.180,ease:'power2.out'},%.3f);" % (el, round(t + 0.16, 3)),
-        _fade_out("#" + el, t, vis),
-    ]
-
-
-def t_stat(el, value, label, t, vis, shake_sel=None):
-    """`stat`: the same stamped pop, plus a camera shake on the frame behind it.
-
-    The number is the punchline of a SCALED scene, so it gets the one impact
-    effect in the system: a two-cycle x/y jitter of the live art wrapper, 0.05s
-    per cycle, snapped back to zero. That is the "ding + hit" beat every fast
-    channel uses to tell you a figure mattered. Silent no-op when nothing is on
-    the base layer yet, since there is then nothing to shake.
-    """
-    num, lbl = el, el + "l"
-    tags = [_clip(num, "beat-stat-num", t, vis, TRACK_OVERLAY, _esc(value))]
-    tweens = [
-        "tl.fromTo('#%s',{scale:0.32,opacity:0},{scale:1.08,opacity:1,duration:0.160,"
-        "ease:'back.out(3.6)'},%.3f);" % (num, t),
-        "tl.to('#%s',{scale:1,duration:0.200,ease:'power2.out'},%.3f);" % (num, round(t + 0.16, 3)),
-        _fade_out("#" + num, t, vis),
-    ]
-    if shake_sel:
-        # yoyo counts `repeat` as EXTRA plays, so repeat:4 gives five passes and
-        # therefore lands on the `to` values -- x:0,y:0. An even repeat count would
-        # finish on the `from` values and leave the art sitting 9px off-centre for
-        # the rest of the scene, with no later tween to correct it.
-        tweens.append("tl.fromTo('%s',{x:-%d,y:%d},{x:0,y:0,duration:0.050,yoyo:true,"
-                      "repeat:4,ease:'none'},%.3f);" % (shake_sel, SHAKE, SHAKE // 2, t))
-    if label:
-        tags.append(_clip(lbl, "beat-stat-lbl", t, vis, TRACK_OVERLAY, _esc(label)))
-        tweens.append("tl.fromTo('#%s',{opacity:0,y:18},{opacity:1,y:0,duration:0.220,"
-                      "ease:'power3.out'},%.3f);" % (lbl, round(t + 0.08, 3)))
-        tweens.append(_fade_out("#" + lbl, t, vis))
-    return tags, tweens
-
-
-def t_meme(el, src, caption, t, vis, template="split"):
-    """`meme`: three presenters, picked per beat by the director.
-
-    split (default): the classic -- a side box slamming in from the right,
-    over-rotated, out at MEME_HOLD. A joke told next to the lecture.
-    full: the interruption -- fullscreen slam in 0.12s, owns the whole frame
-    for its hold. For the moments the video STOPS being a lecture.
-    stamp: the caption IS the gag -- the base dims under a huge caption bar
-    slammed across the lower third. No picture at all beyond `src` dimmed.
-    """
-    template = str(template or "split").strip().lower()
-    if template not in ("split", "full", "stamp"):
-        template = "split"
-    inner = '<img src="%s" alt="">' % _esc(src)
-    if caption:
-        inner += '<div class="beat-meme-cap">%s</div>' % _esc(caption)
-    out = round(min(FADE, max(0.05, vis)), 3)
-    if template == "full":
-        tag = _clip(el, "beat-meme-full", t, vis, TRACK_OVERLAY, inner)
-        return [tag], [
-            "tl.fromTo('#%s',{scale:1.25,opacity:0},{scale:1,opacity:1,"
-            "duration:0.120,ease:'power4.out'},%.3f);" % (el, t),
-            "tl.to('#%s',{opacity:0,duration:%.3f,ease:'power2.in'},%.3f);"
-            % (el, out, round(t + vis - out, 3)),
-        ]
-    if template == "stamp":
-        tag = _clip(el, "beat-meme-stamp", t, vis, TRACK_OVERLAY, _esc(caption or ""))
-        return [tag], [
-            "tl.fromTo('#%s',{scale:1.6,opacity:0},{scale:1,opacity:1,"
-            "duration:0.140,ease:'back.out(2.8)'},%.3f);" % (el, t),
-            "tl.to('#%s',{opacity:0,duration:%.3f,ease:'power2.in'},%.3f);"
-            % (el, out, round(t + vis - out, 3)),
-        ]
-    tag = _clip(el, "beat-meme", t, vis, TRACK_OVERLAY, inner)
-    return [tag], [
-        "tl.fromTo('#%s',{x:560,opacity:0,rotation:11},{x:0,opacity:1,rotation:0,"
-        "duration:0.220,ease:'back.out(2.4)'},%.3f);" % (el, t),
-        "tl.to('#%s',{x:560,opacity:0,duration:%.3f,ease:'power2.in'},%.3f);"
-        % (el, out, round(t + vis - out, 3)),
-    ]
-
 
 def t_zoom(sel, amount, t):
     """`zoom`: a snap zoom -- 0.08s in on expo.out, then an elastic settle.
@@ -374,41 +164,6 @@ def t_zoom(sel, amount, t):
         % (sel, round(t + 0.08, 3)),
     ]
 
-
-ARROW_GLYPH = {"left": "arrow-left", "right": "arrow-right", "center": "arrow-down"}
-ARROW_POS = {"left": "left:180px;top:44%;text-align:center",
-             "right": "right:180px;top:44%;text-align:center",
-             "center": "left:50%;top:66%;transform:translateX(-50%);text-align:center"}
-
-
-def t_arrow(el, label, direction, t, vis):
-    """`arrow`: red arrow + <=3-word pixel label; stamped pop then a fast wiggle.
-
-    Matched to the retuned `type` pop so the two overlay kinds share a vocabulary,
-    with a tighter, faster wiggle (0.09s a cycle) -- the arrow is a pointing
-    gesture, and a slow wave reads as decoration instead. The arrowhead is a CSS
-    triangle, not a glyph -- Press Start 2P has no arrow codepoints and would
-    render a tofu box.
-    """
-    direction = direction if direction in ARROW_GLYPH else "center"
-    inner = '<div class="arrow-glyph %s"></div>%s' % (ARROW_GLYPH[direction], _esc(label))
-    tag = _clip(el, "beat-arrow", t, vis, TRACK_OVERLAY, inner, ARROW_POS[direction])
-    wiggle = round(t + 0.18, 3)
-    return [tag], [
-        "tl.fromTo('#%s',{scale:0.32,opacity:0},{scale:1,opacity:1,duration:0.160,"
-        "ease:'back.out(3.6)'},%.3f);" % (el, t),
-        "tl.fromTo('#%s',{rotation:-7},{rotation:7,duration:0.090,yoyo:true,repeat:3,"
-        "ease:'none'},%.3f);" % (el, wiggle),
-        "tl.to('#%s',{rotation:0,duration:0.090},%.3f);" % (el, round(wiggle + 0.36, 3)),
-        _fade_out("#" + el, t, vis),
-    ]
-
-
-# ----------------------------------------------------------------- the avatar
-# Professor Croc is ONE flat PNG, bottom-right, present for the whole video. No
-# rig, no expression stack, no swaps: the same image the whole way through, which
-# is the only thing a single PNG can honestly do. E1 already positions #avatar,
-# so the tag needs no wrapper and the only motion is the C3 idle bob.
 
 AVATAR_NAMES = ("croc.png", "neutral.png")
 
@@ -448,22 +203,19 @@ def avatar_bob(t0, dur):
 def scene_layer(i, t0, dur, beats, media, state):
     """Every tag, tween and SFX request for one scene.
 
-    `media` is {"art": {beat_index: path}, "meme": {beat_index: path}} of the
-    files that actually exist -- a beat whose art never rendered simply loses
-    its visual and keeps its sound, which is how a partial art failure still
-    produces a watchable episode.
+    `media` is {"art": {beat_index: path}} of the files that actually exist --
+    a beat whose art never rendered simply loses its visual, which is how a
+    partial art failure still produces a watchable episode.
     """
     tags, tweens, sfx = [], [], []
     end = round(t0 + _num(dur), 3)
     art = (media or {}).get("art") or {}
-    memes = (media or {}).get("meme") or {}
     beats = [b for b in (beats or []) if isinstance(b, dict)]
     times = [round(t0 + _num(b.get("t")), 3) for b in beats]
-    # Where the base layer changes next: a full-bleed beat (img/photo/doodle)
-    # holds the screen until another full-bleed beat replaces it, never until
-    # merely the next beat of any kind.
+    # Where the base layer changes next: a frame holds the screen until another
+    # frame replaces it, never until merely the next beat of any kind.
     swaps = [n for n, b in enumerate(beats)
-             if str(b.get("kind") or "").strip().lower() in ("img", "photo", "doodle")
+             if str(b.get("kind") or "").strip().lower() in ("scene", "photo", "meme")
              and art.get(n)]
     live = state.get("live")
 
@@ -472,45 +224,15 @@ def scene_layer(i, t0, dur, beats, media, state):
         t = times[n]
         kind = str(b.get("kind") or "").strip().lower()
 
-        if kind in ("img", "photo", "doodle") and art.get(j):
+        if kind in ("scene", "photo", "meme") and art.get(j):
             after = next((times[k] for k in swaps if k > n), end)
             el, wrap = "b%d_%d" % (i, j), "w%d_%d" % (i, j)
-            span = round(max(0.3, after - t), 3)
-            if kind == "photo":
-                tg, tw = t_photo(el, wrap, art[j], b.get("caption"), b.get("counter"),
-                                 t, span)
-            elif kind == "doodle":
-                tg, tw = t_doodle(el, wrap, art[j], t, span)
-            else:
-                tg, tw = t_img(el, wrap, art[j], t, span)
+            tg, tw = t_frame(el, wrap, art[j], t, round(max(0.3, after - t), 3))
             tags += tg
             tweens += tw
             live = "#" + wrap
-        elif kind == "type" and b.get("text"):
-            tg, tw = t_type("t%d_%d" % (i, j), b.get("text"), b.get("color"),
-                            t, _hold(t, TYPE_HOLD, end))
-            tags += tg
-            tweens += tw
-        elif kind == "stat" and b.get("value"):
-            k = n + STAT_BEATS
-            stop = times[k] if k < len(times) else end
-            tg, tw = t_stat("s%d_%d" % (i, j), b.get("value"), b.get("label"),
-                            t, _hold(t, max(0.6, stop - t), end), shake_sel=live)
-            tags += tg
-            tweens += tw
-        elif kind == "meme" and memes.get(j):
-            vis = _hold(t, MEME_HOLD, end)
-            tg, tw = t_meme("m%d_%d" % (i, j), memes[j], b.get("caption"), t, vis,
-                            b.get("template"))
-            tags += tg
-            tweens += tw
         elif kind == "zoom" and live:
             tweens += t_zoom(live, _num(b.get("amount"), 1.15), t)
-        elif kind == "arrow" and b.get("label"):
-            tg, tw = t_arrow("a%d_%d" % (i, j), b.get("label"), b.get("dir"),
-                             t, _hold(t, TYPE_HOLD, end))
-            tags += tg
-            tweens += tw
 
         name = str(b.get("sfx") or "none").strip().lower()
         if name in SFX_NAMES:
@@ -743,37 +465,36 @@ def copy_audio_beds(assets, plan, wanted):
 
 
 def copy_scene_media(job, work_dir, assets, scenes):
-    """Beat art, memes and narration out of work/ and into the project.
+    """Beat frames and narration out of work/ and into the project.
 
-    Returns ({scene: {"art": {...}, "meme": {...}}}, {scene: voice_src}), holding
+    Returns ({scene: {"art": {...}}}, {scene: voice_src}), holding
     project-relative paths for the files that actually made it across.
     """
     job_id = str(job.get("id") or "")
     work_dir = work_dir or "."
     media, voice = {}, {}
     for i, scene in enumerate(scenes):
-        art, memes = {}, {}
+        art = {}
         for j, beat in enumerate(((scene or {}).get("beats") or [])):
             if not isinstance(beat, dict):
                 continue
             kind = str(beat.get("kind") or "").lower()
-            if kind not in ("img", "meme", "photo", "doodle"):
+            if kind not in ("scene", "photo", "meme"):
                 continue
-            stem = "%s%s_%d_%d" % ({"img": "i", "meme": "m", "photo": "p",
-                                    "doodle": "d"}[kind], job_id, i, j)
+            stem = "%s%s_%d_%d" % ({"scene": "s", "photo": "p",
+                                    "meme": "m"}[kind], job_id, i, j)
             for ext in ("jpg", "png", "jpeg", "webp", "gif"):
                 src = os.path.join(work_dir, "%s.%s" % (stem, ext))
                 if not os.path.exists(src):
                     continue
-                name = "%s%d_%d.%s" % ({"img": "b", "meme": "m", "photo": "b",
-                                       "doodle": "b"}[kind], i, j, ext)
+                name = "b%d_%d.%s" % (i, j, ext)
                 if _copy(src, os.path.join(assets, name), "%s beat %d.%d" % (kind, i, j)):
-                    (art if kind != "meme" else memes)[j] = "assets/" + name
+                    art[j] = "assets/" + name
                 break
             else:
                 print("[compose] scene %d beat %d (%s) has no art in %s -- beat degrades"
                       % (i, j, kind, work_dir))
-        media[i] = {"art": art, "meme": memes}
+        media[i] = {"art": art}
         # The container follows the provider (Chatterbox returns wav), so scan the
         # extensions instead of assuming mp3 -- Chrome and ffmpeg both take either,
         # and transcoding here would only add a step that can fail.
@@ -878,8 +599,8 @@ def build_project(job, work_dir):
         fh.write(page)
 
     print("[compose] %s: %d scenes, %.2fs, %d beats, %d tweens, %d music, %d sfx, "
-          "avatar %s, mode %s, sha1 %s"
+          "avatar %s, sha1 %s"
           % (proj, len(scenes), total, sum(len((s.get("beats") or [])) for s in scenes),
              len(tl), len(plan), len(sfx_clips(sfx, have_sfx)), avatar or "ABSENT",
-             MEDIA_MODE, hashlib.sha1(page.encode("utf-8")).hexdigest()[:12]))
+             hashlib.sha1(page.encode("utf-8")).hexdigest()[:12]))
     return proj, total

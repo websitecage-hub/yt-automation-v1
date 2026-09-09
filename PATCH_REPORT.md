@@ -184,6 +184,27 @@ fall through to the next tier. No key required — same keyless host.
   `/api/chat` (the OpenAI-compatible path truncates long instructions);
   `beats.normalise` tolerates subject/desc/factor aliases.
 
+## 16. v4 "one world" redesign (operator: the v3 video read as three styles at war)
+
+Giant HTML text stamps over photoreal skulls next to a cartoon croc never
+looked like one show. The body of the video is now a single flat cartoon
+universe (the cast world: off-white room, desk, graph, plant):
+
+- Beat grammar collapsed 8 -> 4 kinds: `scene` (world re-staging, baked
+  caption <=4 words and baked number+label drawn INTO the picture),
+  `photo` (ironic real photo, macro-style baked caption/counter), `meme`
+  (Croc re-posed, full-frame), `zoom` (the only motion left).
+- Overlay kinds (`type`/`stat`/`arrow`) and all seven overlay/motion templates
+  are deleted from compose.py, style.css, and the tests -- frames cut with a
+  0.02s blink and hold dead static; the stage flashes warm white, not black.
+- BEAT_TARGET 1.9 -> 3.0 (every beat buys a composed picture now); every scene
+  still needs a betrayal (photo/meme), Croc max 2/scene, beat 1 always scene.
+- `image_world()` paints from-text frames with baked words; wordless scenes go
+  through `cast_edit` first; `image_plain()` bakes macro text into photos.
+- Cinematic specimen art survives ONLY in thumbnails (which the operator
+  approved); the old specimen/doodle/meme-text code paths it replaced were
+  removed along with their tests.
+
 ## Still outstanding
 
 `assets/audio/lofi/` is empty, so episodes render with no music bed. It needs a

@@ -87,21 +87,28 @@ STYLE_NEGATIVE = (
     "white background, no grey background, no busy background, no collage, no "
     "split frames, no borders, no vignette frames, no rainbow palette."
 )
-# v3 Casually-native art. DOODLE is the opposite of the C4 specimen lock: a
-# deliberately dumb flat cartoon drawn FOR the joke -- stick figures, a pyramid
-# with labels, a speech bubble. PHOTO has no lock at all: the sarcasm is a
-# plain real-world photograph (crowd, mansion, smiling family), and any style
-# would blunt it.
-DOODLE_STYLE = (
-    "STYLE: crude flat cartoon doodle, thick black outlines, solid flat colors "
-    "on a plain white background, simple crooked stick figures with dot eyes, "
-    "hand-lettered labels, MS-paint meme energy, deliberately dumb and cheap, "
-    "no shading, no gradients, no photorealism, no 3d."
+# v4 "one world" lock. The video body is ONE flat cartoon universe -- the same
+# off-white world, the same faces, every frame. This replaced the v2/v3 split
+# brain (photoreal specimen base + cartoon memes + HTML text stamps fighting on
+# screen), which read as three styles at war. Words live INSIDE the pictures:
+# the host spells short display copy correctly (proven on thumbnails), so no
+# Python-side text overlay exists anymore for the body of the video.
+WORLD_LOCK = (
+    "Flat cartoon, thick black outlines, solid flat colors, plain off-white "
+    "background, simple crooked figures with dot eyes, hand-lettered labels, "
+    "children's educational cartoon meets meme page, deliberately simple, "
+    "no shading, no gradients, no photorealism, no 3d, no watermark."
 )
-DOODLE_NEGATIVE = (
-    "NEGATIVE: no photorealism, no 3d render, no shading, no gradients, no "
-    "photograph, no dark background, no cinematic lighting."
+WORLD_NEGATIVE = (
+    "NEGATIVE: no photorealism, no 3d render, no shading, no gradients, "
+    "no photograph, no dark background, no cinematic lighting, no gore, "
+    "no watermark, no logo."
 )
+
+# Baked text is short or it isn't baked: the host holds ~4 words and one
+# number per frame reliably (thumbnail track record). Anything longer belongs
+# in the voiceover, not on screen.
+MAX_BAKED_WORDS = 4
 # PART C5 v3. Reaction images are GENERATED, never downloaded -- a real meme frame
 # is someone else's copyright and would put the channel at risk.
 #
@@ -509,28 +516,59 @@ def meme_img(subject):
 
 # ------------------------------------------------- v3 Casually-native art calls
 
+def world_prompt(situation, text="", value="", label=""):
+    """A situation in the one world, with optional baked-in words.
+
+    `text` (<=4 words caption), `value` (one number) + `label` (<=2 words) are
+    drawn INTO the picture by the host as hand-lettered cartoon text. Empty
+    means no text at all -- most frames should have none; the voice carries it.
+    """
+    situation = " ".join(str(situation or "").split()).strip().rstrip(".")
+    if not situation:
+        situation = "the guy staring at a wall graph that goes up"
+    out = "%s. %s %s" % (situation[:300], WORLD_LOCK, WORLD_NEGATIVE)
+    words = " ".join(str(text or "").split())[:40]
+    number = " ".join(str(value or "").split())[:14]
+    lab = " ".join(str(label or "").split()[:2])
+    if number or words:
+        show = ("a big hand-lettered cartoon number \"%s\" with tiny label \"%s\""
+                % (number, lab) if number else
+                "a short hand-lettered cartoon caption \"%s\"" % words)
+        out += (" Drawn into the picture %s, correctly spelled, nothing else "
+                "written anywhere." % show)
+    return out
+
+
+def image_world(situation, text="", value="", label="", size="1920x1080"):
+    """One full video frame from the one world. Bytes."""
+    w, h = (str(size).split("x") + ["", ""])[:2]
+    return _call(dict(CONFIG.get("image") or {}),
+                 {"prompt": world_prompt(situation, text, value, label),
+                  "negative": "", "size": size, "width": w, "height": h},
+                 kind="image")
+
+
 def doodle_prompt(subject, speech=""):
-    """Subject + the flat-cartoon lock, appended exactly once."""
-    subject = " ".join(str(subject or "").split()).replace(DOODLE_STYLE, " ")
-    subject = " ".join(subject.split()).strip().rstrip(",").rstrip(".")
-    if not subject:
-        subject = "a stick figure standing next to a pyramid labelled in stages"
-    text = "%s, %s %s" % (subject[:200], DOODLE_STYLE, DOODLE_NEGATIVE)
-    if speech and str(speech).strip():
-        text += " A hand-lettered speech bubble reads: \"%s\"." % str(speech).strip()[:60]
-    return text
+    """Kept for back-compat; new code uses world_prompt via image_world."""
+    return world_prompt(subject, text=speech)
 
 
-def image_plain(prompt, size="1920x1080"):
-    """A photo punch-in with NO style lock: the prompt goes over nearly raw.
+def image_plain(prompt, size="1920x1080", caption="", counter=""):
+    """A photo punch-in with NO style lock, words baked into the photo itself.
 
-    Used for `photo` beats, where the joke is a plain real-world photograph and
-    any house style would blunt it. Only a small photographic tail is added so
-    the host returns a photo and not clip-art.
+    `caption` (<=6 words) and `counter` (<=12 chars) are drawn onto the photo
+    like a meme macro -- the host does this reliably at short lengths.
     """
     subject = " ".join(str(prompt or "").split())[:400] or "a crowd of people cheering"
     text = ("%s. Real candid photograph, natural light, photojournalistic, "
-            "no illustration, no cartoon, no text, no watermark." % subject)
+            "no illustration, no cartoon, no watermark." % subject)
+    cap = " ".join(str(caption or "").split()[:6])
+    cnt = " ".join(str(counter or "").split())[:12]
+    if cap or cnt:
+        show = " with bold white meme-macro text with black outline reading \"%s\"" % cap if cap else ""
+        if cnt:
+            show += (" and" if show else " with") + " a small overlay counter reading \"%s\"" % cnt
+        text += " Drawn onto the photo%s, correctly spelled." % show
     w, h = (str(size).split("x") + ["", ""])[:2]
     return _call(dict(CONFIG.get("image") or {}),
                  {"prompt": text, "negative": "", "size": size,
@@ -538,11 +576,8 @@ def image_plain(prompt, size="1920x1080"):
 
 
 def image_doodle(prompt, speech="", size="1920x1080"):
-    """A flat-cartoon joke diagram. Bytes; format via last_format('image')."""
-    w, h = (str(size).split("x") + ["", ""])[:2]
-    return _call(dict(CONFIG.get("image") or {}),
-                 {"prompt": doodle_prompt(prompt, speech), "negative": "",
-                  "size": size, "width": w, "height": h}, kind="image")
+    """Kept for back-compat; routes into the one world with baked speech."""
+    return image_world(prompt, text=speech, size=size)
 
 
 # --------------------------------- same-croc memes (upload consistency in action)

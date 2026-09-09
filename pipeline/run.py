@@ -140,7 +140,9 @@ def _voice_path(job, work_dir, i):
 
 def _beat_art(job, work_dir, i, j, kind):
     """Beat (i, j)'s still, if it has already been bought. Resume skips those."""
-    head = {"meme": "m", "photo": "p", "doodle": "d"}.get(kind, "i")
+    head = {"scene": "s", "photo": "p", "meme": "m"}.get(kind)
+    if not head:
+        return None
     return _find(work_dir, "%s%s_%d_%d" % (head, job.get("id", ""), i, j), IMAGE_EXT)
 
 
@@ -349,8 +351,7 @@ def stage_beats(job, work_dir):
                      ("{act}", str(scene.get("act", ""))),
                      ("{heading}", str(scene.get("heading", ""))),
                      ("{text}", str(scene.get("text", ""))),
-                     ("{staircase}", staircase), ("{n}", str(n)),
-                     ("{img_cap}", str(beat_engine.img_cap(n)))):
+                     ("{staircase}", staircase), ("{n}", str(n))):
             user = user.replace(k, v)
 
         specs = _beat_specs(system, user, i)
@@ -396,7 +397,7 @@ def stage_visuals(job, work_dir):
     for i, scene in enumerate(job.get("scenes") or []):
         for j, beat in enumerate(scene.get("beats") or []):
             kind = beat.get("kind")
-            if kind not in ("img", "meme", "photo", "doodle") or not beat.get("prompt"):
+            if kind not in ("scene", "photo", "meme") or not beat.get("prompt"):
                 continue
             if _beat_art(job, work_dir, i, j, kind):
                 continue
@@ -407,11 +408,10 @@ def stage_visuals(job, work_dir):
         job["stage"] = "render"
         return job
 
-    print("[run] visuals: %d beats to render (%d img, %d meme, %d photo, %d doodle)"
-          % (len(jobs_todo), sum(1 for x in jobs_todo if x[2] == "img"),
-             sum(1 for x in jobs_todo if x[2] == "meme"),
+    print("[run] visuals: %d beats to render (%d scene, %d photo, %d meme)"
+          % (len(jobs_todo), sum(1 for x in jobs_todo if x[2] == "scene"),
              sum(1 for x in jobs_todo if x[2] == "photo"),
-             sum(1 for x in jobs_todo if x[2] == "doodle")))
+             sum(1 for x in jobs_todo if x[2] == "meme")))
     done = {"ok": 0, "fail": 0}
     with futures.ThreadPoolExecutor(max_workers=ART_WORKERS) as pool:
         pending = {pool.submit(_render_beat_art, job, work_dir, *task): task for task in jobs_todo}
@@ -429,17 +429,39 @@ def stage_visuals(job, work_dir):
 
 
 def _render_beat_art(job, work_dir, i, j, kind, prompt_text):
-    """One beat's art.
+    """One beat's full frame.
 
-    img gets the C4 specimen lock, photo goes over nearly raw (the joke is the
-    plain photo). doodle and meme are cast re-stagings first (same faces, same
-    world -- the Memeic rule), falling back to text generation when the cast
-    has no cached URL or the edit fails.
+    scene: the one cartoon world. Cast re-staging first (same faces, same
+    room); when the beat carries baked words (text/value) or the cast has no
+    cached URL, a from-text world frame is painted instead -- the host draws
+    short copy correctly, and a missing short caption beats a missing picture.
+    meme: Croc re-posed (cast edit -> same-croc edit -> text fallback).
+    photo: raw irony with the caption/counter baked in like a macro.
     """
-    if kind == "meme":
+    try:
+        beat = ((job.get("scenes") or [])[i].get("beats") or [])[j]
+    except (IndexError, AttributeError):
+        beat = {}
+    beat = beat if isinstance(beat, dict) else {}
+    if kind == "scene":
+        text, value, label = (beat.get("text", ""), beat.get("value", ""),
+                              beat.get("label", ""))
+        dst = os.path.join(work_dir, "s%s_%d_%d.jpg" % (job["id"], i, j))
+        if not (str(text).strip() or str(value).strip()):
+            try:
+                data = adapters.cast_edit(prompt_text, "guy")
+                print("[run] scene %d.%d via cast edit" % (i, j))
+                return save_still(data, adapters.last_format("image") or "png", dst)
+            except Exception as e:
+                print("[run] scene %d.%d cast edit failed (%s) -- painting" % (i, j, e))
+        data = adapters.image_world(prompt_text, text, value, label, "1920x1080")
+        fmt = adapters.last_format("image") or "jpg"
+    elif kind == "meme":
+        dst = os.path.join(work_dir, "m%s_%d_%d.jpg" % (job["id"], i, j))
         try:
             data = adapters.cast_edit(prompt_text, "croc")
             print("[run] meme %d.%d via cast edit (croc)" % (i, j))
+            return save_still(data, adapters.last_format("image") or "png", dst)
         except Exception as e:
             print("[run] meme %d.%d cast edit failed (%s) -- text fallback" % (i, j, e))
             try:
@@ -449,31 +471,13 @@ def _render_beat_art(job, work_dir, i, j, kind, prompt_text):
                 print("[run] meme %d.%d croc-edit failed (%s) -- text fallback" % (i, j, e2))
                 data = adapters.meme_img(prompt_text)
         fmt = adapters.last_format("image") or "png"
-        dst = os.path.join(work_dir, "m%s_%d_%d.jpg" % (job["id"], i, j))
     elif kind == "photo":
-        data = adapters.image_plain(prompt_text, "1920x1080")
+        data = adapters.image_plain(prompt_text, "1920x1080",
+                                    beat.get("caption", ""), beat.get("counter", ""))
         fmt = adapters.last_format("image") or "jpg"
         dst = os.path.join(work_dir, "p%s_%d_%d.jpg" % (job["id"], i, j))
-    elif kind == "doodle":
-        try:
-            beat = ((job.get("scenes") or [])[i].get("beats") or [])[j]
-        except (IndexError, AttributeError):
-            beat = {}
-        speech = str((beat or {}).get("speech", "") or "").strip()
-        situation = prompt_text + (", speech bubble reading \"%s\"" % speech[:60] if speech else "")
-        try:
-            data = adapters.cast_edit("The Guy and Croc: " + situation, "guy")
-            print("[run] doodle %d.%d via cast edit (guy)" % (i, j))
-        except Exception as e:
-            print("[run] doodle %d.%d cast edit failed (%s) -- text fallback" % (i, j, e))
-            data = adapters.image_doodle(prompt_text, (beat or {}).get("speech", ""),
-                                         "1920x1080")
-        fmt = adapters.last_format("image") or "jpg"
-        dst = os.path.join(work_dir, "d%s_%d_%d.jpg" % (job["id"], i, j))
     else:
-        data = adapters.image_styled(prompt_text, "1920x1080")
-        fmt = adapters.last_format("image") or "jpg"
-        dst = os.path.join(work_dir, "i%s_%d_%d.jpg" % (job["id"], i, j))
+        raise RuntimeError("no art path for kind %r" % kind)
     return save_still(data, fmt, dst)
 
 

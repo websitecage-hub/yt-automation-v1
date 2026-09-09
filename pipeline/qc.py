@@ -19,8 +19,8 @@ MIN_ART_COVERAGE = 0.70      # fraction of visual beats that must have files
 MIN_THUMB_BYTES = 30 * 1024  # below this the thumbnail is the painted fallback
 AUDIO_EXT = ("mp3", "wav", "m4a", "ogg", "flac")
 IMAGE_EXT = ("jpg", "jpeg", "png", "webp", "gif")
-VISUAL_KINDS = ("img", "photo", "doodle", "meme")
-_KIND_HEAD = {"img": "i", "photo": "p", "doodle": "d", "meme": "m"}
+VISUAL_KINDS = ("scene", "photo", "meme")
+_KIND_HEAD = {"scene": "s", "photo": "p", "meme": "m"}
 
 
 def _num(value, default=0.0):
