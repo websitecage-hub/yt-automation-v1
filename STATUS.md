@@ -1,8 +1,8 @@
 # SCALED status
 
-_updated 2026-09-09T17:12:50+00:00_
+_updated 2026-09-09T20:36:13+00:00_
 
-shelf (done, unpublished): 0/5
+shelf (done, unpublished): 1/5
 
 | lesson | stage | title |
 | --- | --- | --- |
@@ -11,6 +11,7 @@ shelf (done, unpublished): 0/5
 | 3 | done | Boiling Point. Absolute Zero. It Just Doesn't Care. |
 | 4 | done | This Shrimp Snaps Hotter Than The Sun's Surface |
 | 5 | done | Frog Stops Its Heart. Wakes Up Weeks Later. |
-| 6 | voice | Lungs = Badminton Court? The Scaled Truth |
+| 6 | qc_failed | Lungs = Badminton Court? The Scaled Truth |
+| 7 | done | The Blue Whale Heart Weighs as Much as a Car |
 
-providers: {"TABI_KEY": true, "NIM_KEY": true, "GEMINI_KEY": true, "GROQ_KEY": true}
+providers: {"TABI_KEY": true, "TABI_KEY2": false, "NIM_KEY": true, "GEMINI_KEY": true, "GROQ_KEY": true}

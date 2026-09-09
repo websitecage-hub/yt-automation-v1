@@ -305,7 +305,7 @@
     "lane": "WEIRD_ANIMAL",
     "why": "A blue whale’s heart can weigh ~180 kg, similar to a compact car’s mass.",
     "score": 9,
-    "used": false
+    "used": true
   },
   {
     "topic": "The Arctic Tern Migrates About 70,000 Kilometers Each Year, the Longest Animal Migration",
