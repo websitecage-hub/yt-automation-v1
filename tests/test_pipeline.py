@@ -2219,3 +2219,51 @@ class TestSrtResumeAndPerf:
         jobs = [{"id": "q", "stage": "qc_failed"}, {"id": "v", "stage": "voice"}]
         assert run.in_progress(jobs)["id"] == "v"
         assert run.in_progress([{"id": "q", "stage": "qc_failed"}]) is None
+
+
+class TestScriptValidation:
+    def _good(self):
+        return {"title": "T", "thumb_words": "BIG WIN",
+                "scenes": [{"act": "HOOK", "text": "one two three"} for _ in range(10)]}
+
+    def test_good_script_passes(self):
+        from pipeline.run import _validate_script
+        assert _validate_script(self._good()) == []
+
+    def test_empty_scene_text_is_rejected(self):
+        from pipeline.run import _validate_script
+        doc = self._good()
+        doc["scenes"][15 % 10]["text"] = "   "
+        assert any("no narration text" in p for p in _validate_script(doc))
+
+    def test_missing_packaging_is_rejected(self):
+        from pipeline.run import _validate_script
+        doc = self._good()
+        doc["title"] = ""
+        doc["thumb_words"] = ""
+        problems = " ".join(_validate_script(doc))
+        assert "title" in problems and "thumb_words" in problems
+
+    def test_repair_path_runs_once_then_raises(self, tmp_path, monkeypatch):
+        from pipeline import llm, run, topics
+        calls = []
+
+        def fake_llm(system, user, json_out=False, **kw):
+            calls.append(user)
+            return {"title": "", "thumb_words": "", "scenes": []}
+
+        monkeypatch.setattr(llm, "llm", fake_llm)
+        monkeypatch.setattr(llm, "prompt", lambda name, half: "x")
+        monkeypatch.setattr(topics, "refill", lambda fn: None)
+        monkeypatch.setattr(topics, "pick",
+                            lambda: {"topic": "t", "lane": "HUMAN"})
+        import json as _json
+        with open("data/strategy.json", encoding="utf-8") as fh:
+            _strategy = fh.read()
+        monkeypatch.setattr(run, "_read", lambda p, d="": _strategy if "strategy" in p else d)
+        try:
+            run.stage_idea([])
+            assert False, "should have raised"
+        except RuntimeError as e:
+            assert "invalid after repair" in str(e)
+        assert len(calls) == 2, "exactly one repair attempt"

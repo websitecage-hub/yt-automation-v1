@@ -220,6 +220,41 @@ def _perf_summary():
     return " ".join(parts) or "(no performance data yet)"
 
 
+def _validate_script(doc):
+    """Every way a SCRIPT reply is unusable, as plain sentences.
+
+    A poisoned script (empty scene text, missing packaging) used to sail into
+    data/videos/ and then fail every run's voice stage forever, blocking the
+    whole queue. Now it gets one repair attempt, then a loud failure instead
+    of a poisoned job file.
+    """
+    problems = []
+    if not isinstance(doc, dict):
+        return ["script is not a JSON object"]
+    if not str(doc.get("title", "")).strip():
+        problems.append("title is empty")
+    if not str(doc.get("thumb_words", "")).strip():
+        problems.append("thumb_words (thumbnail headline) is empty")
+    scenes = doc.get("scenes")
+    if not isinstance(scenes, list) or not scenes:
+        return problems + ["scenes is empty"]
+    if not 8 <= len(scenes) <= 20:
+        problems.append("need 8-20 scenes, got %d" % len(scenes))
+    for i, sc in enumerate(scenes):
+        if not isinstance(sc, dict):
+            problems.append("scene %d is not an object" % (i + 1))
+            continue
+        if not str(sc.get("text", "")).strip():
+            problems.append("scene %d has no narration text" % (i + 1))
+    return problems
+
+
+def _parse_script_doc(doc):
+    if isinstance(doc, str):
+        doc = llm.parse_json(doc)
+    return doc
+
+
 def stage_idea(jobs):
     """Pick a topic, write the 16-scene script, return a fresh job at 'voice'."""
     topics.refill(lambda s, u: llm.llm(s, u, json_out=True))
@@ -230,16 +265,23 @@ def stage_idea(jobs):
     n = next_lesson(jobs)
     system = llm.prompt("SCRIPT", "system")
     user = llm.prompt("SCRIPT", "user")
-    for k, v in (("{niche}", _read(NICHE, "SCALED -- biology as power stats")),
+    for k, v in (("{niche}", _read(NICHE, "Kronvex -- biology as power stats")),
                  ("{strategy}", (_read(STRATEGY, "{}").strip() or "{}")),
                  ("{perf}", _perf_summary()),
                  ("{used}", used),
                  ("{topic}", picked["topic"]),
                  ("{n}", str(n))):
         user = user.replace(k, v)
-    doc = llm.llm(system, user, json_out=True)
-    if isinstance(doc, str):
-        doc = llm.parse_json(doc)
+    doc = _parse_script_doc(llm.llm(system, user, json_out=True))
+    problems = _validate_script(doc)
+    if problems:
+        print("[run] script rejected (%s) -- one repair attempt" % "; ".join(problems[:4]))
+        doc = _parse_script_doc(llm.llm(
+            system, user + "\n\nYour last reply was invalid: " + "; ".join(problems)
+            + ". Return the corrected full JSON only.", json_out=True))
+        problems = _validate_script(doc)
+        if problems:
+            raise RuntimeError("script invalid after repair: %s" % "; ".join(problems[:4]))
     scenes = doc.get("scenes") or []
     if not scenes:
         raise RuntimeError("script came back with no scenes")
@@ -254,6 +296,7 @@ def stage_idea(jobs):
         "description": str(doc.get("description", "")),
         "tags": doc.get("tags") or [],
         "thumb_words": str(doc.get("thumb_words", "")),
+        "thumb_kicker": str(doc.get("thumb_kicker", "")),
         "staircase": doc.get("staircase") or [],
         "thumbnail_prompt": str(doc.get("thumbnail_prompt", "")),
         "verdict": str(doc.get("verdict", "")),

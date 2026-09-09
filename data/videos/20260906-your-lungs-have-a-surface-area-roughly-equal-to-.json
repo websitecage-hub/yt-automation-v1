@@ -4,7 +4,7 @@
   "topic": "Your Lungs Have a Surface Area Roughly Equal to a Badminton Court",
   "lane": "HUMAN",
   "created": "2026-09-06T10:58:38+00:00",
-  "stage": "voice",
+  "stage": "qc_failed",
   "title": "Lungs = Badminton Court? The Scaled Truth",
   "description": "Professor Croc grades the true surface area of human lungs, revealing how this hidden court powers endurance and what it means for your potential.",
   "tags": [
@@ -189,5 +189,8 @@
       "image_prompt": "",
       "stat": null
     }
+  ],
+  "qc_reasons": [
+    "scene 16 has no narration text (pre-v4 script, created without validation)"
   ]
 }
