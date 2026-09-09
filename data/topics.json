@@ -312,7 +312,7 @@
     "lane": "WEIRD_ANIMAL",
     "why": "Arctic terns travel from Arctic to Antarctic and back, covering ~70k km annually.",
     "score": 9,
-    "used": false
+    "used": true
   },
   {
     "topic": "The Platypus Can Detect Electric Fields as Weak as 50 Microvolts With Its Bill",
