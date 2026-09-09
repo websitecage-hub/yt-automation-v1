@@ -1,20 +1,28 @@
 {
   "voice": {
     "base": "https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev",
-    "path": "/api/tts",
+    "path": "/api/clone",
     "method": "POST",
-    "payload": {"text": "{text}", "ttsSteps": 2, "emotionExaggeration": 0.3},
+    "form": {
+      "text": "{text}",
+      "ttsSteps": 10,
+      "emotionExaggeration": 0.0,
+      "ttsSeed": 0,
+      "threads": 4
+    },
+    "files": {"voice": "assets/voice/goku_hope_8sec.mp3"},
     "returns": "json-url",
     "url_field": "url",
     "no_proxy": true
   },
   "image": {
     "base": "https://media-gen-mcp.onrender.com",
-    "path": "/api/image",
+    "path": "/mcp",
     "method": "POST",
-    "payload": {"prompt": "{prompt}", "mode": "instant"},
-    "returns": "json-url",
-    "url_field": "urls.0",
+    "tool": "generate_image",
+    "payload": {"prompt": "{prompt}"},
+    "headers": {"Accept": "application/json, text/event-stream"},
+    "returns": "mcp-tool",
     "no_proxy": true
   }
 }

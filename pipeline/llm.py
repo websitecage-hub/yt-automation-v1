@@ -1,18 +1,19 @@
 """LLM access for SCALED — two provider chains, hard-wired fallback order.
 
-llm()      creative chain: tabi opus-4-8 -> NIM super-120b -> NIM nano-30b -> Gemini -> Groq
-llm_code() code chain:     tabi opus-4-8 -> NIM super-120b -> NIM nano-30b -> Gemini -> Groq
+llm()      creative chain: Meta thinking -> tabi opus-4-8 (x2) -> NIM super/nano -> Gemini -> Groq
+llm_code() code chain:     Meta thinking -> tabi opus-4-8 (x2) -> NIM super/nano -> Gemini -> Groq
 
-Providers speak one of three dialects -- "anthropic" (tabitoken gateway, /v1/messages
+Providers speak one of four dialects -- "meta" (Meta AI thinking gateway, OpenAI
+/chat/completions, no key required), "anthropic" (tabitoken gateway, /v1/messages
 + x-api-key, claude-opus-4-8), "nim" (NVIDIA NIM, OpenAI /chat/completions but no
 response_format), and "openai" (Gemini + Groq, /chat/completions with a JSON
-response_format) -- and _post normalises all three to one text/JSON return. Every
+response_format) -- and _post normalises all of them to one text/JSON return. Every
 HTTP call carries a browser User-Agent (tabitoken's Cloudflare 403s a bare curl/
 python UA) and is retried on transient failures (timeouts, 429, 5xx) before the
 chain moves on; a provider whose key env var is empty is skipped without counting
-as a failure, and one that raises, returns non-200, or unparseable JSON (json_out)
-is logged so the next provider takes over. The chain only raises when every
-provider is exhausted.
+as a failure (except Meta, which is keyless and always tried), and one that raises,
+returns non-200, or unparseable JSON (json_out) is logged so the next provider
+takes over. The chain only raises when every provider is exhausted.
 """
 import json
 import os
@@ -26,6 +27,7 @@ CREATIVE_MAX_TOKENS = 8000
 CODE_MAX_TOKENS = 12000
 
 NIM_BASE = "https://integrate.api.nvidia.com/v1"
+META_BASE = "https://meta-api-u04m.onrender.com/v1"
 TABI_BASE = "https://tabitoken.com"
 SEEKAI_BASE = "https://seekai.cc"
 GROQ_BASE = "https://api.groq.com/openai/v1"
@@ -40,31 +42,37 @@ RETRY_TRIES = 3                       # per-provider HTTP attempts before fallin
 RETRY_STATUS = {408, 409, 429, 500, 502, 503, 504}   # 403 is NOT here: fall through fast
 
 # (label, base, model, env var holding the key, dialect)
-# tabitoken (Anthropic dialect, claude-opus-4-8) leads both chains -- the user's
-# pick for quality. NVIDIA NIM (nemotron super-120b -> nano-30b) then free Gemini
-# + Groq form the tail so the chain never dies if tabitoken is blocked or out of
-# credit. seekai/kimi/deepseek are dropped: seekai 401s from CI IPs and the big
-# NIM reasoning models (kimi-k3, deepseek-v4) never answer within 280s.
+# Meta AI (thinking mode, OpenAI-compatible, no key required) leads both chains --
+# the user's pick and free. tabitoken (Anthropic dialect, claude-opus-4-8) with a
+# second key backs it up for quality, then NVIDIA NIM (nemotron super-120b ->
+# nano-30b) then free Gemini + Groq form the tail so the chain never dies. Meta
+# needs no key, so it is never skipped for a missing env var. seekai/kimi/deepseek
+# are dropped: seekai 401s from CI IPs and the big NIM reasoning models never
+# answer within 280s.
 CREATIVE_CHAIN = [
-    ("tabi/opus-4-8",  TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY",   "anthropic"),
-    ("nim/super-120b", NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
-    ("nim/nano-30b",   NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
-    ("gemini",         GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
-    ("groq",           GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
+    ("meta/thinking",   META_BASE,   "meta-ai-thinking",                  "META_KEY",   "meta"),
+    ("tabi/opus-4-8",   TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY",   "anthropic"),
+    ("tabi/opus-4-8#2", TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY2",  "anthropic"),
+    ("nim/super-120b",  NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
+    ("nim/nano-30b",    NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
+    ("gemini",          GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
+    ("groq",            GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
 ]
 CODE_CHAIN = [
-    ("tabi/opus-4-8",  TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY",   "anthropic"),
-    ("nim/super-120b", NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
-    ("nim/nano-30b",   NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
-    ("gemini",         GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
-    ("groq",           GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
+    ("meta/thinking",   META_BASE,   "meta-ai-thinking",                  "META_KEY",   "meta"),
+    ("tabi/opus-4-8",   TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY",   "anthropic"),
+    ("tabi/opus-4-8#2", TABI_BASE,   "claude-opus-4-8",                   "TABI_KEY2",  "anthropic"),
+    ("nim/super-120b",  NIM_BASE,    "nvidia/nemotron-3-super-120b-a12b", "NIM_KEY",    "nim"),
+    ("nim/nano-30b",    NIM_BASE,    "nvidia/nemotron-3-nano-30b-a3b",    "NIM_KEY",    "nim"),
+    ("gemini",          GEMINI_BASE, "gemini-2.5-flash",                  "GEMINI_KEY", "openai"),
+    ("groq",            GROQ_BASE,   "openai/gpt-oss-120b",               "GROQ_KEY",   "openai"),
 ]
 
 # Filled at import: which provider keys are actually present in this process.
 # run.py logs this so a run that silently lost a provider is obvious in the log.
 PROVIDERS_HEALTH = {
     env: bool((os.getenv(env) or "").strip())
-    for env in ("TABI_KEY", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY")
+    for env in ("TABI_KEY", "TABI_KEY2", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY")
 }
 
 _FENCE = re.compile(r"^\s*```(?:json|JSON)?\s*|\s*```\s*$")
@@ -127,7 +135,21 @@ def _http_post(url, headers, payload):
 
 
 def _post(base, model, key, system, user, temperature, max_tokens, json_out, dialect):
-    if dialect == "anthropic":
+    if dialect == "meta":
+        # Meta AI thinking gateway: its own /api/chat path understands long
+        # instruction-heavy prompts far better than the OpenAI-compatible
+        # /v1/chat/completions one (which truncates and roleplays instead of
+        # emitting the asked-for JSON). system + user go in one message;
+        # the reply's `text` holds the completion. Auth open.
+        payload = {"message": "%s\n\n%s" % (system, user)}
+        headers = {"Content-Type": "application/json", "User-Agent": UA}
+        root = base.rsplit("/v1", 1)[0]  # META_BASE ends in /v1; /api/chat lives at root
+        r = _http_post(root + "/api/chat", headers, payload)
+        try:
+            content = r.json().get("text", "")
+        except Exception:
+            raise RuntimeError("meta chat expected JSON, got: %s" % r.text[:200])
+    elif dialect == "anthropic":
         # Anthropic Messages API: system is top-level, no response_format; we lean
         # on parse_json to recover the object the prompt already asks the model for.
         payload = {
@@ -168,7 +190,7 @@ def _run_chain(chain, system, user, temperature, max_tokens, json_out, tag):
     tried = []
     for label, base, model, env, dialect in chain:
         key = (os.getenv(env) or "").strip()
-        if not key:
+        if not key and dialect != "meta":      # meta needs no key; never skip it
             print("[llm] %s skipped: %s not set" % (label, env))
             continue
         tried.append(label)

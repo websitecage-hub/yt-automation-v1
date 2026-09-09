@@ -13,6 +13,7 @@ shapes depending on API version:
 normalize_words() accepts both, prefers the flat top-level list, and logs which
 shape it saw so the first real run tells us the truth instead of us guessing.
 """
+import json
 import os
 
 import requests
@@ -102,3 +103,37 @@ def word_timeline(mp3_path):
     if not words:
         raise RuntimeError("whisper returned no words for %s" % mp3_path)
     return words
+
+
+# ---------------------------------------------------------------- scene clock
+
+def scene_t0(job, i):
+    """Absolute start of scene i = the sum of every earlier scene's duration."""
+    total = 0.0
+    for s in ((job or {}).get("scenes") or [])[:i]:
+        try:
+            total += float((s or {}).get("dur") or 0.0)
+        except (TypeError, ValueError):
+            pass
+    return round(total, 3)
+
+
+def scene_words(job, i, work_dir):
+    """Word list for scene i: whatever this module wrote to work/, else the job.
+
+    Beats snap to these onsets, so this is the one place the rest of the pipeline
+    asks "when was each word actually said". Missing or corrupt files give [],
+    which downgrades pacing to an even grid rather than failing the episode.
+    """
+    scenes = (job or {}).get("scenes") or []
+    if not (0 <= i < len(scenes)):
+        return []
+    words = (scenes[i] or {}).get("words")
+    if not words and work_dir:
+        path = os.path.join(work_dir, "w%s_%d.json" % ((job or {}).get("id", ""), i))
+        try:
+            with open(path, encoding="utf-8") as fh:
+                words = json.load(fh)
+        except (OSError, ValueError):
+            words = []
+    return [w for w in (words or []) if isinstance(w, dict)]

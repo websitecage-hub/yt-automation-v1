@@ -11,7 +11,9 @@ on:
   workflow_dispatch: {}
 
 concurrency:
-  group: scaled-produce
+  # R4: all four workflows write data/ + STATUS.md. One shared group serializes
+  # the writers so a push race can never silently drop a stage advance.
+  group: scaled-state
   cancel-in-progress: false
 
 permissions:
@@ -29,12 +31,26 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: pip install requests google-api-python-client google-auth
+      # pillow: compose crops every still to 1920x1080 and thumbnail.py paints the
+      # whole brand layer. Without it the visuals and thumbnail stages both die.
+      - run: pip install requests google-api-python-client google-auth pillow
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      # R3: work/ is ephemeral on a fresh runner, but paid art is not free.
+      # Restore the last run's intermediates (voice, stills, word files) so a
+      # kill during render resumes instead of re-buying every image + whisper
+      # call. Misses silently fall back to regenerating everything.
+      - name: Restore work/
+        uses: actions/cache/restore@v4
+        with:
+          path: work/
+          key: scaled-work-${{ hashFiles('data/videos/*.json') }}
+          restore-keys: scaled-work-
       - name: Produce
         env:
+          META_KEY: ${{ secrets.META_KEY }}
           TABI_KEY: ${{ secrets.TABI_KEY }}
+          TABI_KEY2: ${{ secrets.TABI_KEY2 }}
           NIM_KEY: ${{ secrets.NIM_KEY }}
           GROQ_KEY: ${{ secrets.GROQ_KEY }}
           GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
@@ -47,7 +63,7 @@ jobs:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           RUN_BUDGET_MIN: "300"
         run: python -m pipeline.run
-      - name: Upload preview (video + thumbnail + images)
+      - name: Upload preview (video + thumbnail + stills + narration)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -55,14 +71,33 @@ jobs:
           path: |
             work/**/*.mp4
             work/**/*.jpg
+            work/**/*.png
+            work/**/*.webp
+            work/**/*.mp3
+            work/**/*.wav
+            work/**/index.html
             data/videos/*.json
           if-no-files-found: warn
           retention-days: 14
+      - name: Save work/
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: work/
+          key: scaled-work-${{ hashFiles('data/videos/*.json') }}-${{ github.run_id }}
       - name: Commit state
         if: always()
         run: |
           git config user.name "scaled-bot"
           git config user.email "scaled-bot@users.noreply.github.com"
-          git add data STATUS.md
+          # assets/memes is a cache, not an intermediate: committing it is what
+          # makes a meme survive to the next run instead of being re-bought.
+          git add data STATUS.md assets/memes || true
           git commit -m "produce: advance pipeline [skip ci]" || echo "nothing to commit"
-          git push || echo "nothing to push"
+          # R4: never swallow a push rejection -- that is how stage advances get
+          # silently lost (and re-uploaded). Rebase onto whoever won the race
+          # and retry; fail loudly if the state still did not land.
+          for i in 1 2 3; do
+            git pull --rebase && git push && break || sleep 15
+          done
+          git status --porcelain | grep -q . && { echo "STATE DID NOT LAND"; exit 1; } || true

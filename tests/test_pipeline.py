@@ -61,7 +61,14 @@ def dialect_resp(url, content):
     """Reply in whichever dialect the URL implies, so chain-order tests work."""
     if "/v1/messages" in url:
         return FakeResp(payload=anthropic_msg(content))
+    if "/api/chat" in url:
+        return FakeResp(payload={"text": content, "model": "meta-ai-thinking"})
     return FakeResp(payload=chat(content))
+
+
+def meta_chat_url(llm):
+    """Where the meta dialect posts: /api/chat at the host root, not under /v1."""
+    return llm.META_BASE.rsplit("/v1", 1)[0] + "/api/chat"
 
 
 # ==========================================================================
@@ -69,7 +76,7 @@ def dialect_resp(url, content):
 # ==========================================================================
 class TestLLM:
     def _mod(self, monkeypatch, keys=("TABI_KEY", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY")):
-        for env in ("TABI_KEY", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY"):
+        for env in ("TABI_KEY", "TABI_KEY2", "NIM_KEY", "GEMINI_KEY", "GROQ_KEY"):
             monkeypatch.setenv(env, "k-" + env if env in keys else "")
         from pipeline import llm
         monkeypatch.setattr(llm.time, "sleep", lambda *a, **k: None)  # no real backoff in tests
@@ -80,46 +87,43 @@ class TestLLM:
         calls = []
 
         def fake_post(url, **kw):
-            calls.append((url, kw["json"]["model"], kw["json"]["temperature"], kw["headers"]))
-            return FakeResp(payload=anthropic_msg("Base stats first."))
+            calls.append((url, kw["json"].get("model"), kw["headers"]))
+            return FakeResp(payload={"text": "Base stats first.", "model": "meta-ai-thinking"})
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("sys", "user") == "Base stats first."
         assert len(calls) == 1
-        url, model, temp, headers = calls[0]
-        assert url == llm.TABI_BASE + "/v1/messages"
-        assert model == "claude-opus-4-8"
-        assert temp == 0.85
-        assert "Mozilla/" in headers["User-Agent"]   # Cloudflare needs a browser UA
+        url, model, headers = calls[0]
+        assert url == meta_chat_url(llm)   # Meta is the keyless primary
+        assert model is None               # /api/chat takes a bare message, no model
+        assert "Mozilla/" in headers["User-Agent"]
 
-    def test_code_chain_starts_at_tabi_opus(self, monkeypatch):
+    def test_code_chain_starts_at_meta(self, monkeypatch):
         llm = self._mod(monkeypatch)
         seen = {}
 
         def fake_post(url, **kw):
-            seen.update(url=url, **kw["json"])
-            return FakeResp(payload=anthropic_msg("tl.to('#s0-a',{opacity:1},0.5);"))
+            seen.update(url=url, message=kw["json"]["message"])
+            return FakeResp(payload={"text": "tl.to('#s0-a',{opacity:1},0.5);"})
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         llm.llm_code("sys", "user")
-        assert seen["url"] == llm.TABI_BASE + "/v1/messages"
-        assert seen["model"] == "claude-opus-4-8"
-        assert seen["temperature"] == 0.4
-        assert seen["max_tokens"] == 12000
+        assert seen["url"] == meta_chat_url(llm)
+        assert "sys" in seen["message"] and "user" in seen["message"]
 
     def test_first_provider_fails_second_is_used(self, monkeypatch):
         llm = self._mod(monkeypatch)
-        models = []
+        urls = []
 
         def fake_post(url, **kw):
-            models.append(kw["json"]["model"])
-            if len(models) == 1:
-                return FakeResp(status=403, text="cloudflare")  # non-retryable -> next provider
-            return FakeResp(payload=chat("second answer"))
+            urls.append(url)
+            if len(urls) == 1:
+                return FakeResp(status=400, text="meta down")  # non-retryable -> next provider
+            return dialect_resp(url, "second answer")
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "second answer"
-        assert models == ["claude-opus-4-8", "nvidia/nemotron-3-super-120b-a12b"]
+        assert urls == [meta_chat_url(llm), llm.TABI_BASE + "/v1/messages"]
 
     def test_retryable_status_is_retried_on_same_provider(self, monkeypatch):
         llm = self._mod(monkeypatch)
@@ -129,7 +133,7 @@ class TestLLM:
             n["i"] += 1
             if n["i"] == 1:
                 return FakeResp(status=503, text="try later")  # retryable -> retry, don't fall through
-            return FakeResp(payload=anthropic_msg("ok"))
+            return dialect_resp(url, "ok")
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "ok"
@@ -143,23 +147,27 @@ class TestLLM:
             n["i"] += 1
             if n["i"] == 1:
                 raise llm.requests.RequestException("connection reset")
-            return FakeResp(payload=anthropic_msg("recovered"))
+            return dialect_resp(url, "recovered")
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "recovered"
         assert n["i"] == 2
 
     def test_empty_key_provider_is_skipped_not_called(self, monkeypatch):
+        # Only GROQ has a key. Meta (keyless) is tried first; make it fail so the
+        # chain must skip the empty-key providers (tabi/nim/gemini) and land on groq.
         llm = self._mod(monkeypatch, keys=("GROQ_KEY",))
-        models = []
+        urls = []
 
         def fake_post(url, **kw):
-            models.append(kw["json"]["model"])
+            urls.append(url)
+            if url == meta_chat_url(llm):
+                return FakeResp(status=400, text="meta down")
             return FakeResp(payload=chat("groq only"))
 
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u") == "groq only"
-        assert models == ["openai/gpt-oss-120b"]
+        assert urls == [meta_chat_url(llm), llm.GROQ_BASE + "/chat/completions"]
 
     def test_all_down_raises(self, monkeypatch):
         llm = self._mod(monkeypatch)
@@ -167,17 +175,28 @@ class TestLLM:
         with pytest.raises(RuntimeError, match="all LLM providers down"):
             llm.llm("s", "u")
 
-    def test_no_keys_at_all_raises(self, monkeypatch):
+    def test_no_keys_only_meta_is_attempted(self, monkeypatch):
+        # Meta needs no key, so even with every key empty it is still tried (and is
+        # the only provider tried); the keyed providers are all skipped.
         llm = self._mod(monkeypatch, keys=())
-        monkeypatch.setattr(llm.requests, "post", lambda *a, **k: pytest.fail("must not POST"))
+        urls = []
+
+        def fake_post(url, **kw):
+            urls.append(url)
+            return FakeResp(status=400, text="meta down")
+
+        monkeypatch.setattr(llm.requests, "post", fake_post)
         with pytest.raises(RuntimeError, match="all LLM providers down"):
             llm.llm("s", "u")
+        assert urls == [meta_chat_url(llm)]
 
     def test_json_out_sets_response_format_on_openai_dialect(self, monkeypatch):
         llm = self._mod(monkeypatch, keys=("GROQ_KEY",))
         seen = {}
 
         def fake_post(url, **kw):
+            if url == meta_chat_url(llm):
+                return FakeResp(status=400, text="meta down")   # fall through to groq
             seen.update(kw["json"])
             return FakeResp(payload=chat('{"verdict":"APEX"}'))
 
@@ -190,6 +209,8 @@ class TestLLM:
         seen = {}
 
         def fake_post(url, **kw):
+            if url == meta_chat_url(llm):
+                return FakeResp(status=400, text="meta down")   # fall through to tabi
             seen.update(url=url, **kw["json"])
             return FakeResp(payload=anthropic_msg('{"verdict":"APEX"}'))
 
@@ -220,38 +241,73 @@ class TestLLM:
 
     def test_unparseable_json_is_a_provider_failure(self, monkeypatch):
         llm = self._mod(monkeypatch)
-        models = []
+        urls = []
 
         def fake_post(url, **kw):
-            models.append(kw["json"]["model"])
-            if len(models) == 1:
-                return FakeResp(payload=anthropic_msg("I'm afraid I can't do that."))
-            return FakeResp(payload=chat('{"ok":true}'))
-
+            urls.append(url)
+            if len(urls) == 1:
+                return dialect_resp(url, "I'm afraid I can't do that.")  # meta: non-JSON
+            return dialect_resp(url, '{"ok":true}')                      # tabi: JSON
         monkeypatch.setattr(llm.requests, "post", fake_post)
         assert llm.llm("s", "u", json_out=True) == {"ok": True}
-        assert len(models) == 2
+        assert len(urls) == 2
 
     def test_providers_health_reflects_env(self, monkeypatch):
         monkeypatch.setenv("TABI_KEY", "x")
         monkeypatch.setenv("GROQ_KEY", "")
+        monkeypatch.delenv("TABI_KEY2", raising=False)
         monkeypatch.delenv("NIM_KEY", raising=False)
         monkeypatch.delenv("GEMINI_KEY", raising=False)
         import importlib
         from pipeline import llm as _llm
         llm = importlib.reload(_llm)
         assert llm.PROVIDERS_HEALTH == {
-            "TABI_KEY": True, "NIM_KEY": False, "GEMINI_KEY": False, "GROQ_KEY": False,
+            "TABI_KEY": True, "TABI_KEY2": False,
+            "NIM_KEY": False, "GEMINI_KEY": False, "GROQ_KEY": False,
         }
+
+    def test_second_tabi_key_is_the_first_fallback(self, monkeypatch):
+        llm = self._mod(monkeypatch, keys=("TABI_KEY", "TABI_KEY2", "NIM_KEY"))
+        seen = []
+
+        def fake_post(url, **kw):
+            m = kw["json"].get("model")
+            seen.append((url, m))
+            if url == meta_chat_url(llm):
+                return FakeResp(status=400, text="meta down")      # skip past meta
+            if [u for u, _ in seen].count(llm.TABI_BASE + "/v1/messages") == 1:
+                return FakeResp(status=403, text="cloudflare")     # first tabi key blocked
+            return FakeResp(payload=anthropic_msg("second key answer"))
+
+        monkeypatch.setattr(llm.requests, "post", fake_post)
+        assert llm.llm("s", "u") == "second key answer"
+        # meta fails, then a per-key block on TABI_KEY falls through to TABI_KEY2
+        # (still opus, still the anthropic /v1/messages endpoint) before NIM.
+        assert seen == [
+            (meta_chat_url(llm), None),
+            (llm.TABI_BASE + "/v1/messages", "claude-opus-4-8"),
+            (llm.TABI_BASE + "/v1/messages", "claude-opus-4-8"),
+        ]
 
     def test_prompts_file_has_every_part_f_section(self):
         from pipeline import llm
         p = llm.load_prompts()
-        for name in ("SCRIPT", "SCENE", "COMMENT", "EXTRA_CREDIT", "THUMBNAIL", "STRATEGIST", "TOPICS"):
+        for name in ("SCRIPT", "BEATS", "COMMENT", "EXTRA_CREDIT", "THUMBNAIL",
+                     "STRATEGIST", "TOPICS", "TITLE_AB"):
             assert name in p, name
-        assert p["SCENE"]["system"].rstrip().endswith("containing only tl.* lines.")
-        assert "Two hundred million years of field research." in p["SCRIPT"]["user"]
+        assert "SCENE" not in p          # the director fills slots; it never writes tl.* lines
+        assert "never write code or CSS" in p["BEATS"]["system"]
+        for slot in ("{n}", "{staircase}", "{text}", "{act}"):
+            assert slot in p["BEATS"]["user"], slot
+        assert "thumb_words" in p["SCRIPT"]["user"] and "staircase" in p["SCRIPT"]["user"]
         assert llm.prompt("COMMENT", "system").startswith("You are Professor Croc replying")
+
+    def test_no_prompt_asks_the_model_for_a_timestamp_or_an_expression(self):
+        """C4: Python owns the clock and Croc is one static PNG."""
+        from pipeline import llm
+        blob = json.dumps(llm.load_prompts()).lower()
+        for banned in ("expression", "data-start", "gsap", "tl.to", "tl.fromto", "keyframe"):
+            assert banned not in blob, banned
 
 
 # ==========================================================================
@@ -531,7 +587,75 @@ class TestAdapters:
         cfg = adapters.load_config()
         for kind in ("voice", "image"):
             assert cfg[kind]["base"].startswith("https://"), kind
-            assert cfg[kind]["returns"] in ("json-url", "mp3-bytes", "jpeg-bytes")
+            assert cfg[kind]["returns"] in ("json-url", "mcp-tool", "mp3-bytes",
+                                            "jpeg-bytes", "png-bytes"), kind
+            assert "payload" in cfg[kind] or "form" in cfg[kind], kind
+        # The voice host clones a reference recording, so it MUST ride along.
+        assert cfg["voice"]["form"]["text"] == "{text}"
+        ref = cfg["voice"]["files"]["voice"]
+        assert ref.endswith(".mp3") and os.path.isfile(os.path.join(ROOT, ref)), ref
+        # The image host is an MCP server: the tool name is what gets called.
+        assert cfg["image"]["tool"] == "generate_image"
+
+    def test_mcp_request_is_a_jsonrpc_tools_call(self):
+        from pipeline import adapters
+        cfg = {"returns": "mcp-tool", "tool": "generate_image",
+               "payload": {"prompt": "{prompt}"}}
+        kwargs = adapters._request_kwargs(cfg, {"prompt": "a jaw"}, [])
+        assert kwargs["json"] == {"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                                  "params": {"name": "generate_image",
+                                             "arguments": {"prompt": "a jaw"}}}
+
+    def test_mcp_inline_base64_beats_the_cdn_url(self):
+        """The inline block is already in hand and cannot expire."""
+        import base64
+        from pipeline import adapters
+        doc = {"result": {"content": [
+            {"type": "text", "text": "here it is https://cdn.example.com/x.png"},
+            {"type": "image", "data": base64.b64encode(b"\x89PNG\r\n").decode()},
+        ]}}
+        data, url = adapters._mcp_media(doc, "image")
+        assert data == b"\x89PNG\r\n" and url is None
+
+    def test_mcp_falls_back_to_a_media_url_in_the_text(self):
+        from pipeline import adapters
+        doc = {"result": {"content": [
+            {"type": "text", "text": "done: https://cdn.example.com/a.png and some prose."}]}}
+        data, url = adapters._mcp_media(doc, "image")
+        assert data is None and url == "https://cdn.example.com/a.png"
+
+    @pytest.mark.parametrize("doc", [
+        {"error": {"code": -1, "message": "nope"}},
+        {"result": {"isError": True, "content": [{"type": "text", "text": "tool blew up"}]}},
+        {"result": {"content": [{"type": "text", "text": "no media anywhere"}]}},
+    ])
+    def test_mcp_failures_raise(self, doc):
+        from pipeline import adapters
+        with pytest.raises(RuntimeError):
+            adapters._mcp_media(doc, "image")
+
+    def test_multipart_uploads_the_reference_voice_and_sets_no_content_type(self, tmp_path):
+        """requests must set Content-Type itself -- only it knows the boundary."""
+        from pipeline import adapters
+        ref = tmp_path / "ref.mp3"
+        ref.write_bytes(b"ID3ref")
+        cfg = {"form": {"text": "{text}", "ttsSteps": 2}, "files": {"voice": str(ref)}}
+        opened = []
+        try:
+            kwargs = adapters._request_kwargs(cfg, {"text": "hello"}, opened)
+            assert kwargs["data"] == {"text": "hello", "ttsSteps": "2"}
+            assert kwargs["files"]["voice"][0] == "ref.mp3"
+            assert opened and not opened[0].closed
+        finally:
+            for fh in opened:
+                fh.close()
+        assert "Content-Type" not in adapters._headers(cfg)
+
+    def test_a_missing_upload_raises_before_the_request(self, tmp_path):
+        from pipeline import adapters
+        cfg = {"form": {"text": "{text}"}, "files": {"voice": str(tmp_path / "gone.mp3")}}
+        with pytest.raises(RuntimeError):
+            adapters._request_kwargs(cfg, {"text": "hi"}, [])
 
 
 # ==========================================================================
@@ -693,7 +817,7 @@ class TestTopics:
         assert len(after) == 11
         assert all(t["used"] is False for t in after)
         assert after[1]["topic"] == "new 0"
-        assert "SCALED" in seen["system"]
+        assert "Kronvex" in seen["system"]
         assert "old" in seen["user"] and "{existing}" not in seen["user"]
 
     def test_refill_accepts_a_prelisted_result_and_fenced_text(self, tf):
@@ -783,505 +907,44 @@ class TestTopics:
 
 
 # ==========================================================================
-# TASK 8 — pipeline/htmlgen.py
-# ==========================================================================
-GOOD_JS = ("tl.fromTo('#s2-card',{opacity:0},{opacity:1,duration:0.5},12.000);\n"
-           "tl.to('#s2-card',{y:-30,duration:0.6},13.000);\n"
-           "tl.to('#img2',{scale:1.05,duration:4},12.200);")
-GOOD_HTML = '<div id="s2-card" class="clip" data-start="12.00" data-duration="6.00">STAT</div>'
-
-
-def job_with(scenes, **kw):
-    j = {"id": "2026-08-29-test", "title": "The Punch That Breaks Physics", "scenes": scenes}
-    j.update(kw)
-    return j
-
-
-class TestHtmlgenBans:
-    @pytest.mark.parametrize("bad", [
-        "tl.to('#s2-a',{x:Math.random()*10},12.0);",
-        "tl.to('#s2-a',{x:Date.now()},12.0);",
-        "setTimeout(function(){},10);tl.to('#s2-a',{x:1},12.0);",
-        "setInterval(f,10);tl.to('#s2-a',{x:1},12.0);",
-        "requestAnimationFrame(f);tl.to('#s2-a',{x:1},12.0);",
-        "fetch('/x');tl.to('#s2-a',{x:1},12.0);",
-        "localStorage.setItem('a','b');tl.to('#s2-a',{x:1},12.0);",
-    ])
-    def test_banned_js_tokens_are_caught(self, bad):
-        from pipeline import htmlgen
-        v = htmlgen.static_violations(GOOD_HTML, bad, 2, 12.0, 18.0)
-        assert any("banned token" in x for x in v), v
-
-    @pytest.mark.parametrize("bad", [
-        '<img id="s2-i" src="https://x.com/a.jpg">',
-        '<img id="s2-i" src="http://x.com/a.jpg">',
-        '<style>@import url(a.css);</style><div id="s2-a"></div>',
-        '<link rel="stylesheet" href="a.css"><div id="s2-a"></div>',
-        '<script src="a.js"></script><div id="s2-a"></div>',
-    ])
-    def test_banned_html_tokens_are_caught(self, bad):
-        from pipeline import htmlgen
-        v = htmlgen.static_violations(bad, GOOD_JS, 2, 12.0, 18.0)
-        assert any("banned token" in x for x in v), v
-
-    def test_lookalike_identifiers_are_not_banned(self):
-        """F.rand, mathRandom, dateNow, myFetch, timeoutMs must all pass."""
-        from pipeline import htmlgen
-        js = ("const k = F.rand;\n"
-              "tl.to('#s2-a',{x:mathRandom,duration:0.2},12.0);\n"
-              "tl.to('#s2-a',{y:dateNow + timeoutMs + myFetch(1),duration:0.2},12.5);\n"
-              "tl.to('#s2-a',{opacity:1,duration:0.2},12.1);")
-        assert htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0) == []
-
-    def test_clean_scene_has_no_violations(self):
-        from pipeline import htmlgen
-        assert htmlgen.static_violations(GOOD_HTML, GOOD_JS, 2, 12.0, 18.0) == []
-
-    def test_missing_tween_call_is_a_violation(self):
-        from pipeline import htmlgen
-        v = htmlgen.static_violations(GOOD_HTML, "const x = 1;", 2, 12.0, 18.0)
-        assert any("no tl.to(" in x for x in v)
-
-    def test_framework_owned_selectors_are_rejected(self):
-        from pipeline import htmlgen
-        for sel in ("#croc", "#croc-jaw", "#croc-arm", ".croc-eye", "#verdict", "#lesson", "#c2-3"):
-            js = "tl.to('%s',{opacity:1,duration:0.2},12.0);" % sel
-            v = htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0)
-            assert any("framework-owned" in x for x in v), (sel, v)
-
-    def test_css_motion_is_rejected(self):
-        from pipeline import htmlgen
-        html = '<div id="s2-a" style="transition: all 0.3s ease">x</div>'
-        assert any("CSS transition" in x for x in htmlgen.static_violations(html, GOOD_JS, 2, 12.0, 18.0))
-        html = '<div id="s2-a" style="animation: spin 2s linear">x</div>'
-        assert any("CSS animation" in x for x in htmlgen.static_violations(html, GOOD_JS, 2, 12.0, 18.0))
-
-    def test_ids_must_be_scene_scoped(self):
-        from pipeline import htmlgen
-        v = htmlgen.static_violations('<div id="card">x</div>', GOOD_JS, 2, 12.0, 18.0)
-        assert any("must start with 's2-'" in x for x in v), v
-
-    def test_other_scenes_elements_are_off_limits(self):
-        from pipeline import htmlgen
-        js = "tl.to('#s5-card',{opacity:1,duration:0.2},12.0);"
-        v = htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0)
-        assert any("not yours" in x for x in v), v
-
-    def test_own_image_and_globals_are_allowed(self):
-        from pipeline import htmlgen
-        js = ("tl.to('#img2',{scale:1.05,duration:5},12.0);\n"
-              "tl.to('#stage',{opacity:1,duration:1},13.0);")
-        assert htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0) == []
-        v = htmlgen.static_violations(GOOD_HTML, "tl.to('#img5',{scale:1.05,duration:5},12.0);", 2, 12.0, 18.0)
-        assert any("not yours" in x for x in v)
-        # the host is framework-owned now: the model must not touch #croc at all
-        v = htmlgen.static_violations(GOOD_HTML, "tl.to('#croc',{x:1450,duration:1},12.0);", 2, 12.0, 18.0)
-        assert any("framework-owned" in x for x in v)
-
-
-class TestHtmlgenTimeWindow:
-    def test_times_inside_the_window_pass_including_slack(self):
-        from pipeline import htmlgen
-        for t in (12.0, 15.0, 18.0, 11.8, 18.2):
-            js = "tl.to('#s2-a',{opacity:1,duration:0.2},%s);" % t
-            assert htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0) == [], t
-
-    def test_times_outside_the_window_are_rejected(self):
-        from pipeline import htmlgen
-        for t in (0.0, 11.79, 18.21, 400.0, -3.0):
-            js = "tl.to('#s2-a',{opacity:1,duration:0.2},%s);" % t
-            v = htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0)
-            assert any("outside this scene's window" in x for x in v), t
-
-    def test_relative_position_strings_are_rejected(self):
-        from pipeline import htmlgen
-        for pos in ("'+=0.5'", '"<"', "'>'"):
-            js = "tl.to('#s2-a',{opacity:1,duration:0.2},%s);" % pos
-            v = htmlgen.static_violations(GOOD_HTML, js, 2, 12.0, 18.0)
-            assert any("no absolute-second time" in x for x in v), pos
-
-    def test_missing_position_argument_is_rejected(self):
-        from pipeline import htmlgen
-        v = htmlgen.static_violations(GOOD_HTML, "tl.to('#s2-a',{opacity:1,duration:0.2});", 2, 12.0, 18.0)
-        assert any("no absolute-second time" in x for x in v), v
-
-    def test_parser_survives_nested_braces_commas_and_strings(self):
-        from pipeline import htmlgen
-        js = ("tl.to('#s2-a',{x:1,y:2,ease:'power2.out',onStart:null,"
-              "transformOrigin:'50% 50%',boxShadow:'0 0 20px rgba(166,255,61,0.6)'},13.250);")
-        assert [t for t, _ in htmlgen.tween_times(js)] == [13.25]
-
-    def test_parser_reads_fromto_with_two_vars_objects(self):
-        from pipeline import htmlgen
-        js = "tl.fromTo('#s2-a',{scale:3,opacity:0},{scale:1,opacity:1,duration:0.5},14.75);"
-        assert [t for t, _ in htmlgen.tween_times(js)] == [14.75]
-
-    def test_parser_handles_whitespace_newlines_and_multiple_calls(self):
-        from pipeline import htmlgen
-        js = ("tl . to (\n  '#s2-a',\n  {opacity: 1, duration: 0.4},\n  12.100\n);\n"
-              "tl.to('#s2-b',{y:-30,duration:0.6},13.4);\n")
-        assert [t for t, _ in htmlgen.tween_times(js)] == [12.1, 13.4]
-
-    def test_parser_ignores_parens_inside_quotes(self):
-        from pipeline import htmlgen
-        js = "tl.to('#s2-a',{ease:'back.in(1.2)',duration:0.5},16.000);"
-        assert [t for t, _ in htmlgen.tween_times(js)] == [16.0]
-
-    def test_parser_returns_nothing_when_there_are_no_tweens(self):
-        from pipeline import htmlgen
-        assert htmlgen.tween_times("const a = fn(1,2);") == []
-
-
-class TestHtmlgenFences:
-    def test_clean_two_fences(self):
-        from pipeline import htmlgen
-        html, js = htmlgen.parse_fences("```html\n<div id=\"s0-a\"></div>\n```\n```js\ntl.to(1);\n```")
-        assert html == '<div id="s0-a"></div>' and js == "tl.to(1);"
-
-    def test_messy_whitespace_prose_and_casing(self):
-        from pipeline import htmlgen
-        reply = ("Sure! Here is scene 3.\n\n```  HTML  \n\n<div id=\"s3-a\">hi</div>\n\n```"
-                 "\n\nAnd the timeline:\n\n``` javascript \ntl.to('#s3-a',{x:1},4.0);\n```\n\nEnjoy.")
-        html, js = htmlgen.parse_fences(reply)
-        assert html == '<div id="s3-a">hi</div>'
-        assert js == "tl.to('#s3-a',{x:1},4.0);"
-
-    def test_unlabelled_fences_fall_back_to_order(self):
-        from pipeline import htmlgen
-        html, js = htmlgen.parse_fences("```\n<div id=\"s1-a\"></div>\n```\n```\ntl.to(1);\n```")
-        assert html == '<div id="s1-a"></div>' and js == "tl.to(1);"
-
-    def test_unclosed_final_fence_still_parses(self):
-        from pipeline import htmlgen
-        html, js = htmlgen.parse_fences("```html\n<div id=\"s1-a\"></div>\n```\n```js\ntl.to('#s1-a',{x:1},2.0);")
-        assert js == "tl.to('#s1-a',{x:1},2.0);"
-
-    def test_one_or_zero_fences_raises(self):
-        from pipeline import htmlgen
-        with pytest.raises(ValueError, match="two fenced blocks"):
-            htmlgen.parse_fences("```html\n<div></div>\n```")
-        with pytest.raises(ValueError, match="two fenced blocks"):
-            htmlgen.parse_fences("no fences at all")
-
-    def test_extra_trailing_fence_is_ignored(self):
-        from pipeline import htmlgen
-        html, js = htmlgen.parse_fences(
-            "```html\n<div id=\"s1-a\"></div>\n```\n```js\ntl.to(1);\n```\n```bash\nnpm i\n```")
-        assert js == "tl.to(1);"
-
-
-class TestHtmlgenBrief:
-    def test_scene_t0_sums_previous_durations(self):
-        from pipeline import htmlgen
-        job = job_with([{"dur": 10.0}, {"dur": 5.5}, {"dur": 7.25}])
-        assert htmlgen.scene_t0(job, 0) == 0.0
-        assert htmlgen.scene_t0(job, 1) == 10.0
-        assert htmlgen.scene_t0(job, 2) == 15.5
-        assert htmlgen.scene_t0(job, 3) == 22.75
-
-    def test_scene_t0_ignores_missing_and_junk_durations(self):
-        from pipeline import htmlgen
-        job = job_with([{"dur": 10.0}, {}, {"dur": "nope"}, {"dur": 4}])
-        assert htmlgen.scene_t0(job, 4) == 14.0
-
-    def test_word_clock_is_absolute_and_formatted_to_millis(self):
-        from pipeline import htmlgen
-        words = [{"w": "Your", "s": 0.1, "e": 0.4}, {"w": " brain ", "s": 0.4, "e": 0.9}]
-        assert htmlgen.word_clock(words, 104.8) == "Your(104.900-105.200) brain(105.200-105.700)"
-
-    def test_word_clock_drops_blank_and_broken_words(self):
-        from pipeline import htmlgen
-        words = [{"w": "", "s": 0, "e": 1}, {"w": "ok", "s": 1, "e": 2}, {"w": "x", "s": "?", "e": 3}]
-        assert htmlgen.word_clock(words, 0) == "ok(1.000-2.000)"
-
-    def test_words_come_from_the_srt_work_file(self, tmp_path):
-        from pipeline import htmlgen
-        (tmp_path / "wjob1_2.json").write_text(json.dumps([{"w": "hi", "s": 0.0, "e": 0.5}]), encoding="utf-8")
-        job = job_with([{}, {}, {}], id="job1")
-        assert htmlgen.scene_words(job, 2, str(tmp_path))[0]["w"] == "hi"
-
-    def test_words_on_the_job_win_over_the_work_file(self, tmp_path):
-        from pipeline import htmlgen
-        (tmp_path / "wjob1_0.json").write_text(json.dumps([{"w": "file", "s": 0, "e": 1}]), encoding="utf-8")
-        job = job_with([{"words": [{"w": "inline", "s": 0, "e": 1}]}], id="job1")
-        assert htmlgen.scene_words(job, 0, str(tmp_path))[0]["w"] == "inline"
-
-    def test_missing_word_file_is_not_fatal(self, tmp_path):
-        from pipeline import htmlgen
-        assert htmlgen.scene_words(job_with([{}], id="nope"), 0, str(tmp_path)) == []
-
-    def test_brief_carries_the_scene_window_and_fields(self):
-        from pipeline import htmlgen
-        job = job_with([{"dur": 12.0}, {"act": "BASE STATS", "heading": "GRIP", "text": "It bites.",
-                                        "image_prompt": "a jaw", "dur": 6.5,
-                                        "words": [{"w": "It", "s": 0.2, "e": 0.5}]}])
-        b = htmlgen.build_brief(job, 1, None)
-        assert (b["t0"], b["t1"]) == (12.0, 18.5)
-        assert b["act"] == "BASE STATS" and b["heading"] == "GRIP"
-        assert b["clock"] == "It(12.200-12.500)"
-
-    def test_brief_notes_when_there_is_no_word_clock(self):
-        from pipeline import htmlgen
-        b = htmlgen.build_brief(job_with([{"dur": 5.0}]), 0, None)
-        assert "no word timings" in b["clock"]
-
-    def test_prompt_placeholders_are_all_filled(self):
-        from pipeline import htmlgen
-        job = job_with([{"act": "HOOK", "heading": "H", "text": "T", "image_prompt": "IP",
-                         "dur": 8.0, "words": [{"w": "T", "s": 0.0, "e": 0.4}]}])
-        system, user = htmlgen.render_prompt(htmlgen.build_brief(job, 0, None))
-        assert "motion designer" in system
-        for leftover in ("{i+1}", "{title}", "{act}", "{heading}", "{text}",
-                         "{clock}", "{t0}", "{t1}", "{image_prompt}"):
-            assert leftover not in user, leftover
-        assert "SCENE 1 of 16" in user
-        assert "The Punch That Breaks Physics" in user
-        assert "[0.000, 8.000]" in user
-
-
-class TestHtmlgenLoop:
-    @pytest.fixture(autouse=True)
-    def no_subprocess(self, monkeypatch):
-        """The lint gate is exercised for real elsewhere; here it must never shell out."""
-        from pipeline import htmlgen
-        monkeypatch.setattr(htmlgen, "lint_violations", lambda *a, **k: [])
-        monkeypatch.setattr(htmlgen.subprocess, "run",
-                            lambda *a, **k: pytest.fail("no subprocess in this test"))
-
-    def job(self):
-        return job_with([{"act": "HOOK", "heading": "SEALED", "text": "Your brain seals it.",
-                          "image_prompt": "a brain", "dur": 9.0,
-                          "words": [{"w": "Your", "s": 0.2, "e": 0.5}]}])
-
-    def test_accepts_a_clean_first_attempt(self, monkeypatch):
-        from pipeline import htmlgen, llm
-        reply = ("```html\n<div id=\"s0-a\" class=\"clip\" data-start=\"0.20\" "
-                 "data-duration=\"8.00\">SEALED</div>\n```\n```js\n"
-                 "tl.fromTo('#s0-a',{opacity:0},{opacity:1,duration:0.5},0.200);\n"
-                 "tl.to('#s0-a',{y:-20,duration:0.4},0.400);\n```")
-        calls = []
-        monkeypatch.setattr(llm, "llm_code", lambda s, u: (calls.append(u), reply)[1])
-        job = self.job()
-        htmlgen.generate_scene(job, 0, None)
-        assert job["scenes"][0]["frag_source"] == "llm attempt 1"
-        assert "s0-a" in job["scenes"][0]["frag_js"]
-        assert len(calls) == 1
-
-    def test_repairs_then_accepts_and_feeds_violations_back(self, monkeypatch):
-        from pipeline import htmlgen, llm
-        bad = "```html\n<div id=\"nope\"></div>\n```\n```js\ntl.to('#nope',{x:Math.random()},99.0);\n```"
-        good = ("```html\n<div id=\"s0-a\"></div>\n```\n```js\n"
-                "tl.to('#s0-a',{opacity:1,duration:0.4},1.000);\n```")
-        seen = []
-
-        def fake(system, user):
-            seen.append(user)
-            return bad if len(seen) == 1 else good
-
-        monkeypatch.setattr(llm, "llm_code", fake)
-        job = self.job()
-        htmlgen.generate_scene(job, 0, None)
-        assert job["scenes"][0]["frag_source"] == "llm attempt 2"
-        assert "YOUR PREVIOUS ATTEMPT WAS REJECTED" in seen[1]
-        assert "Math.random" in seen[1] and "99.000" in seen[1]
-        assert "[0.000, 9.000]" in seen[1]
-
-    def test_four_bad_attempts_fall_back_and_never_raise(self, monkeypatch):
-        from pipeline import htmlgen, llm
-        n = {"i": 0}
-
-        def fake(system, user):
-            n["i"] += 1
-            return "```html\n<div id=\"bad\"></div>\n```\n```js\nsetTimeout(f,1);tl.to('#bad',{x:1},900.0);\n```"
-
-        monkeypatch.setattr(llm, "llm_code", fake)
-        job = self.job()
-        scene = htmlgen.generate_scene(job, 0, None)
-        assert n["i"] == htmlgen.MAX_REPAIRS + 1 == 4
-        assert scene["frag_source"] == "SAFE_FALLBACK"
-        assert "s0-fbhead" in scene["frag_html"]
-        assert htmlgen.static_violations(scene["frag_html"], scene["frag_js"], 0, 0.0, 9.0) == []
-
-    def test_llm_outage_falls_back_without_raising(self, monkeypatch):
-        from pipeline import htmlgen, llm
-
-        def boom(system, user):
-            raise RuntimeError("all LLM providers down")
-
-        monkeypatch.setattr(llm, "llm_code", boom)
-        job = self.job()
-        assert htmlgen.generate_scene(job, 0, None)["frag_source"] == "SAFE_FALLBACK"
-
-    def test_unparseable_reply_is_treated_as_a_rejection(self, monkeypatch):
-        from pipeline import htmlgen, llm
-        monkeypatch.setattr(llm, "llm_code", lambda s, u: "I cannot do that.")
-        job = self.job()
-        assert htmlgen.generate_scene(job, 0, None)["frag_source"] == "SAFE_FALLBACK"
-
-    def test_lint_errors_alone_force_a_repair(self, monkeypatch):
-        from pipeline import htmlgen, llm
-        good = ("```html\n<div id=\"s0-a\"></div>\n```\n```js\n"
-                "tl.to('#s0-a',{opacity:1,duration:0.4},1.000);\n```")
-        monkeypatch.setattr(llm, "llm_code", lambda s, u: good)
-        rounds = {"i": 0}
-
-        def flaky(*a, **k):
-            rounds["i"] += 1
-            return ["hyperframes lint media_missing_id: needs an id"] if rounds["i"] == 1 else []
-
-        monkeypatch.setattr(htmlgen, "lint_violations", flaky)
-        job = self.job()
-        assert htmlgen.generate_scene(job, 0, None)["frag_source"] == "llm attempt 2"
-
-    def test_scene_slot_is_created_when_the_job_is_short(self, monkeypatch):
-        from pipeline import htmlgen, llm
-        monkeypatch.setattr(llm, "llm_code", lambda s, u: "junk")
-        job = {"id": "x", "title": "t", "scenes": []}
-        htmlgen.generate_scene(job, 2, None)
-        assert len(job["scenes"]) == 3 and job["scenes"][2]["frag_source"] == "SAFE_FALLBACK"
-
-
-class TestHtmlgenComposition:
-    def test_test_composition_has_the_contract_attributes(self):
-        from pipeline import htmlgen
-        page = htmlgen.test_composition(GOOD_HTML, GOOD_JS, 2, 12.0, 18.0)
-        assert 'data-composition-id="scaled"' in page
-        assert 'data-duration="18.00"' in page          # renderer needs a duration source
-        assert 'data-width="1920"' in page and 'data-height="1080"' in page
-        assert "gsap.timeline({paused:true})" in page
-        assert "window.__timelines = {scaled: tl}" in page
-        assert 'src="assets/gsap.min.js"' in page and "http" not in page
-        assert GOOD_HTML in page and GOOD_JS in page
-
-    def test_safe_fallback_is_self_consistent_for_any_window(self):
-        from pipeline import htmlgen
-        for t0, t1, i in ((0.0, 9.0, 0), (104.5, 118.25, 7), (500.0, 500.05, 15)):
-            html, js = htmlgen.SAFE_FALLBACK(t0, t1, "HEADING <&>", i)
-            assert htmlgen.static_violations(html, js, i, t0, max(t1, t0 + 1.2)) == []
-            assert "s%d-fbhead" % i in html
-            assert "#img%d" % i in js and "#croc" not in js
-            assert "<" not in html.split(">", 1)[1].split("<")[0]   # heading text is sanitised
-
-    def test_safe_fallback_survives_an_empty_heading(self):
-        from pipeline import htmlgen
-        html, _ = htmlgen.SAFE_FALLBACK(1.0, 5.0, "")
-        assert ">SCALED<" in html
-
-    @pytest.mark.skipif(os.getenv("HF_LIVE") != "1",
-                        reason="set HF_LIVE=1 to run the real `hyperframes lint` gate (needs npx)")
-    def test_safe_fallback_passes_the_real_linter(self, tmp_path):
-        from pipeline import htmlgen
-        html, js = htmlgen.SAFE_FALLBACK(10.0, 22.5, "THE AWAKENING", 3)
-        assert htmlgen.lint_violations(html, js, 3, 10.0, 22.5, str(tmp_path)) == []
-        assert htmlgen.LINT_SUBCOMMAND in ("lint", "check")
-
-
-# ==========================================================================
-# TASK 9 — pipeline/compose.py
+# pipeline/compose.py — the Beat Engine baked into one GSAP timeline
 # ==========================================================================
 def w(text, s, e):
     return {"w": text, "s": s, "e": e}
 
 
-def words_from(sentence, step=0.3):
-    return [w(t, i * step, i * step + step - 0.05) for i, t in enumerate(sentence.split())]
-
-
-def texts(lines):
-    return [[x["w"] for x in line] for line in lines]
-
-
-class TestGroupLines:
-    def test_flushes_on_the_34_char_boundary(self):
-        from pipeline.compose import group_lines
-        # 4 x 8 chars + 3 spaces = 35 > 34, so the fourth word starts a new line
-        got = texts(group_lines(words_from("aaaaaaaa bbbbbbbb cccccccc dddddddd")))
-        assert got == [["aaaaaaaa", "bbbbbbbb", "cccccccc"], ["dddddddd"]]
-
-    def test_exactly_34_chars_stays_on_one_line(self):
-        from pipeline.compose import group_lines
-        # 3 x 10 + 2 spaces = 32, plus a 2-char word and a space = 35 -> splits;
-        # trimming to 1 char keeps it at 34 and must not split
-        assert len(group_lines(words_from("aaaaaaaaaa bbbbbbbbbb cccccccccc d"))) == 1
-        assert len(group_lines(words_from("aaaaaaaaaa bbbbbbbbbb cccccccccc dd"))) == 2
-
-    def test_flushes_on_the_5_word_boundary(self):
-        from pipeline.compose import group_lines
-        got = texts(group_lines(words_from("a b c d e f g")))
-        assert got == [["a", "b", "c", "d", "e"], ["f", "g"]]
-
-    def test_flushes_after_a_sentence_end(self):
-        from pipeline.compose import group_lines
-        assert texts(group_lines(words_from("It bites. Hard"))) == [["It", "bites."], ["Hard"]]
-        assert texts(group_lines(words_from("Really? Yes"))) == [["Really?"], ["Yes"]]
-        assert texts(group_lines(words_from("Stop! Go"))) == [["Stop!"], ["Go"]]
-
-    def test_a_single_long_word_gets_its_own_line_and_may_overflow(self):
-        from pipeline.compose import group_lines
-        long = "electroencephalographically" * 2
-        got = texts(group_lines(words_from("tiny %s next" % long)))
-        assert got == [["tiny"], [long], ["next"]]
-        assert len(got[1][0]) > 34
-
-    def test_never_drops_a_word(self):
-        from pipeline.compose import group_lines
-        sentence = ("Your brain seals your true strength. Two hundred million years of field "
-                    "research says otherwise, and the numbers are not kind.")
-        words = words_from(sentence)
-        flat = [x["w"] for line in group_lines(words) for x in line]
-        assert flat == sentence.split()
-
-    def test_respects_custom_limits(self):
-        from pipeline.compose import group_lines
-        assert texts(group_lines(words_from("a b c d"), max_words=2)) == [["a", "b"], ["c", "d"]]
-        assert texts(group_lines(words_from("aaa bbb"), max_chars=5)) == [["aaa"], ["bbb"]]
-
-    def test_survives_empty_blank_and_malformed_input(self):
-        from pipeline.compose import group_lines
-        assert group_lines([]) == []
-        assert group_lines(None) == []
-        assert texts(group_lines([w("  ", 0, 1), "junk", w("ok", 1, 2)])) == [["ok"]]
-
-
-class TestGradePct:
-    @pytest.mark.parametrize("grade,pct", [
-        ("A+", 100), ("A", 92), ("A-", 87), ("B+", 80), ("B", 75), ("B-", 70),
-        ("C+", 60), ("C", 55), ("C-", 50), ("D+", 40), ("D", 35), ("D-", 30),
-        ("F", 15), ("F-", 10),
-    ])
-    def test_mapping(self, grade, pct):
-        from pipeline.compose import grade_pct
-        assert grade_pct(grade) == pct
-
-    def test_case_and_whitespace_insensitive(self):
-        from pipeline.compose import grade_pct
-        assert grade_pct("  a+ ") == 100 and grade_pct("b") == 75
-
-    def test_unknown_and_empty_grades_are_survivable(self):
-        from pipeline.compose import grade_pct
-        assert grade_pct("") == 50 and grade_pct(None) == 50 and grade_pct("???") == 50
-
-    def test_stays_within_0_and_100(self):
-        from pipeline.compose import grade_pct
-        assert all(0 <= grade_pct(g) <= 100 for g in
-                   ["A+", "A++", "S", "S+", "F-", "F--", "Z", "", None, 7])
+def beat(kind, t, **kw):
+    b = {"kind": kind, "t": t}
+    b.update(kw)
+    return b
 
 
 def demo_job(**kw):
-    words = [w("Your", 0.10, 0.42), w("brain", 0.42, 0.85), w("seals", 0.88, 1.20),
-             w("your", 1.20, 1.38), w("strength.", 1.38, 1.71)]
+    """Two scenes, 42s total, exercising all four beat kinds at least once.
+
+    Beat times are written by hand rather than through beats.plan_times so a
+    change to the pacing formula cannot silently rewrite what these assertions
+    are checking -- compose's contract is "render the beats you are given".
+    """
     job = {
-        "id": "2026-08-29-brain", "lesson": 7, "title": "Your Brain Seals Your True Strength",
-        "verdict": "APEX",
+        "id": "2026-08-29-brain", "lesson": 7, "verdict": "APEX",
+        "title": "Your Brain Seals Your True Strength",
         "scenes": [
             {"act": "HOOK", "heading": "SEALED", "text": "Your brain seals your strength.",
-             "image_prompt": "a brain", "dur": 24.0, "words": words, "stat": None,
-             "frag_html": '<div id="s0-a" class="clip" data-start="1.00" data-duration="4.00">A</div>',
-             "frag_js": "tl.to('#s0-a',{opacity:1,duration:0.4},1.000);"},
-            {"act": "BASE STATS", "heading": "GRIP", "text": "It bites.", "image_prompt": "a jaw",
-             "dur": 18.0, "words": words,
-             "stat": {"label": "NEURAL BRAKE", "grade": "A+", "note": "Governor caps recruitment."},
-             "frag_html": "", "frag_js": ""},
+             "dur": 24.0, "beats": [
+                 beat("scene", 0.0, prompt="a brain in a vice"),
+                 beat("scene", 2.4, prompt="a motor neuron firing", text="SEALED",
+                      value="97%", label="CAPPED", sfx="pop"),
+                 beat("photo", 4.8, prompt="a cheering crowd", caption="SO LOVED",
+                      counter="31,957,4!?"),
+                 beat("zoom", 7.2, amount=1.2),
+                 beat("scene", 9.6, prompt="a jaw on a desk"),
+                 beat("meme", 12.0, prompt="a crocodile unimpressed"),
+             ]},
+            {"act": "PROMISE", "heading": "GRIP", "text": "It bites.", "dur": 18.0, "beats": [
+                beat("scene", 0.0, prompt="a jaw"),
+                beat("zoom", 2.4, amount=1.2),
+            ]},
         ],
     }
     job.update(kw)
@@ -1289,12 +952,15 @@ def demo_job(**kw):
 
 
 def build(tmp_path, job, media=True):
-    """Build a project in tmp_path, optionally with real-ish media files present."""
+    """Build a project in tmp_path, optionally with real-ish beat media present."""
     from pipeline import compose
     if media:
-        for i in range(len(job["scenes"])):
-            (tmp_path / ("i%s_%d.jpg" % (job["id"], i))).write_bytes(b"\xff\xd8\xff\xe0jpg")
+        for i, scene in enumerate(job.get("scenes") or []):
             (tmp_path / ("v%s_%d.mp3" % (job["id"], i))).write_bytes(b"ID3mp3")
+            for j, b in enumerate(scene.get("beats") or []):
+                head = {"scene": "s", "photo": "p", "meme": "m"}.get(b.get("kind"))
+                if head:
+                    (tmp_path / ("%s%s_%d_%d.jpg" % (head, job["id"], i, j))).write_bytes(b"\xff\xd8\xff")
     proj, total = compose.build_project(job, str(tmp_path))
     page = open(os.path.join(proj, "index.html"), encoding="utf-8").read()
     return proj, total, page
@@ -1311,8 +977,9 @@ class TestBuildProject:
         _, total, page = build(tmp_path, demo_job())
         assert 'data-composition-id="scaled"' in page
         assert 'data-start="0"' in page
-        assert 'data-duration="%.2f"' % total in page      # renderer needs a duration source
+        assert 'data-duration="%.3f"' % total in page     # renderer needs a duration source
         assert 'data-width="1920"' in page and 'data-height="1080"' in page
+        assert 'data-fps="60"' in page                    # C1: the show is 60fps now
         assert "const tl = gsap.timeline({paused:true});" in page
         assert "window.__timelines = {scaled: tl};" in page
 
@@ -1321,7 +988,6 @@ class TestBuildProject:
         head = page[page.index("<head>"):page.index("</head>")]
         assert head.count("<script") == 1 and 'src="assets/gsap.min.js"' in head
         assert "<link" not in head and "http://" not in page and "https://" not in page
-        assert "@font-face" in head and "--lime:#A6FF3D" in head
         assert "url('assets/fonts/display.woff2')" in head   # rebased for the project root
         assert os.path.isfile(os.path.join(proj, "assets", "gsap.min.js"))
 
@@ -1329,129 +995,157 @@ class TestBuildProject:
         """Without an id the renderer cannot discover media -- audio renders SILENT."""
         _, _, page = build(tmp_path, demo_job())
         timed = re.findall(r"<(\w+)([^>]*data-start[^>]*)>", page)
-        assert timed
+        assert len(timed) > 10
         for tag, attrs in timed:
             assert re.search(r'\bid="', attrs), (tag, attrs)
 
-    def test_media_clips_are_wired_per_scene(self, tmp_path):
+    def test_frame_holds_until_the_next_frame_not_the_next_beat(self, tmp_path):
+        """Every frame holds until the next frame replaces it (all full-bleed)."""
+        _, _, page = build(tmp_path, demo_job())
+        assert ('<img id="b0_0" class="beat-img clip" data-start="0.000" '
+                'data-duration="2.400" data-track-index="0" src="assets/b0_0.jpg" alt="">') in page
+        assert '<div id="w0_0" class="beat-wrap">' in page
+        # the photo at 4.8 runs until the next frame at 9.6 (zoom owns no frame)
+        assert 'id="b0_2" class="beat-img clip" data-start="4.800" data-duration="4.800"' in page
+        assert 'id="b0_4" class="beat-img clip" data-start="9.600" data-duration="2.400"' in page
+        assert 'id="b0_5" class="beat-img clip" data-start="12.000" data-duration="12.000"' in page
+
+    def test_frame_is_a_hard_cut_and_nothing_else(self, tmp_path):
+        """v4: one 0.02s blink. No scale, no drift, no settle -- static frames."""
+        _, _, page = build(tmp_path, demo_job())
+        assert ("tl.fromTo('#b0_0',{opacity:0},{opacity:1,duration:0.020,ease:'none'},0.000);"
+                in page)
+        # ...and the snap zoom rides the wrapper, never the image.
+        assert "tl.to('#w0_2',{scale:1.200,duration:0.080,ease:'expo.out'},7.200);" in page
+        assert ("tl.to('#w0_2',{scale:1,duration:0.620,ease:'elastic.out(1,0.55)'},7.280);"
+                in page)
+
+    def test_scene_photo_and_meme_all_render_as_full_frames(self, tmp_path):
+        """No overlays exist anymore: every visual beat is a full-bleed frame."""
+        _, _, page = build(tmp_path, demo_job())
+        assert 'id="b0_2" class="beat-img clip" data-start="4.800"' in page   # photo
+        assert 'id="b0_5" class="beat-img clip" data-start="12.000"' in page  # meme
+        assert "beat-type" not in page and "beat-stat" not in page
+        assert "beat-arrow" not in page and "beat-meme" not in page
+
+    def test_beat_times_are_absolute_across_scenes(self, tmp_path):
+        """Scene 1 starts at 24.0, so its frame at t=0 lands at 24.0."""
+        _, _, page = build(tmp_path, demo_job())
+        assert 'id="b1_0" class="beat-img clip" data-start="24.000" data-duration="18.000"' in page
+        assert 'id="b1_1" class="beat-img clip" data-start="26.400"' not in page  # zoom has no element
+
+    def test_zoom_with_nothing_on_screen_emits_nothing(self, tmp_path):
+        """A zoom is a tween on live art, so it is also the safe landing spot for
+        any beat that cannot be rendered -- and must no-op when nothing is live."""
+        job = demo_job()
+        job["scenes"] = [{"dur": 8.0, "beats": [beat("zoom", 0.0, amount=1.2)]}]
+        _, _, page = build(tmp_path, job, media=False)
+        assert "scale:1.200" not in page
+
+    def test_missing_beat_art_degrades_that_beat_only(self, tmp_path):
+        _, _, page = build(tmp_path, demo_job(), media=False)
+        assert "assets/b0_0.jpg" not in page
+        assert 'class="beat-img' not in page
+        # A beat that lost its art keeps its SOUND -- that is the whole point of
+        # degrading per beat.
+        assert 'src="assets/audio/pop.wav"' in page
+        assert "narration" not in page                 # ...but no voice was copied
+
+    def test_narration_is_one_clip_per_scene_in_the_voice_lane(self, tmp_path):
         proj, _, page = build(tmp_path, demo_job())
-        assert '<img id="img0" class="clip" data-start="0.00" data-duration="24.00"' in page
-        assert 'src="assets/s0.jpg"' in page and 'data-track-index="0"' in page
-        assert '<audio id="aud1" data-start="24.00" data-duration="18.00"' in page
-        assert 'src="assets/a1.mp3"' in page and 'data-track-index="2"' in page
-        for name in ("s0.jpg", "s1.jpg", "a0.mp3", "a1.mp3"):
+        assert ('<audio id="v0" class="clip" data-start="0.000" data-duration="24.000" '
+                'data-track-index="2" src="assets/a0.mp3"></audio>') in page
+        assert 'id="v1" class="clip" data-start="24.000" data-duration="18.000"' in page
+        for name in ("a0.mp3", "a1.mp3", "b0_0.jpg", "b0_5.jpg"):
             assert os.path.isfile(os.path.join(proj, "assets", name)), name
 
-    def test_missing_media_is_omitted_rather_than_referenced(self, tmp_path):
-        _, _, page = build(tmp_path, demo_job(), media=False)
-        assert "assets/s0.jpg" not in page and "assets/a0.mp3" not in page
-        # the host image is always present; only the scene media img/audio are omitted
-        assert '<img id="img' not in page and "<audio" not in page
+    def test_narration_keeps_the_providers_container(self, tmp_path):
+        """Chatterbox returns wav; transcoding it would only add a step that fails."""
+        job = demo_job()
+        (tmp_path / ("v%s_0.wav" % job["id"])).write_bytes(b"RIFF....WAVE")
+        (tmp_path / ("v%s_1.wav" % job["id"])).write_bytes(b"RIFF....WAVE")
+        proj, _, page = build(tmp_path, job, media=False)
+        assert 'src="assets/a0.wav"' in page and 'src="assets/a1.wav"' in page
+        assert os.path.isfile(os.path.join(proj, "assets", "a0.wav"))
 
-    def test_bgdiv_media_mode(self, tmp_path, monkeypatch):
+    def test_avatar_is_one_static_png_with_only_an_idle_bob(self, tmp_path):
+        """One PNG, no rig: no expression swap, no crossfade, no second image."""
+        proj, _, page = build(tmp_path, demo_job())
+        assert page.count('id="avatar"') == 1
+        assert '<img id="avatar" src="assets/avatar/croc.png" alt="">' in page
+        tag = page[page.index('<img id="avatar"'):]
+        assert "data-start" not in tag[:tag.index(">")]   # global element, not a timed clip
+        assert "avatar-alt" not in page and "expression" not in page
+        assert os.path.isfile(os.path.join(proj, "assets", "avatar", "croc.png"))
+        # ceil(24/1.2)-1 = 19 extra plays: GSAP counts repeat as repeats, not plays
+        assert ("tl.fromTo('#avatar',{y:0},{y:-5,duration:1.200,yoyo:true,repeat:19,"
+                "ease:'sine.inOut'},0.000);") in page
+        assert ("tl.fromTo('#avatar',{y:0},{y:-5,duration:1.200,yoyo:true,repeat:14,"
+                "ease:'sine.inOut'},24.000);") in page
+
+    def test_a_missing_avatar_is_loud_but_not_fatal(self, tmp_path, monkeypatch):
         from pipeline import compose
-        monkeypatch.setattr(compose, "MEDIA_MODE", "bgdiv")
+        monkeypatch.setattr(compose, "AVATAR_DIR", str(tmp_path / "no-avatar"))
         _, _, page = build(tmp_path, demo_job())
-        assert '<div id="img0" class="mediaclip clip"' in page
-        assert "background-image:url(assets/s0.jpg)" in page
-        assert '<img id="img' not in page          # scene media are divs here; the host <img> stays
+        # The selector stays in the stylesheet; nothing may reference the element.
+        body = page[page.index('id="stage"'):]
+        assert 'id="avatar"' not in body and "#avatar" not in body
+        assert "window.__timelines = {scaled: tl};" in page
 
-    def test_captions_are_absolute_word_synced_and_scene_scoped(self, tmp_path):
-        _, _, page = build(tmp_path, demo_job())
-        assert '<div id="cap0-0" class="cap-line clip" data-start="0.10"' in page
-        assert '<span id="c0-0">Your</span>' in page
-        assert "tl.to('#c0-0',{color:'#A6FF3D',duration:0.05},0.100);" in page
-        assert "tl.to('#c0-0',{color:'#7E8C84',duration:0.05},0.420);" in page
-        # scene 1 starts at 24.0, so its first word highlight is at 24.10
-        assert "tl.to('#c1-0',{color:'#A6FF3D',duration:0.05},24.100);" in page
-
-    def test_caption_line_duration_adds_the_tail(self, tmp_path):
-        _, _, page = build(tmp_path, demo_job())
-        # words 0-4 end in "strength." -> one line, 0.10 to 1.71, +0.25 tail
-        assert 'id="cap0-0" class="cap-line clip" data-start="0.10" data-duration="1.86"' in page
-
-    def test_croc_idle_motion_is_baked_per_scene(self, tmp_path):
-        _, _, page = build(tmp_path, demo_job())
-        # the flat host gets a zoom/rotate/drift performance -- never a jaw or a blink
-        assert "#croc-jaw" not in page and "croc-eye" not in page
-        assert re.search(
-            r"tl\.to\('#croc',\{scale:[\d.]+,rotation:-?[\d.]+,y:-?[\d.]+,"
-            r"transformOrigin:'center bottom',duration:[\d.]+,ease:'sine\.inOut'\},[\d.]+\);",
-            page)
-
-    def test_croc_motion_is_seeded_and_returns_to_base(self):
+    def test_require_avatar_turns_a_missing_png_into_a_crash(self, tmp_path, monkeypatch):
         from pipeline import compose
-        a = compose.croc_motion(3, 0.0, 20.0)
-        assert a and a == compose.croc_motion(3, 0.0, 20.0)      # deterministic
-        assert a != compose.croc_motion(4, 0.0, 20.0)            # seeded per scene
-        # every beat resolves back to the base transform, so consecutive scenes chain cleanly
-        assert a[-1].startswith("tl.to('#croc',{scale:1.000,rotation:0.00,y:0.0")
-        times = [float(re.search(r"\},([\d.]+)\);", t).group(1)) for t in a]
-        assert times == sorted(times)
-        assert all(0.0 <= t <= 20.0 for t in times)
+        monkeypatch.setattr(compose, "AVATAR_DIR", str(tmp_path / "no-avatar"))
+        monkeypatch.setenv("SCALED_REQUIRE_AVATAR", "1")
+        with pytest.raises(RuntimeError):
+            build(tmp_path, demo_job())
 
-    def test_stat_card_only_appears_where_the_job_has_one(self, tmp_path):
+    def test_sfx_are_requested_per_beat_and_silent_when_absent(self, tmp_path, monkeypatch):
+        from pipeline import compose
+        fx = tmp_path / "sfx"
+        fx.mkdir()
+        (fx / "pop.mp3").write_bytes(b"ID3pop")
+        monkeypatch.setattr(compose, "SFX_DIR", str(fx))
         _, _, page = build(tmp_path, demo_job())
-        assert 'id="stat0"' not in page
-        assert '<div id="stat1" class="statcard clip" data-start="24.00" data-duration="18.00"' in page
-        assert "NEURAL BRAKE" in page and "Governor caps recruitment." in page
-        assert "tl.to('#statbar1',{width:'100%',duration:0.9,ease:'power3.out'},24.600);" in page
+        # pop exists and lands on the baked-text scene beat at 2.4
+        assert ('<audio id="fx0" class="clip" data-start="2.400" data-duration="0.400" '
+                'data-track-index="4" data-volume="0.22" src="assets/audio/pop.mp3"></audio>'
+                in page)
+
+    def test_music_is_segmented_back_to_back_at_low_volume(self, tmp_path, monkeypatch):
+        from pipeline import compose
+        lofi = tmp_path / "lofi"
+        lofi.mkdir()
+        (lofi / "bed.mp3").write_bytes(b"ID3bed")
+        monkeypatch.setattr(compose, "LOFI_DIR", str(lofi))
+        monkeypatch.setattr(compose, "probe_seconds", lambda p: 30.0)
+        _, _, page = build(tmp_path, demo_job())
+        assert 'id="mus0" class="clip" data-start="0.000" data-duration="30.000"' in page
+        assert 'id="mus1" class="clip" data-start="30.000" data-duration="12.000"' in page
+        assert 'data-track-index="3" data-volume="0.12"' in page
 
     def test_verdict_stamp_owns_the_last_twenty_seconds(self, tmp_path):
-        _, total, page = build(tmp_path, demo_job())
-        assert '<div id="verdict" class="verdict-stamp clip" data-start="22.00" data-duration="20.00"' in page
-        assert ">APEX<" in page
-        assert ("tl.fromTo('#verdict',{scale:3,opacity:0},{scale:1,opacity:1,duration:0.5,"
-                "ease:'back.in(1.2)'},23.000);") in page
-        assert "tl.to('#verdict',{x:12,y:-8,duration:0.15},23.500);" in page
-        assert "tl.to('#verdict',{x:0,y:0,duration:0.15},23.650);" in page
+        _, _, page = build(tmp_path, demo_job())
+        assert ('<div id="verdict" class="verdict-stamp clip" data-start="22.000" '
+                'data-duration="20.000" data-track-index="5">APEX</div>') in page
+        assert ("tl.fromTo('#verdict',{scale:2.4,opacity:0},{scale:1,opacity:1,duration:0.400,"
+                "ease:'back.out(1.4)'},22.000);") in page
 
     def test_verdict_is_skipped_when_the_job_has_none(self, tmp_path):
         _, _, page = build(tmp_path, demo_job(verdict=""))
-        assert "verdict-stamp" not in page.split("<style>")[1].split("</style>")[0] or True
         assert 'id="verdict"' not in page
 
-    def test_lesson_slate_is_zero_padded_and_fades_in(self, tmp_path):
+    def test_lesson_chip_is_zero_padded_and_present_for_the_whole_video(self, tmp_path):
         _, _, page = build(tmp_path, demo_job())
-        assert ">LESSON #007<" in page
-        assert "tl.fromTo('#lesson',{opacity:0},{opacity:1,duration:0.5,ease:'power2.out'},0.200);" in page
-        assert page.count('id="lesson"') == 1
+        assert ('<div id="lesson-chip" class="clip" data-start="0.000" data-duration="42.000" '
+                'data-track-index="5">LESSON #007</div>') in page
+        assert page.count('id="lesson-chip"') == 1
 
-    def test_scene_fragments_are_inlined_verbatim(self, tmp_path):
-        _, _, page = build(tmp_path, demo_job())
-        assert '<div id="s0-a" class="clip" data-start="1.00" data-duration="4.00">A</div>' in page
-        assert "tl.to('#s0-a',{opacity:1,duration:0.4},1.000);" in page
-        stage = page[page.index('id="stage"'):page.index("</div>\n<script>")]
-        assert 's0-a' in stage                       # fragment html lives inside #stage
-
-    def test_croc_is_a_single_global_image_not_a_clip(self, tmp_path):
-        proj, _, page = build(tmp_path, demo_job())
-        assert page.count('id="croc"') == 1
-        assert '<img id="croc" src="assets/croc.png"' in page
-        head = page[page.index('<img id="croc"'):]
-        assert "data-start" not in head[:head.index(">")]        # a global element, not a timed clip
-        assert os.path.isfile(os.path.join(proj, "assets", "croc.png"))
-        assert "#croc-jaw" not in page and 'class="croc-eye"' not in page
-
-    def test_croc_entrance_is_baked_when_scene_0_does_not_do_one(self, tmp_path):
-        _, _, page = build(tmp_path, demo_job())
-        assert "tl.to('#croc',{opacity:1,duration:0.4},0.300);" in page
-        assert "tl.fromTo('#croc',{x:1980},{x:1450,duration:1.0,ease:'power2.out'},0.300);" in page
-
-    def test_baked_entrance_is_skipped_when_the_fragment_brings_him_in(self, tmp_path):
-        """Two entrances would overlap on the same properties -- lint warns about it."""
-        job = demo_job()
-        job["scenes"][0]["frag_js"] = ("tl.to('#croc',{opacity:1,duration:0.4},0.500);\n"
-                                       "tl.fromTo('#croc',{x:1900},{x:1400,duration:1.2},0.500);")
+    def test_html_is_escaped_so_a_script_flavoured_verdict_cannot_inject(self, tmp_path):
+        job = demo_job(verdict='</div><script>alert("x")</script>')
         _, _, page = build(tmp_path, job)
-        assert "},0.300);" not in page
-        assert page.count("tl.to('#croc',{opacity:1") == 1
-
-    def test_html_is_escaped_so_a_script_flavoured_heading_cannot_inject(self, tmp_path):
-        job = demo_job()
-        job["scenes"][1]["stat"]["note"] = '</div><script>alert("x")</script>'
-        _, _, page = build(tmp_path, job)
-        assert "<script>alert" not in page and "&lt;script&gt;alert" in page
+        # verdicts render uppercased; the escaping must survive the casing
+        assert "<script>alert" not in page and "<SCRIPT>ALERT" not in page
+        assert "&lt;SCRIPT&gt;ALERT" in page
 
     def test_build_is_byte_identical_across_runs(self, tmp_path):
         _, _, first = build(tmp_path, demo_job())
@@ -1478,26 +1172,16 @@ class TestBuildProject:
         proj, total = compose.build_project({"id": "empty", "scenes": []}, str(tmp_path))
         page = open(os.path.join(proj, "index.html"), encoding="utf-8").read()
         assert total == 0.0
-        assert 'data-duration="0.10"' in page          # never zero: that fails the renderer
+        assert 'data-duration="0.100"' in page         # never zero: that fails the renderer
         assert "window.__timelines = {scaled: tl};" in page
 
-    @pytest.mark.skipif(os.getenv("HF_LIVE") != "1",
-                        reason="set HF_LIVE=1 to lint a real composition (needs npx)")
-    def test_built_project_passes_the_real_linter(self, tmp_path):
-        from pipeline import htmlgen
+    def test_a_scene_with_no_beats_holds_the_previous_picture(self, tmp_path):
         job = demo_job()
-        for i, scene in enumerate(job["scenes"]):
-            t0 = 0.0 if i == 0 else 24.0
-            scene["frag_html"], scene["frag_js"] = htmlgen.SAFE_FALLBACK(t0, t0 + scene["dur"],
-                                                                        scene["heading"], i)
-        proj, _, _ = build(tmp_path, job)
-        out = subprocess.run(["npx", "-y", "hyperframes@0.8.16", "lint", "--json", proj],
-                             capture_output=True, text=True, timeout=900)
-        blob = out.stdout + out.stderr
-        report = json.loads(blob[blob.index("{"):blob.rindex("}") + 1])
-        errors = [f for f in report["findings"] if f["severity"] == "error"]
-        assert errors == [], errors
-        assert report["ok"] is True
+        job["scenes"][1]["beats"] = []
+        _, total, page = build(tmp_path, job)
+        assert total == 42.0
+        assert 'id="b1_0"' not in page
+        assert 'id="v1" class="clip" data-start="24.000"' in page   # it still speaks
 
 
 # ==================== TASK 11-12: render + youtube modules ====================
@@ -1505,13 +1189,18 @@ import pipeline.render as _r
 
 
 class TestRender:
-    def test_kenburns_frames_equal_round_dur_times_30(self):
+    def test_kenburns_frames_equal_round_dur_times_60(self):
         for dur in (8.0, 12.5, 0.03, 500.0):
-            assert _r.kenburns_frames(dur) == max(1, round(dur * 30))
+            assert _r.kenburns_frames(dur) == max(1, round(dur * 60))
+
+    def test_fps_matches_the_composition(self):
+        from pipeline import compose
+        assert _r.FPS == compose.FPS == 60
 
     def test_kenburns_frames_never_below_one(self):
-        assert _r.kenburns_frames(0.03) == 1
+        assert _r.kenburns_frames(0.001) == 1
         assert _r.kenburns_frames(0.0) == 1
+        assert _r.kenburns_frames(None) == 1
 
     def test_still_cmd_is_ffmpeg_list(self):
         cmd = _r.ffmpeg_still_cmd("in.jpg", 2.0, "out.mp4")
@@ -1529,8 +1218,41 @@ class TestRender:
         cmd = _r.mux_cmd("v.mp4", "a.mp3", "out.mp4")
         assert isinstance(cmd, list) and cmd[0] == "ffmpeg"
 
-    def test_render_outflag_default(self):
-        assert _r.RENDER_OUTFLAG in ("--out", "--output", "-o")
+    def test_render_outflag_default_is_the_one_the_cli_accepts(self):
+        """hyperframes 0.8.16 answers "Unknown flag: --out" -- only --output/-o work."""
+        assert _r.RENDER_OUTFLAG in ("--output", "-o")
+
+    def test_outflag_probe_does_not_read_out_of_the_middle_of_output(self, monkeypatch):
+        """The real 0.8.16 help text, trimmed to the line that matters.
+
+        `--out` is a substring of `--output`, so a plain `in` test picks a flag
+        the CLI rejects and every render silently falls through to the ffmpeg
+        slideshow. The probe has to match whole tokens.
+        """
+        help_text = ("  -c, --composition=<composition>    Render a specific composition\n"
+                     "  -o, --output=<output>    Output path (default: renders/<name>.mp4)\n"
+                     "  -f, --fps=<fps>    Frame rate.\n")
+        monkeypatch.setattr(_r, "_OUTFLAG_PROBED", False)
+        monkeypatch.setattr(_r, "RENDER_OUTFLAG", "--output")
+        monkeypatch.setattr(_r.subprocess, "run", lambda *a, **k: types.SimpleNamespace(
+            returncode=0, stdout=help_text, stderr=""))
+        assert _r._render_outflag() == "--output"
+
+    def test_outflag_probe_still_honours_a_genuine_short_only_cli(self, monkeypatch):
+        monkeypatch.setattr(_r, "_OUTFLAG_PROBED", False)
+        monkeypatch.setattr(_r, "RENDER_OUTFLAG", "--output")
+        monkeypatch.setattr(_r.subprocess, "run", lambda *a, **k: types.SimpleNamespace(
+            returncode=0, stdout="  -o <file>   where to write it\n", stderr=""))
+        assert _r._render_outflag() == "-o"
+
+    def test_outflag_probe_falls_back_when_help_cannot_run(self, monkeypatch):
+        def boom(*a, **k):
+            raise OSError("npx not installed")
+
+        monkeypatch.setattr(_r, "_OUTFLAG_PROBED", False)
+        monkeypatch.setattr(_r, "RENDER_OUTFLAG", "--output")
+        monkeypatch.setattr(_r.subprocess, "run", boom)
+        assert _r._render_outflag() == "--output"
 
 
 from datetime import datetime as _dt, timedelta as _td
@@ -1600,19 +1322,900 @@ class TestHasYt:
         assert upload.has_yt() is False
 
 
-class TestMakeThumb:
-    def test_fills_zero_padded_lesson_and_calls_image(self, monkeypatch, tmp_path):
-        from pipeline import upload, adapters
+class TestCommittedAssets:
+    """The two render paths read different files; nothing else checks they agree.
+
+    Pillow cannot decompress a woff2's Brotli glyph tables, so the thumbnail
+    needs TTFs while the browser gets woff2 -- and a mismatched pair sets the
+    thumbnail's headline in a different typeface from the video's captions.
+    """
+
+    FACES = [("display", "Archivo Black"), ("mono", "JetBrains Mono"),
+             ("pixel", "Press Start 2P")]
+
+    def _fonts(self, *names):
+        return [os.path.join(ROOT, "assets", "fonts", n) for n in names]
+
+    @pytest.mark.parametrize("stem,family", FACES)
+    def test_both_formats_are_committed_and_are_the_same_typeface(self, stem, family):
+        import struct
+        woff, ttf = self._fonts(stem + ".woff2", stem + ".ttf")
+        assert os.path.isfile(woff) and os.path.isfile(ttf), stem
+        blob = open(woff, "rb").read()
+        assert blob[:4] == b"wOF2", stem
+        # A latin subset decompresses to tens of KB. `mono.woff2` once shipped as
+        # the CYRILLIC-EXT subset -- a valid 1160-byte file with no latin letters
+        # in it -- because the download grabbed css2's first @font-face instead
+        # of the /* latin */ one. Every lesson chip silently fell back to system
+        # monospace. The sfnt size in the header is the cheapest tripwire.
+        assert struct.unpack(">I", blob[16:20])[0] > 30000, "%s: wrong subset?" % stem
+        from PIL import ImageFont
+        assert ImageFont.truetype(ttf, 32).getname()[0] == family, stem
+
+    @pytest.mark.parametrize("stem,_family", FACES)
+    def test_pillow_rasterises_real_letters_not_notdef_boxes(self, stem, _family):
+        from PIL import Image, ImageDraw, ImageFont
+        img = Image.new("L", (760, 120), 0)
+        draw = ImageDraw.Draw(img)
+        draw.text((6, 6), "SCALED 97%", font=ImageFont.truetype(
+            self._fonts(stem + ".ttf")[0], 64), fill=255)
+        assert sum(1 for px in img.tobytes() if px > 40) > 2000, stem
+
+    def test_the_voice_reference_is_committed_not_gitignored(self):
+        """Chatterbox clones this file on EVERY tts call, including on the runner.
+
+        It is an input, not an intermediate -- but .gitignore blanket-ignores
+        *.mp3 to keep generated narration out of the repo, and for a while that
+        rule swallowed this file too.
+        """
+        from pipeline import adapters
+        ref = adapters.load_config()["voice"]["files"]["voice"]
+        assert os.path.isfile(os.path.join(ROOT, ref)), ref
+        out = subprocess.run(["git", "check-ignore", ref], cwd=ROOT,
+                             capture_output=True, text=True)
+        assert out.returncode != 0, "%s is gitignored -- CI will render silent" % ref
+
+    def test_no_secret_bearing_file_is_trackable(self):
+        out = subprocess.run(["git", "check-ignore", "github-pat.txt", ".env"],
+                             cwd=ROOT, capture_output=True, text=True)
+        assert "github-pat.txt" in out.stdout, "the PAT file is committable!"
+
+    def test_the_avatar_png_is_committed_where_compose_looks_for_it(self):
+        from pipeline import compose
+        assert compose.avatar_file(), "no .png in assets/avatar -- Croc is absent"
+
+
+class TestThumbnail:
+    """Thumbnail v3: the host paints the whole frame, headline included."""
+
+    def test_art_prompt_carries_the_subject_and_bakes_the_headline(self):
+        from pipeline import thumbnail
+        got = thumbnail.art_prompt({"thumbnail_prompt": "a crocodile bench-pressing a car",
+                                    "thumb_words": "160 VS 3700",
+                                    "thumb_kicker": "bite force, pounds"})
+        assert "a crocodile bench-pressing a car" in got
+        assert '"160 VS 3700"' in got, "the headline has to be quoted into the prompt"
+        assert '"BITE FORCE, POUNDS"' in got, "the kicker is the clue -- it cannot drop"
+        assert "{subject}" not in got
+        # v2 forbade all text; v3 forbids only the failure modes around it.
+        assert "no split screen" in got and "no misspelling" in got
+
+    def test_art_prompt_falls_back_to_the_topic_then_to_a_default(self):
+        from pipeline import thumbnail
+        assert "the human brain" in thumbnail.art_prompt({"topic": "the human brain"})
+        assert thumbnail.art_prompt({}).strip()
+
+    def test_archetype_is_stable_per_episode_and_varies_between_them(self):
+        from pipeline import thumbnail
+        pick = lambda i: thumbnail.pick_archetype({"id": i})[0]
+        assert pick("2026-09-03-jaw") == pick("2026-09-03-jaw")
+        seen = {pick("2026-09-%02d-x" % d) for d in range(1, 29)}
+        assert len(seen) >= 4, "one archetype for every episode is a template, not variety"
+
+    def test_archetype_can_be_forced_by_env(self, monkeypatch):
+        from pipeline import thumbnail
+        monkeypatch.setenv("SCALED_THUMB_ARCH", "versus")
+        assert thumbnail.pick_archetype({"id": "anything"})[0] == "versus"
+
+    def test_kicker_falls_back_to_the_topic_when_the_model_omits_it(self):
+        from pipeline import thumbnail
+        assert thumbnail.thumb_kicker({"thumb_kicker": "Bite Force, Pounds"}) == "BITE FORCE, POUNDS"
+        assert "JAW" in thumbnail.thumb_kicker({"topic": "the human jaw"})
+        assert thumbnail.thumb_kicker({}).strip()
+
+    def test_accent_prefers_a_turn_word_over_a_number(self):
+        from pipeline import thumbnail
+        assert thumbnail.accent_word(["160", "VS", "3700"]) == "VS"
+        assert thumbnail.accent_word(["2.4M", "YEARS", "AGO"]) == "YEARS"
+
+    @pytest.mark.parametrize("job,expected", [
+        ({"thumb_words": "97% SEALED"}, ["97%", "SEALED"]),
+        ({"thumb_words": ["NEURAL", "brake"]}, ["NEURAL", "BRAKE"]),
+        ({"title": "How Your Brain Is The Real Cap"}, ["BRAIN", "REAL", "CAP"]),
+    ])
+    def test_headline_is_short_uppercase_and_stripped_of_filler(self, job, expected):
+        from pipeline import thumbnail
+        assert thumbnail.thumb_words(job) == expected
+
+    def test_headline_never_exceeds_four_words(self):
+        from pipeline import thumbnail
+        got = thumbnail.thumb_words({"thumb_words": "one two three four five six"})
+        assert len(got) == thumbnail.MAX_WORDS == 4
+
+    def test_compose_writes_a_1280x720_jpeg_even_with_no_art(self, tmp_path):
+        from PIL import Image
+        from pipeline import thumbnail
+        img = thumbnail.compose(None, {"id": "x", "title": "A Title", "lesson": 7})
+        assert img.size == (1280, 720)
+        dst = tmp_path / "t.jpg"
+        img.save(str(dst), "JPEG")
+        assert Image.open(str(dst)).size == (1280, 720)
+
+    def test_backdrop_is_deterministic_per_episode(self):
+        from pipeline import thumbnail
+        a = thumbnail._backdrop("2026-08-29-brain")
+        b = thumbnail._backdrop("2026-08-29-brain")
+        assert a.tobytes() == b.tobytes()
+        assert a.tobytes() != thumbnail._backdrop("2026-08-30-jaw").tobytes()
+
+    def test_band_picks_the_darker_half_and_env_can_force_it(self, monkeypatch):
+        from PIL import Image, ImageDraw
+        from pipeline import thumbnail
+        img = Image.new("RGB", (1280, 720), (255, 255, 255))
+        ImageDraw.Draw(img).rectangle((0, 0, 1280, 300), fill=(0, 0, 0))
+        assert thumbnail.band(img) == "top"
+        monkeypatch.setenv("SCALED_THUMB_POS", "bottom")
+        assert thumbnail.band(img) == "bottom"
+
+    def test_make_thumbnail_uses_the_art_call_and_writes_the_file(self, monkeypatch, tmp_path):
+        from pipeline import adapters, thumbnail
+        from PIL import Image
         captured = {}
+        buf = __import__("io").BytesIO()
+        Image.new("RGB", (1920, 1280), (12, 40, 90)).save(buf, "JPEG")
 
         def fake_image(prompt, size="1280x720"):
             captured["prompt"], captured["size"] = prompt, size
-            return b"\xff\xd8\xff\xe0jpeg-bytes"
+            return buf.getvalue()
 
+        def no_rest(prompt, mode="thinking", timeout=300):
+            raise RuntimeError("rest tier skipped in test")
+
+        monkeypatch.setattr(adapters, "image_rest", no_rest)
         monkeypatch.setattr(adapters, "image", fake_image)
-        job = {"id": "2026-08-30-brain", "title": "Your Brain Seals Your Strength",
-               "topic": "the human brain", "lesson": 7, "word": "97%"}
-        out = upload.make_thumb(job, str(tmp_path))
-        assert out and out.endswith("thumb_2026-08-30-brain.jpg")
-        assert "LESSON #007" in captured["prompt"]
-        assert "{NNN}" not in captured["prompt"]
+        job = {"id": "2026-08-30-brain", "lesson": 7, "thumb_words": "97% SEALED",
+               "title": "Your Brain Seals Your Strength", "topic": "the human brain"}
+        out = thumbnail.make_thumbnail(job, str(tmp_path))
+        assert out and out.endswith("2026-08-30-brain_thumb.jpg")
+        assert Image.open(out).size == (1280, 720)
+        assert '"97% SEALED"' in captured["prompt"]
+        # The 3:2 the host sometimes returns has to be cover-cropped, not squashed.
+        assert captured["size"] == "1280x720"
+
+    def test_the_baked_path_leaves_the_art_alone_but_the_fallback_gets_type(self):
+        from PIL import Image
+        from pipeline import thumbnail
+        buf = __import__("io").BytesIO()
+        Image.new("RGB", (1280, 720), (9, 9, 9)).save(buf, "JPEG")
+        art = buf.getvalue()
+        job = {"id": "x", "lesson": 7, "thumb_words": "ONE TWO", "title": "T"}
+        baked = thumbnail.compose(art, job, baked=True)
+        plain = thumbnail.compose(art, job, baked=False)
+        ink = lambda im: sum(v * i for i, v in enumerate(im.convert("L").histogram())
+                             if i > 200)
+        # Both draw a mark; only the unbaked path typesets the whole headline.
+        assert ink(plain) > ink(baked) * 3, "the fallback must still carry the words"
+
+    def test_make_thumbnail_falls_back_to_beat_one_art(self, monkeypatch, tmp_path):
+        from pipeline import adapters, thumbnail
+        from PIL import Image
+        Image.new("RGB", (1920, 1080), (200, 30, 30)).save(
+            str(tmp_path / "i2026-08-30-brain_0_0.jpg"), "JPEG")
+
+        def boom(prompt, size="1280x720"):
+            raise RuntimeError("art host down")
+
+        def boom_rest(prompt, mode="thinking", timeout=300):
+            raise RuntimeError("rest tier down")
+
+        def boom_edit(image_url, instruction):
+            raise RuntimeError("edit tier down")
+
+        monkeypatch.setattr(adapters, "image_rest", boom_rest)
+        monkeypatch.setattr(adapters, "image", boom)
+        monkeypatch.setattr(adapters, "edit_image", boom_edit)
+        out = thumbnail.make_thumbnail({"id": "2026-08-30-brain", "lesson": 3,
+                                        "title": "Down But Branded"}, str(tmp_path))
+        assert out and Image.open(out).size == (1280, 720)
+
+    def test_thumbnail_tries_rest_then_mcp_then_consistency_edit(self, monkeypatch, tmp_path):
+        from pipeline import adapters, thumbnail
+        from PIL import Image
+        order = []
+        buf = __import__("io").BytesIO()
+        Image.new("RGB", (1280, 720), (9, 9, 9)).save(buf, "JPEG")
+
+        def fake_rest(prompt, mode="thinking", timeout=300):
+            order.append(("rest", mode))
+            assert '"97% SEALED"' in prompt and "BRAIN" in prompt  # headline + kicker baked
+            raise RuntimeError("rest down")
+
+        def fake_mcp(prompt, size="1280x720"):
+            order.append(("mcp", size))
+            raise RuntimeError("mcp down")
+
+        def fake_upload(path):
+            order.append(("upload", os.path.basename(path)))
+            return "https://cdn.test/ref.jpg"
+
+        def fake_edit(image_url, instruction):
+            order.append(("edit", image_url))
+            return buf.getvalue()
+
+        monkeypatch.setattr(adapters, "image_rest", fake_rest)
+        monkeypatch.setattr(adapters, "image", fake_mcp)
+        monkeypatch.setattr(adapters, "media_upload", fake_upload)
+        monkeypatch.setattr(adapters, "edit_image", fake_edit)
+        Image.new("RGB", (1920, 1080), (200, 30, 30)).save(
+            str(tmp_path / "i2026-08-30-brain_0_0.jpg"), "JPEG")
+        job = {"id": "2026-08-30-brain", "lesson": 3, "thumb_words": "97% SEALED",
+               "thumb_kicker": "BRAIN, SEALED", "title": "T", "topic": "the human brain"}
+        out = thumbnail.make_thumbnail(job, str(tmp_path))
+        assert out and Image.open(out).size == (1280, 720)
+        kinds = [k for k, _ in order]
+        assert kinds == ["rest", "mcp", "upload", "edit"], order
+        assert order[0][1] == "thinking"  # thumbnails buy the quality pass
+
+    def test_the_avatar_resolves_the_same_way_as_the_video(self):
+        from pipeline import compose, thumbnail
+        want = compose.avatar_file()
+        got = thumbnail._avatar_file()
+        assert (os.path.basename(got) if got else None) == want
+
+
+# ==========================================================================
+# Beat Engine — Python owns the clock, the LLM only fills slots
+# ==========================================================================
+def grid(step, count, start=0.0):
+    """A word timeline with onsets every `step` seconds."""
+    return [w("x%d" % i, round(start + i * step, 3), round(start + i * step + 0.1, 3))
+            for i in range(count)]
+
+
+class TestBeatCount:
+    @pytest.mark.parametrize("dur,expected", [
+        (0, 3), (1.0, 3), (7.6, 3),           # floor(7.6/3.0)=2, at the floor
+        (12.0, 4), (24.0, 8),
+        (38.0, 12), (60.0, 12), (600.0, 12),  # clamped at BEAT_MAX
+    ])
+    def test_clamped_to_four_through_twenty(self, dur, expected):
+        from pipeline.beats import beat_count
+        assert beat_count(dur) == expected
+
+    def test_junk_duration_degrades_to_the_minimum(self):
+        from pipeline.beats import beat_count, BEAT_MIN
+        assert beat_count(None) == BEAT_MIN
+        assert beat_count("abc") == BEAT_MIN
+        assert beat_count(-5) == BEAT_MIN
+
+
+class TestPlanTimes:
+    def test_the_grid_is_syncopated_not_a_metronome(self):
+        """v2 spaced beats evenly, which reads as a machine. The edit lives here."""
+        from pipeline.beats import rhythm_grid
+        times = rhythm_grid(24.0, 12)
+        gaps = [b - a for a, b in zip(times, times[1:])]
+        assert max(gaps) > min(gaps) * 2, "no burst-then-hold contrast in the grid"
+
+    @pytest.mark.parametrize("dur", [12.0, 24.0, 41.0])
+    def test_median_cut_lands_in_the_one_to_three_second_brief(self, dur):
+        from pipeline.beats import beat_count, plan_times
+        times = plan_times(dur, [], beat_count(dur))
+        gaps = sorted(b - a for a, b in zip(times, times[1:]))
+        assert 1.0 <= gaps[len(gaps) // 2] <= 3.0
+        assert max(gaps) >= 2.5, "every scene needs at least one hold to land a joke"
+
+    def test_first_beat_is_pinned_to_zero(self):
+        from pipeline.beats import plan_times
+        assert plan_times(12.0, grid(0.4, 40))[0] == 0.0
+
+    def test_beats_are_strictly_ascending_and_inside_the_scene(self):
+        from pipeline.beats import plan_times
+        times = plan_times(20.0, grid(0.37, 60))
+        assert times == sorted(times)
+        assert len(set(times)) == len(times)
+        assert all(0.0 <= t < 20.0 for t in times)
+
+    def test_min_gap_is_never_violated(self):
+        from pipeline.beats import plan_times, MIN_GAP
+        # Onsets every 0.1s would happily cut every 100ms; MIN_GAP must stop it.
+        times = plan_times(24.0, grid(0.1, 240))
+        gaps = [b - a for a, b in zip(times, times[1:])]
+        assert gaps and min(gaps) >= MIN_GAP - 1e-9
+
+    def test_beats_land_on_word_onsets_when_one_is_reachable(self):
+        from pipeline.beats import plan_times
+        onsets = {x["s"] for x in grid(0.5, 60)}
+        times = plan_times(24.0, grid(0.5, 60))
+        assert all(t in onsets for t in times[1:])
+
+    def test_no_word_clock_still_produces_an_even_grid(self):
+        from pipeline.beats import plan_times, beat_count
+        times = plan_times(12.0, [])
+        assert len(times) == beat_count(12.0)
+        assert times[0] == 0.0
+        assert times == sorted(times)
+
+    def test_explicit_n_overrides_the_formula(self):
+        from pipeline.beats import plan_times
+        assert len(plan_times(24.0, grid(0.3, 90), n=6)) == 6
+
+    def test_beats_that_cannot_fit_are_dropped_not_stacked(self):
+        from pipeline.beats import plan_times
+        # 3s of scene cannot hold 12 beats 0.8s apart; expect a short list,
+        # never twelve copies of the last frame.
+        times = plan_times(3.0, grid(0.2, 15), n=12)
+        assert len(times) < 12
+        assert len(set(times)) == len(times)
+
+    def test_malformed_words_are_ignored(self):
+        from pipeline.beats import plan_times
+        words = [{"s": "nope"}, "not-a-dict", {"e": 1.0}, {"s": 2.0, "e": 2.1}]
+        times = plan_times(12.0, words)
+        assert times[0] == 0.0 and times == sorted(times)
+
+    def test_deterministic(self):
+        from pipeline.beats import plan_times
+        a = plan_times(18.0, grid(0.31, 70))
+        b = plan_times(18.0, grid(0.31, 70))
+        assert a == b
+
+
+class TestNormalise:
+    def test_unknown_kind_degrades_to_zoom(self):
+        from pipeline.beats import normalise
+        assert normalise({"kind": "explode"}, {}, 0)["kind"] == "zoom"
+        assert normalise({}, {}, 0)["kind"] == "zoom"
+        assert normalise("garbage", {}, 0)["kind"] == "zoom"
+
+    def test_scene_baked_text_is_capped_and_uppercased(self):
+        from pipeline.beats import normalise, MAX_CAPTION_WORDS
+        beat = normalise({"kind": "scene", "prompt": "the guy",
+                          "text": "one two three four five six"}, {}, 1)
+        assert beat["kind"] == "scene"
+        assert beat["text"] == "ONE TWO THREE FOUR"
+        assert len(beat["text"].split()) == MAX_CAPTION_WORDS
+
+    def test_scene_baked_number_capped_label_at_two_words(self):
+        from pipeline.beats import normalise
+        beat = normalise({"kind": "scene", "prompt": "croc pointing",
+                          "value": "3700000000000 psi",
+                          "label": "bite force of doom"}, {}, 2)
+        assert len(beat["value"]) <= 14
+        assert beat["label"] == "BITE FORCE"
+
+    def test_meme_needs_a_situation(self):
+        from pipeline.beats import normalise
+        beat = normalise({"kind": "meme", "prompt": "crocodile doing taxes"}, {}, 0)
+        assert beat["kind"] == "meme" and beat["prompt"] == "crocodile doing taxes"
+        assert normalise({"kind": "meme"}, {}, 0)["kind"] == "zoom"
+
+    def test_no_beat_carries_an_expression(self):
+        """Croc is one static PNG -- nothing in the pipeline swaps his face."""
+        from pipeline.beats import normalise
+        beat = normalise({"kind": "meme", "prompt": "p", "expression": "fire"}, {}, 0)
+        assert "expression" not in beat
+
+    def test_scene_falls_back_to_the_scene_heading(self):
+        from pipeline.beats import normalise
+        beat = normalise({"kind": "scene"}, {"heading": "The Bite"}, 0)
+        assert beat["kind"] == "scene" and beat["prompt"] == "The Bite"
+
+    def test_zoom_amount_is_clamped_to_the_legal_range(self):
+        from pipeline.beats import normalise, ZOOM_MIN, ZOOM_MAX
+        assert normalise({"kind": "zoom", "amount": 9.0}, {}, 0)["amount"] == ZOOM_MAX
+        assert normalise({"kind": "zoom", "amount": 0.2}, {}, 0)["amount"] == ZOOM_MIN
+        assert ZOOM_MIN <= normalise({"kind": "zoom", "amount": "junk"}, {}, 0)["amount"] <= ZOOM_MAX
+
+    def test_photo_caption_and_counter_are_capped(self):
+        from pipeline.beats import normalise
+        beat = normalise({"kind": "photo", "prompt": "a crowd",
+                          "caption": "one two three four five six seven",
+                          "counter": "123456789012345678"}, {}, 0)
+        assert len(beat["caption"].split()) <= 6
+        assert len(beat["counter"]) <= 12
+
+    def test_default_sfx_comes_from_the_kind(self):
+        from pipeline.beats import normalise, DEFAULT_SFX
+        for kind, spec in (("scene", {"prompt": "p"}), ("photo", {"prompt": "p"}),
+                           ("meme", {"prompt": "p"}), ("zoom", {})):
+            spec["kind"] = kind
+            assert normalise(spec, {}, 0)["sfx"] == DEFAULT_SFX[kind]
+
+    def test_bogus_sfx_falls_back_to_the_default(self):
+        from pipeline.beats import normalise, SFX
+        assert normalise({"kind": "scene", "prompt": "p", "sfx": "airhorn"}, {}, 0)["sfx"] in SFX
+
+    def test_unknown_slots_are_dropped(self):
+        from pipeline.beats import normalise
+        beat = normalise({"kind": "zoom", "onclick": "alert(1)", "src": "http://x"}, {}, 0)
+        assert "onclick" not in beat and "src" not in beat
+
+
+class TestValidate:
+    def _legal(self):
+        return [{"i": 0, "kind": "scene", "prompt": "the guy staring at a graph"},
+                {"i": 1, "kind": "scene", "prompt": "croc pointing",
+                 "text": "SOLD IT", "value": "160", "label": "POUNDS"},
+                {"i": 2, "kind": "photo", "prompt": "a cheering crowd",
+                 "caption": "SO LOVED", "counter": "31,957,4!?"},
+                {"i": 3, "kind": "zoom", "amount": 1.18},
+                {"i": 4, "kind": "meme", "prompt": "filing paperwork"}]
+
+    def test_a_legal_scene_reports_nothing(self):
+        from pipeline.beats import validate
+        assert validate(self._legal()) == []
+
+    def test_empty_scene_is_a_violation(self):
+        from pipeline.beats import validate
+        assert validate([]) and validate(None)
+
+    def test_first_beat_must_be_scene(self):
+        from pipeline.beats import validate
+        beats = self._legal()
+        beats[0] = {"i": 0, "kind": "zoom", "amount": 1.2}
+        assert any("beat 1" in p for p in validate(beats))
+
+    def test_too_many_memes_are_reported(self):
+        from pipeline.beats import validate
+        beats = self._legal() + [{"i": 5, "kind": "meme", "prompt": "m2"},
+                                 {"i": 6, "kind": "meme", "prompt": "m3"}]
+        problems = " ".join(validate(beats))
+        assert '"meme"' in problems
+
+    def test_a_jokeless_scene_is_reported(self):
+        from pipeline.beats import validate
+        beats = [{"i": 0, "kind": "scene", "prompt": "a"},
+                 {"i": 1, "kind": "zoom", "amount": 1.1}]
+        assert any("the joke" in p for p in validate(beats))
+
+    def test_scene_photo_meme_slots_validate(self):
+        from pipeline import beats as beat_engine
+        from pipeline.beats import validate, normalise
+        assert set(beat_engine.KINDS) == {"scene", "photo", "meme", "zoom"}
+        photo = normalise({"kind": "photo", "prompt": "a cheering crowd",
+                           "caption": "SO POPULAR", "counter": "31,957,4!?"},
+                          {}, 0)
+        assert photo["caption"] == "SO POPULAR" and photo["counter"] == "31,957,4!?"
+        assert photo["sfx"] == "none"  # hard cuts need no sound
+        scene = normalise({"kind": "scene", "prompt": "the guy",
+                           "text": "SOLD IT", "value": "160 LBF", "label": "YOURS"}, {}, 1)
+        assert scene["text"] == "SOLD IT" and scene["value"] == "160 LBF"
+        joke_free = ([{"i": 0, "kind": "scene", "prompt": "a"}]
+                     + [{"i": i + 1, "kind": "zoom", "amount": 1.2} for i in range(2)])
+        assert any("the joke" in p for p in validate(joke_free))
+
+    def test_frames_are_hard_cuts_with_zero_motion(self):
+        from pipeline import compose
+        tags, tweens = compose.t_frame("e", "w", "assets/x.jpg", 1.0, 2.0)
+        script = " ".join(tweens)
+        assert "0.020" in script  # the blink only
+        assert "scale" not in script  # deadpan: zero motion
+
+    def test_overlong_text_and_missing_prompts_are_reported(self):
+        from pipeline.beats import validate
+        beats = [{"i": 0, "kind": "scene", "prompt": ""},
+                 {"i": 1, "kind": "scene", "prompt": "x",
+                  "text": "a b c d e f g", "value": "x" * 40}]
+        problems = " ".join(validate(beats))
+        assert "situation prompt" in problems and "<=4 words" in problems
+        assert "<=14 characters" in problems
+
+
+class TestAutofix:
+    SCENE = {"dur": 24.0, "heading": "The Bite",
+             "text": "A saltwater crocodile bites at 3700 psi which is more than a lion"}
+
+    def test_output_always_passes_validate(self):
+        from pipeline.beats import autofix, validate
+        wrecked = [{"i": 0, "kind": "zoom"}, {"i": 1, "kind": "zoom"},
+                   {"i": 2, "kind": "zoom"}, {"i": 3, "kind": "zoom"}]
+        assert validate(autofix(wrecked, self.SCENE)) == []
+
+    def test_an_existing_scene_beat_is_promoted_not_duplicated(self):
+        from pipeline.beats import autofix
+        beats = [{"i": 0, "kind": "zoom", "amount": 1.2},
+                 {"i": 1, "kind": "scene", "prompt": "keep me"},
+                 {"i": 2, "kind": "photo", "prompt": "crowd"}]
+        out = autofix(beats, self.SCENE)
+        assert out[0]["kind"] == "scene" and out[0]["prompt"] == "keep me"
+        assert sum(1 for b in out if b["kind"] == "scene") == 1
+
+    def test_excess_memes_become_zooms(self):
+        from pipeline.beats import autofix, MAX_MEME
+        beats = [{"i": i, "kind": "meme", "prompt": "m%d" % i} for i in range(4)]
+        out = autofix(beats, self.SCENE)
+        assert sum(1 for b in out if b["kind"] == "meme") <= MAX_MEME
+
+    def test_a_jokeless_scene_gets_an_ironic_photo(self):
+        """Rule 3: a spare zoom becomes the betrayal rather than more straight art."""
+        from pipeline.beats import autofix, validate
+        beats = [{"i": 0, "kind": "scene", "prompt": "a"},
+                 {"i": 1, "kind": "zoom", "amount": 1.2}]
+        out = autofix(beats, self.SCENE)
+        assert validate(out) == []
+        assert any(b["kind"] == "photo" for b in out)
+
+    def test_indices_are_renumbered_and_sfx_always_present(self):
+        from pipeline.beats import autofix, SFX
+        out = autofix([{"i": 9, "kind": "scene", "prompt": "a"}, {"i": 4, "kind": "zoom"},
+                       {"i": 1, "kind": "zoom"}], self.SCENE)
+        assert [b["i"] for b in out] == list(range(len(out)))
+        assert all(b["sfx"] in SFX for b in out)
+
+    def test_never_mutates_the_input(self):
+        from pipeline.beats import autofix
+        beats = [{"i": 0, "kind": "zoom"}]
+        autofix(beats, self.SCENE)
+        assert beats == [{"i": 0, "kind": "zoom"}]
+
+
+class TestBuild:
+    SCENE = {"dur": 24.0, "heading": "The Bite",
+             "text": "A crocodile bites at 3700 psi harder than any lion alive today"}
+
+    def test_model_beat_count_never_changes_the_pacing(self):
+        from pipeline.beats import build, plan_times
+        words = grid(0.4, 60)
+        expected = len(plan_times(self.SCENE["dur"], words))
+        assert len(build(self.SCENE, words, [{"kind": "zoom"}] * 40)) == expected
+        assert len(build(self.SCENE, words, [{"kind": "zoom"}])) == expected
+        assert len(build(self.SCENE, words, None)) == expected
+
+    def test_every_beat_carries_a_window(self):
+        from pipeline.beats import build
+        out = build(self.SCENE, grid(0.4, 60), [{"kind": "scene", "prompt": "p"}])
+        assert all("t" in b and "end" in b for b in out)
+        assert all(b["end"] >= b["t"] for b in out)
+        assert out[-1]["end"] == 24.0
+
+    def test_result_is_always_legal_and_opens_on_art(self):
+        from pipeline.beats import build, validate
+        out = build(self.SCENE, grid(0.4, 60), [{"kind": "zoom", "amount": 1.2}])
+        assert out[0]["kind"] == "scene"
+        assert validate(out) == []
+
+    def test_deterministic(self):
+        from pipeline.beats import build
+        specs = [{"kind": "scene", "prompt": "p"}, {"kind": "photo", "prompt": "q"}]
+        assert build(self.SCENE, grid(0.31, 70), specs) == build(self.SCENE, grid(0.31, 70), specs)
+
+    def test_punchline_beat_holds_about_twice_the_median(self):
+        from pipeline.beats import build
+        out = build(self.SCENE, grid(0.4, 60),
+                    [{"kind": "scene", "prompt": "p"}] * 3 + [{"kind": "photo", "prompt": "q"}])
+        wins = [out[k + 1]["t"] - out[k]["t"] for k in range(len(out) - 1)]
+        med = sorted(wins)[len(wins) // 2]
+        last = 24.0 - out[-1]["t"]
+        assert last >= min(2 * med, 24.0 - out[-2]["t"] - 0.55) - 0.01
+
+
+# ==========================================================================
+# pipeline/run.py — the stage machine, its resume skips and its degradations
+# ==========================================================================
+class TestStageMachine:
+    def test_stage_order_is_the_dependency_order(self):
+        from pipeline import run
+        assert run.STAGES == ["idea", "voice", "srt", "beats", "visuals",
+                              "render", "upload", "thumbnail", "qc", "done"]
+        # voice before srt (nothing to time), srt before beats (nothing to snap
+        # to), beats before visuals (we don't know which stills to buy).
+        for earlier, later in (("voice", "srt"), ("srt", "beats"),
+                               ("beats", "visuals"), ("visuals", "render")):
+            assert run.STAGES.index(earlier) < run.STAGES.index(later)
+
+    def test_every_stage_but_idea_and_done_has_a_function(self):
+        from pipeline import run
+        assert set(run.STAGE_FN) == set(run.STAGES) - {"idea", "done"}
+
+    def test_no_stage_function_is_the_deleted_htmlgen(self):
+        from pipeline import run
+        assert not hasattr(run, "htmlgen")
+        assert "htmlgen" not in dir(run)
+
+    def test_voice_and_art_lookups_accept_whatever_container_arrived(self, tmp_path):
+        """The TTS host returns wav and the art host returns webp; resume has to
+        find both, or every restart re-buys media it already paid for."""
+        from pipeline import run
+        job = {"id": "2026-09-03-jaw"}
+        assert run._voice_path(job, str(tmp_path), 0) is None
+        (tmp_path / "v2026-09-03-jaw_0.wav").write_bytes(b"RIFF....WAVE")
+        assert run._voice_path(job, str(tmp_path), 0).endswith("_0.wav")
+        (tmp_path / "s2026-09-03-jaw_1_2.webp").write_bytes(b"RIFF....WEBP")
+        assert run._beat_art(job, str(tmp_path), 1, 2, "scene").endswith("_1_2.webp")
+        # memes carry an m prefix so they never collide with the scene at the same index
+        assert run._beat_art(job, str(tmp_path), 1, 2, "meme") is None
+        (tmp_path / "m2026-09-03-jaw_1_2.png").write_bytes(b"\x89PNG\r\n")
+        assert run._beat_art(job, str(tmp_path), 1, 2, "meme").endswith("_1_2.png")
+        assert run._beat_art(job, str(tmp_path), 1, 2, "zoom") is None
+
+    def test_a_zero_byte_file_does_not_count_as_done(self, tmp_path):
+        """A killed run can leave an empty file; resuming past it renders silent."""
+        from pipeline import run
+        (tmp_path / "v2026-09-03-jaw_0.mp3").write_bytes(b"")
+        assert run._voice_path({"id": "2026-09-03-jaw"}, str(tmp_path), 0) is None
+
+    def test_stage_voice_skips_a_scene_it_already_narrated(self, tmp_path, monkeypatch):
+        from pipeline import adapters, run
+        calls = []
+        monkeypatch.setattr(adapters, "tts", lambda text: calls.append(text) or b"ID3new")
+        monkeypatch.setattr(adapters, "last_format", lambda kind=None: "mp3")
+        job = {"id": "j", "scenes": [{"text": "one"}, {"text": "two"}]}
+        (tmp_path / "vj_0.mp3").write_bytes(b"ID3already")
+        run.stage_voice(job, str(tmp_path))
+        assert calls == ["two"]
+        assert (tmp_path / "vj_0.mp3").read_bytes() == b"ID3already"
+
+    def test_save_still_cover_crops_to_1920x1080_without_squashing(self, tmp_path):
+        from PIL import Image
+        from pipeline import run
+        buf = __import__("io").BytesIO()
+        # the art host returns 3:2; a stretch to 16:9 is instantly visible
+        Image.new("RGB", (1920, 1280), (10, 20, 30)).save(buf, "WEBP")
+        out = run.save_still(buf.getvalue(), "webp", str(tmp_path / "s.jpg"))
+        img = Image.open(out)
+        assert img.size == (1920, 1080) and img.format == "JPEG"
+
+    def test_save_still_writes_unreadable_bytes_through_rather_than_dying(self, tmp_path):
+        from pipeline import run
+        out = run.save_still(b"not an image at all", "jpg", str(tmp_path / "s.jpg"))
+        assert os.path.getsize(out) > 0
+
+    def test_stage_srt_falls_back_to_the_ffprobe_clock_with_no_word_list(self, tmp_path, monkeypatch):
+        """No GROQ_KEY is a documented degradation: beats land on an even grid."""
+        from pipeline import run, srt
+        monkeypatch.setattr(srt, "word_timeline",
+                            lambda p: (_ for _ in ()).throw(RuntimeError("GROQ_KEY missing")))
+        monkeypatch.setattr(run, "audio_seconds", lambda p: 12.0)
+        job = {"id": "j", "scenes": [{"text": "one"}]}
+        (tmp_path / "vj_0.mp3").write_bytes(b"ID3")
+        run.stage_srt(job, str(tmp_path))
+        assert job["scenes"][0]["dur"] == round(12.0 + run.CAPTION_PAD, 3)
+        assert not job["scenes"][0].get("words")
+
+    def test_stage_beats_spends_exactly_one_repair_call_on_an_illegal_reply(self, tmp_path, monkeypatch):
+        from pipeline import beats as beat_engine
+        from pipeline import llm, run
+        seen = []
+
+        def fake_llm(system, user, json_out=False, **kw):
+            seen.append(user)
+            if len(seen) == 1:                      # illegal: no scene, no joke
+                return {"beats": [{"kind": "zoom"}, {"kind": "zoom"}]}
+            return {"beats": [{"kind": "scene", "prompt": "a jaw"},
+                              {"kind": "photo", "prompt": "a crowd"},
+                              {"kind": "meme", "prompt": "a croc"},
+                              {"kind": "zoom", "amount": 1.2}]}
+
+        monkeypatch.setattr(llm, "llm", fake_llm)
+        monkeypatch.setattr(llm, "prompt",
+                            lambda name, half: "sys" if half == "system" else "{text} {n}")
+        job = {"id": "j", "scenes": [{"text": "one", "dur": 12.0, "act": "HOOK"}]}
+        run.stage_beats(job, str(tmp_path))
+        assert len(seen) == 2, "expected exactly one repair attempt"
+        assert "was invalid" in seen[1]
+        assert not beat_engine.validate(job["scenes"][0]["beats"])
+        assert job["stage"] == "visuals"
+
+    def test_stage_beats_survives_a_director_that_never_answers(self, tmp_path, monkeypatch):
+        """[] is survivable -- build() pads with zooms, so pacing outlives the model."""
+        from pipeline import llm, run
+        monkeypatch.setattr(llm, "llm",
+                            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("providers down")))
+        monkeypatch.setattr(llm, "prompt", lambda name, half: "x")
+        job = {"id": "j", "scenes": [{"text": "one", "dur": 12.0, "act": "HOOK"}]}
+        run.stage_beats(job, str(tmp_path))
+        assert len(job["scenes"][0]["beats"]) >= 4
+
+    def test_stage_visuals_never_raises_when_the_art_host_is_down(self, tmp_path, monkeypatch):
+        from pipeline import adapters, run
+        monkeypatch.setattr(adapters, "image_world",
+                            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("host down")))
+        monkeypatch.setattr(adapters, "cast_edit",
+                            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("host down")))
+        monkeypatch.setattr(adapters, "meme_croc",
+                            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("host down")))
+        monkeypatch.setattr(adapters, "meme_img",
+                            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("host down")))
+        monkeypatch.setattr(adapters, "image_plain",
+                            lambda *a, **k: (_ for _ in ()).throw(RuntimeError("host down")))
+        job = {"id": "j", "scenes": [{"beats": [
+            {"kind": "scene", "prompt": "a jaw"}, {"kind": "meme", "prompt": "a croc"},
+            {"kind": "photo", "prompt": "a crowd"}]}]}
+        run.stage_visuals(job, str(tmp_path))
+        assert job["stage"] == "render"
+
+
+# ==========================================================================
+# v4 Phase 1 — reliability (R1/R2/R3/R7) and the un-hardcoded {perf}
+# ==========================================================================
+
+class TestUploadIdempotency:
+    def test_marker_is_deterministic_per_job(self):
+        from pipeline.upload import job_marker
+        assert job_marker("2026-01-01-x") == "[kronvex:2026-01-01-x]"
+        assert job_marker("2026-01-01-x") == job_marker("2026-01-01-x")
+
+    def test_find_upload_adopts_orphan_by_marker(self, monkeypatch):
+        from pipeline import upload
+        monkeypatch.setenv("YT_REFRESH_TOKEN", "r")
+        monkeypatch.setenv("YT_CLIENT_ID", "c")
+        monkeypatch.setenv("YT_CLIENT_SECRET", "s")
+
+        class Search:
+            def list(self, **k):
+                class Ex:
+                    def execute(self):
+                        return {"items": [{"id": {"videoId": "vid9"}},
+                                          {"id": {"videoId": "vid8"}}]}
+                return Ex()
+
+        class Videos:
+            def list(self, **k):
+                class Ex:
+                    def execute(self):
+                        return {"items": [
+                            {"id": "vid9", "snippet": {"description": "hello"}},
+                            {"id": "vid8", "snippet": {"description": "x [kronvex:J1] y"}}]}
+                return Ex()
+
+        class Svc:
+            def search(self):
+                return Search()
+
+            def videos(self):
+                return Videos()
+
+        monkeypatch.setattr(upload, "_service", lambda kind="youtube": Svc())
+        assert upload.find_upload("J1") == "vid8"
+
+    def test_find_upload_returns_none_without_match_or_creds(self, monkeypatch):
+        from pipeline import upload
+        for v in ("YT_REFRESH_TOKEN", "YT_CLIENT_ID", "YT_CLIENT_SECRET"):
+            monkeypatch.delenv(v, raising=False)
+        assert upload.find_upload("J1") is None
+
+
+class TestPublishVerification:
+    def _yt(self, monkeypatch, public_after=True):
+        monkeypatch.setenv("YT_REFRESH_TOKEN", "r")
+        monkeypatch.setenv("YT_CLIENT_ID", "c")
+        monkeypatch.setenv("YT_CLIENT_SECRET", "s")
+        from pipeline import upload
+        state = {"status": "private"}
+
+        class Videos:
+            def update(self, **k):
+                if public_after:
+                    state["status"] = "public"
+
+                class Ex:
+                    def execute(self):
+                        return {}
+                return Ex()
+
+            def list(self, **k):
+                class Ex:
+                    def execute(self):
+                        return {"items": [{"status": {"privacyStatus": state["status"]}}]}
+                return Ex()
+
+        class Comments:
+            def insert(self, **k):
+                class Ex:
+                    def execute(self):
+                        return {}
+                return Ex()
+
+        class Svc:
+            def videos(self):
+                return Videos()
+
+            def commentThreads(self):
+                return Comments()
+
+        monkeypatch.setattr(upload, "_service", lambda kind="youtube": Svc())
+
+    def test_verified_public_marks_published(self, tmp_path, monkeypatch):
+        from pipeline import publish
+        self._yt(monkeypatch, public_after=True)
+        d = str(tmp_path)
+        job = {"id": "J1", "stage": "done", "video_id": "vid1", "extra_credit": "Extra credit: x"}
+        publish.write_job(d + "/J1.json", job)
+        out = publish.publish_one(d)
+        assert out["published"] is True and "publish_attempts" not in out
+
+    def test_failed_flip_stays_queued_with_attempts(self, tmp_path, monkeypatch):
+        from pipeline import publish
+        self._yt(monkeypatch, public_after=False)
+        d = str(tmp_path)
+        job = {"id": "J1", "stage": "done", "video_id": "vid1"}
+        publish.write_job(d + "/J1.json", job)
+        out = publish.publish_one(d)
+        assert out.get("published") is not True
+        assert out["publish_attempts"] == 1
+
+
+class TestQCGate:
+    def _job(self, dur=100.0, beats=None):
+        beats = beats if beats is not None else [
+            {"kind": "scene", "prompt": "a jaw"}, {"kind": "photo", "prompt": "crowd"}]
+        return {"id": "J1", "thumb": "", "scenes": [{"dur": dur, "beats": beats}]}
+
+    def test_good_episode_passes(self, tmp_path):
+        from pipeline import qc
+        d = str(tmp_path)
+        open(d + "/vJ1_0.wav", "wb").write(b"\x00" * 100)
+        open(d + "/sJ1_0_0.jpg", "wb").write(b"\x00" * 100)
+        open(d + "/pJ1_0_1.jpg", "wb").write(b"\x00" * 100)
+        open(d + "/J1_thumb.jpg", "wb").write(b"\x00" * (31 * 1024))
+        open(d + "/wJ1_0.json", "w").write('[{"s":0,"e":1,"w":"hi"}]')
+        ok, fails, _warns = qc.check(self._job(), d)
+        assert ok and not fails
+
+    def test_short_duration_missing_audio_and_thumb_fail(self, tmp_path):
+        from pipeline import qc
+        d = str(tmp_path)
+        ok, fails, _warns = qc.check(self._job(dur=3.0), d)
+        assert not ok
+        blob = " ".join(fails)
+        assert "duration" in blob and "narration" in blob and "thumbnail" in blob
+
+    def test_low_art_coverage_fails(self, tmp_path):
+        from pipeline import qc
+        d = str(tmp_path)
+        open(d + "/vJ1_0.wav", "wb").write(b"\x00" * 100)
+        open(d + "/J1_thumb.jpg", "wb").write(b"\x00" * (31 * 1024))
+        beats = ([{"kind": "scene", "prompt": "p%d" % i} for i in range(4)]
+                 + [{"kind": "zoom", "amount": 1.2}])
+        ok, fails, _warns = qc.check(self._job(beats=beats), d)
+        assert not ok and any("coverage" in f for f in fails)
+
+    def test_whisper_gaps_warn_without_key_fail_with_key(self, tmp_path, monkeypatch):
+        from pipeline import qc
+        d = str(tmp_path)
+        open(d + "/vJ1_0.wav", "wb").write(b"\x00" * 100)
+        open(d + "/sJ1_0_0.jpg", "wb").write(b"\x00" * 100)
+        open(d + "/pJ1_0_1.jpg", "wb").write(b"\x00" * 100)
+        open(d + "/J1_thumb.jpg", "wb").write(b"\x00" * (31 * 1024))
+        open(d + "/wJ1_0.json", "w").write("[]")
+        monkeypatch.delenv("GROQ_KEY", raising=False)
+        ok, _fails, warns = qc.check(self._job(), d)
+        assert ok and warns
+        monkeypatch.setenv("GROQ_KEY", "k")
+        ok2, fails2, _w2 = qc.check(self._job(), d)
+        assert not ok2 and any("word timings" in f for f in fails2)
+
+
+class TestSrtResumeAndPerf:
+    def test_stage_srt_reuses_word_file(self, tmp_path):
+        from pipeline import run
+        d = str(tmp_path)
+        words = [{"s": 0.0, "e": 1.5, "w": "hi"}]
+        open(d + "/wJ1_0.json", "w").write(__import__("json").dumps(words))
+        job = {"id": "J1", "stage": "srt", "scenes": [{"text": "hi there"}]}
+        run.stage_srt(job, d)
+        assert job["scenes"][0]["dur"] == round(1.5 + run.CAPTION_PAD, 3)
+        assert job["stage"] == "beats"
+
+    def test_perf_summary_empty_when_no_history(self, tmp_path, monkeypatch):
+        from pipeline import run
+        monkeypatch.setattr(run, "VIDEOS", str(tmp_path))
+        monkeypatch.setattr(run, "STRATEGY", str(tmp_path / "strategy.json"))
+        assert run._perf_summary() == "(no performance data yet)"
+
+    def test_qc_failed_jobs_do_not_resume(self):
+        from pipeline import run
+        jobs = [{"id": "q", "stage": "qc_failed"}, {"id": "v", "stage": "voice"}]
+        assert run.in_progress(jobs)["id"] == "v"
+        assert run.in_progress([{"id": "q", "stage": "qc_failed"}]) is None

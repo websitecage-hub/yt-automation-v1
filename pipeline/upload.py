@@ -12,9 +12,6 @@ the functions that touch the network, so this module imports cleanly on a box
 where they were never pip-installed and in every DRY_RUN.
 """
 import os
-import re
-
-from pipeline import adapters, llm
 
 # The OAuth env vars that must ALL be present (and non-empty) before we touch
 # the network. Secrets live only as these names; a literal token never appears.
@@ -30,6 +27,16 @@ SCOPES = [
 ]
 # 27 = "Education" in the YouTube category list; the natural home for a lecture.
 DEFAULT_CATEGORY = "27"
+
+
+def job_marker(job_id):
+    """Deterministic idempotency tag embedded in every upload's description.
+
+    R1: a kill between a successful upload and the state save must never produce
+    a duplicate video. The marker makes an orphan upload findable, so the resume
+    path adopts it instead of uploading again.
+    """
+    return "[kronvex:%s]" % str(job_id or "unknown")
 
 
 def _dry_run():
@@ -74,36 +81,6 @@ def _service(kind="youtube"):
     return build(name, version, credentials=creds, cache_discovery=False)
 
 
-# --------------------------------------------------------------- helpers
-
-def _lesson_num(job):
-    """Zero-pad source: job['lesson'] or job['n'], defaulting to 1."""
-    for key in ("lesson", "n"):
-        try:
-            return int(job.get(key))
-        except (TypeError, ValueError):
-            continue
-    return 1
-
-
-def _shock_word(job):
-    """A short, shocking word or number for the thumbnail's one giant token.
-
-    An explicit job field wins; otherwise the first number in the packaging,
-    otherwise the first substantial word, otherwise the channel name.
-    """
-    for key in ("shock_word", "word", "hook_word"):
-        val = str(job.get(key) or "").strip()
-        if val:
-            return val
-    text = " ".join(str(job.get(k) or "") for k in ("title", "topic"))
-    num = re.search(r"\d[\d,\.]*%?", text)
-    if num:
-        return num.group(0)
-    words = [w for w in re.findall(r"[A-Za-z]+", text) if len(w) >= 4]
-    return words[0].upper() if words else "SCALED"
-
-
 # --------------------------------------------------------------- actions
 
 def upload_video(job, mp4_path, privacy="private"):
@@ -119,8 +96,9 @@ def upload_video(job, mp4_path, privacy="private"):
 
     body = {
         "snippet": {
-            "title": (str(job.get("title") or "SCALED"))[:100],
-            "description": str(job.get("description") or ""),
+            "title": (str(job.get("title") or "Kronvex"))[:100],
+            "description": (str(job.get("description") or "").rstrip() + "\n\n"
+                            + job_marker(job.get("id"))),
             "tags": list(job.get("tags") or []),
             "categoryId": str(job.get("categoryId") or DEFAULT_CATEGORY),
         },
@@ -143,34 +121,33 @@ def upload_video(job, mp4_path, privacy="private"):
         return None
 
 
-def make_thumb(job, work_dir):
-    """Render the 1280x720 thumbnail via the image API. Returns its path or None.
+def find_upload(job_id, limit=25):
+    """Adopt an orphan: the newest own video whose description carries our marker.
 
-    Offline-safe on purpose: this is only an image call, so it runs even in
-    DRY_RUN. The adapters call is guarded, so a down image provider degrades to
-    None (a video with no custom thumbnail) instead of a crash.
+    R1 resume path. Returns the videoId or None (also None in DRY_RUN / without
+    creds / on any API failure — the caller then uploads normally).
     """
-    subject = job.get("title") or job.get("topic") or "the specimen"
-    prompt = (
-        llm.prompt("THUMBNAIL", "user")
-        .replace("{subject}", str(subject))
-        .replace("{word}", str(_shock_word(job)))
-        .replace("{NNN}", "%03d" % _lesson_num(job))
-    )
+    if not has_yt():
+        return None
+    marker = job_marker(job_id)
     try:
-        data = adapters.image(prompt, "1280x720")
+        svc = _service("youtube")
+        mine = svc.search().list(part="id", forMine=True, type="video",
+                                 order="date", maxResults=min(50, max(1, limit)),
+                                 ).execute().get("items") or []
+        ids = [it.get("id", {}).get("videoId") for it in mine]
+        ids = [v for v in ids if v][:limit]
+        if not ids:
+            return None
+        details = svc.videos().list(part="id,snippet", id=",".join(ids)).execute()
+        for item in details.get("items") or []:
+            if marker in str(((item.get("snippet") or {}).get("description")) or ""):
+                print("[upload] adopted orphan upload %s for job %s"
+                      % (item.get("id"), job_id))
+                return item.get("id")
     except Exception as e:
-        print("[upload] thumbnail generation failed: %s -- returning None" % e)
-        return None
-    if not data:
-        print("[upload] thumbnail came back empty -- returning None")
-        return None
-    os.makedirs(work_dir or ".", exist_ok=True)
-    out = os.path.join(work_dir or ".", "thumb_%s.jpg" % (job.get("id") or "job"))
-    with open(out, "wb") as fh:
-        fh.write(data)
-    print("[upload] thumbnail -> %s" % out)
-    return out
+        print("[upload] orphan search failed (%s) -- uploading normally" % e)
+    return None
 
 
 def set_thumbnail(video_id, thumb_path):

@@ -1,20 +1,22 @@
 """Turns a baked Hyperframes project into the finished mp4 (PART D / TASK 11).
 
-compose.py has already done the hard part: index.html carries every media clip,
-caption, the croc's idle motion, the stat cards and the verdict stamp on one
-paused GSAP timeline, 1920x1080 at 30fps, with Whisper as the only clock. All
-this module does is *play it out to a file*.
+compose.py has already done the hard part: index.html carries every visual beat,
+Croc's idle bob, the music bed, the SFX hits and the verdict stamp on one paused
+GSAP timeline, 1920x1080 at 60fps, with Whisper as the only clock. All this
+module does is *play it out to a file*.
 
 Two rendering paths, in order of fidelity:
   * the real renderer -- `hyperframes render` walks the paused timeline and bakes
     BOTH the video and the composition's own audio elements, so its mp4 is final;
   * a Ken Burns ffmpeg slideshow, so a missing/broken renderer still yields a
-    watchable cut: one slow-zoom clip per scene image, concatenated, with the
-    per-scene narration muxed back in on top.
+    watchable cut: one slow-zoom clip per scene built from that scene's FIRST
+    beat still, concatenated, with the per-scene narration muxed back on top.
+    The fallback is deliberately dumber than the composition -- it keeps the
+    words and the pictures, and loses the pacing.
 
 One renderer fact is load-bearing and unconfirmed on this machine -- the exact
 render output flag -- so it is probed once against `hyperframes render --help`
-exactly the way htmlgen probes its lint subcommand (see the PART I register).
+once and the answer is cached for the process (see the PART I register).
 
 Everything the ffmpeg fallback needs is built by pure, side-effect-free argv
 helpers (kenburns_frames / ffmpeg_still_cmd / concat_cmd / mux_cmd) so the command
@@ -23,6 +25,7 @@ loudly and never leave a half-written mp4 behind.
 """
 
 import os
+import re
 import shutil
 import subprocess
 
@@ -30,12 +33,19 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 HF = ["npx", "-y", "hyperframes@0.8.16"]
 RENDER_TIMEOUT = 3600     # a full render is slow; this is the ceiling, not a target
-FPS = 30                  # matches data-fps="30" baked by compose.build_project
+FPS = 60                  # matches data-fps="60" baked by compose.build_project (C1)
 
-# VERIFY-ON-FIRST-RUN #1 -- the render output flag is unconfirmed. `--out` is the
-# coded default; _render_outflag() probes `render --help` once and, if one of the
-# known spellings appears, remembers it here for the rest of the process.
-RENDER_OUTFLAG = "--out"
+# The render output flag, VERIFIED against hyperframes 0.8.16 on 2026-09-03:
+#
+#     -o, --output=<output>    Output path (default: renders/<name>.mp4)
+#
+# `--out` is NOT accepted -- `hyperframes render --out x.mp4` answers "Unknown
+# flag: --out" and exits non-zero, which would have sent every single render
+# down the ffmpeg slideshow fallback. _render_outflag() still probes, because a
+# future version may rename it, but it now matches whole tokens: `--out` is a
+# substring of `--output`, so a naive `in` test picks the broken spelling out of
+# a help text that only ever offered the working one.
+RENDER_OUTFLAG = "--output"
 _OUTFLAG_PROBED = False
 
 
@@ -52,7 +62,7 @@ def kenburns_frames(dur, fps=FPS):
     """Frames in one scene's Ken Burns clip: round(dur*fps), never below 1.
 
     The clip length is the scene duration -- Whisper is the only clock -- so the
-    frame count is derived straight from it, matching compose's 30fps timeline.
+    frame count is derived straight from it, matching compose's 60fps timeline.
     """
     try:
         n = round(float(dur) * float(fps))
@@ -150,11 +160,13 @@ def _audio_concat_cmd(audio_paths, out_path):
 # ---------------------------------------------------------------- real renderer
 
 def _render_outflag():
-    """VERIFY-ON-FIRST-RUN #1: which of --out/--output/-o `hyperframes render` wants.
+    """Which of --output/-o/--out this `hyperframes render` wants.
 
-    Mirrors htmlgen._lint_subcommand(): probe `render --help` exactly once, cache
-    the answer in a module global, log the choice. Defaults to `--out` when the
-    help text can't be read or names none of the known spellings.
+    Probe `render --help` exactly once, cache the answer in a module global and
+    log the choice. Matching is on whole tokens, longest spelling first: `--out`
+    is a substring of `--output`, and a plain `in` test against 0.8.16's help
+    therefore selects a flag the CLI rejects outright. Falls back to the
+    verified default when the help text cannot be read or names none of them.
     """
     global RENDER_OUTFLAG, _OUTFLAG_PROBED
     if _OUTFLAG_PROBED:
@@ -168,8 +180,8 @@ def _render_outflag():
               % (e, RENDER_OUTFLAG))
         return RENDER_OUTFLAG
     blob = (out.stdout or "") + (out.stderr or "")
-    for candidate in ("--out", "--output", "-o"):
-        if candidate in blob:
+    for candidate in ("--output", "--out", "-o"):
+        if re.search(r"(?<![\w-])%s(?![\w-])" % re.escape(candidate), blob):
             RENDER_OUTFLAG = candidate
             print("[render] render output flag in use: %s" % candidate)
             return candidate
@@ -207,6 +219,59 @@ def _run(cmd, label):
                            % (label, out.returncode, _short((out.stderr or out.stdout), 300)))
 
 
+def _scene_still(assets, i):
+    """Scene i's first beat still inside the built project, or None.
+
+    Beats are named b{scene}_{beat}.ext, so the sort key is the numeric beat index
+    -- lexically, b2 would sort before b10 and the slideshow would open a scene on
+    its middle picture.
+    """
+    prefix = "b%d_" % i
+    found = []
+    for name in os.listdir(assets) if os.path.isdir(assets) else []:
+        if not name.startswith(prefix):
+            continue
+        stem, ext = os.path.splitext(name)
+        if ext.lower() not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+            continue
+        try:
+            found.append((int(stem[len(prefix):]), name))
+        except ValueError:
+            continue
+    if not found:
+        return None
+    return os.path.join(assets, sorted(found)[0][1])
+
+
+def _scene_audio(assets, i):
+    """Scene i's narration inside the built project, whatever container it is in."""
+    for ext in ("mp3", "wav", "m4a", "ogg", "flac"):
+        path = os.path.join(assets, "a%d.%s" % (i, ext))
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def has_audio(path):
+    """True when `path` really carries an audio stream.
+
+    The renderer can exit 0 having silently dropped every <audio> -- that is what
+    a missing element id does -- and a silent 8-minute lecture is worse than a
+    slideshow. ffprobe is the only honest check; when it cannot run we assume the
+    audio is there rather than throwing away a good render.
+    """
+    try:
+        out = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "a",
+             "-show_entries", "stream=codec_type", "-of", "csv=p=0", str(path)],
+            capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError) as e:
+        print("[render] ffprobe unavailable (%s) -- assuming %s has audio"
+              % (e, os.path.basename(str(path))))
+        return True
+    return "audio" in (out.stdout or "")
+
+
 def _fallback_slideshow(job, proj, work_dir, mp4):
     """Ken Burns slideshow: one slow-zoom clip per scene image, concatenated, with
     the per-scene narration muxed on top. Raises if there is nothing to render, and
@@ -219,17 +284,18 @@ def _fallback_slideshow(job, proj, work_dir, mp4):
     try:
         parts, audio_paths = [], []
         for i, dur in enumerate(durs):
-            img = os.path.join(assets, "s%d.jpg" % i)
-            if not os.path.exists(img):
-                print("[render] scene %d has no image (%s) -- skipped in the slideshow" % (i, img))
+            img = _scene_still(assets, i)
+            if not img:
+                print("[render] scene %d has no beat still in %s -- skipped in the slideshow"
+                      % (i, assets))
                 continue
             part = os.path.join(work_dir, "_kb_%d.mp4" % i)
             _run(ffmpeg_still_cmd(img, dur, part, FPS), "ken burns scene %d (%d frames)"
                  % (i, kenburns_frames(dur, FPS)))
             parts.append(part)
             temps.append(part)
-            aud = os.path.join(assets, "a%d.mp3" % i)
-            if os.path.exists(aud):
+            aud = _scene_audio(assets, i)
+            if aud:
                 audio_paths.append(aud)
 
         if not parts:
@@ -278,6 +344,51 @@ def _fallback_slideshow(job, proj, work_dir, mp4):
                     pass
 
 
+def _rescue_silent(proj, work_dir, mp4):
+    """Mux the project's narration onto a rendered-but-silent mp4, in place.
+
+    Cheaper and truer than re-rendering: the visuals are already correct, only
+    the audio graph was dropped. Writes to a temp file and only moves it over the
+    original once ffmpeg succeeded, so a failure leaves the silent video intact.
+    """
+    assets = os.path.join(proj, "assets")
+    tracks = []
+    i = 0
+    while True:
+        found = _scene_audio(assets, i)
+        if not found:
+            break
+        tracks.append(found)
+        i += 1
+    if not tracks:
+        print("[render] no narration in %s to rescue with" % assets)
+        return False
+
+    tmp_audio = os.path.join(work_dir, "_rescue_audio.mp3")
+    tmp_mp4 = os.path.join(work_dir, "_rescue.mp4")
+    try:
+        if len(tracks) == 1:
+            audio = tracks[0]
+        else:
+            _run(_audio_concat_cmd(tracks, tmp_audio), "concat %d narration tracks" % len(tracks))
+            audio = tmp_audio
+        _run(mux_cmd(mp4, audio, tmp_mp4), "mux narration onto the silent render")
+        shutil.move(tmp_mp4, mp4)
+        print("[render] rescued %s (%d bytes, %d narration tracks)"
+              % (mp4, os.path.getsize(mp4), len(tracks)))
+        return True
+    except Exception as e:
+        print("[render] rescue failed: %s" % e)
+        return False
+    finally:
+        for t in (tmp_audio, tmp_mp4):
+            if os.path.exists(t):
+                try:
+                    os.remove(t)
+                except OSError:
+                    pass
+
+
 # ---------------------------------------------------------------- entry point
 
 def render_video(job, work_dir):
@@ -299,9 +410,17 @@ def render_video(job, work_dir):
 
     if _try_hyperframes_render(proj, mp4):
         if os.path.exists(mp4) and os.path.getsize(mp4) > 0:
-            print("[render] hyperframes rendered %s (%d bytes) -- final" % (mp4, os.path.getsize(mp4)))
-            return mp4
-        print("[render] `hyperframes render` exited clean but %s is missing/empty -- "
-              "falling back to ffmpeg" % mp4)
+            if has_audio(mp4):
+                print("[render] hyperframes rendered %s (%d bytes) -- final"
+                      % (mp4, os.path.getsize(mp4)))
+                return mp4
+            print("[render] hyperframes rendered %s but it has NO audio stream -- "
+                  "muxing the narration back on" % mp4)
+            if _rescue_silent(proj, work_dir, mp4):
+                return mp4
+            print("[render] could not rescue the silent render -- falling back to ffmpeg")
+        else:
+            print("[render] `hyperframes render` exited clean but %s is missing/empty -- "
+                  "falling back to ffmpeg" % mp4)
 
     return _fallback_slideshow(job, proj, work_dir, mp4)
