@@ -1,0 +1,980 @@
+{
+  "id": "20260910-your-brain-generates-enough-electricity-to-power",
+  "lesson": 11,
+  "topic": "Your Brain Generates Enough Electricity to Power a Small LED Bulb",
+  "lane": "HUMAN",
+  "created": "2026-09-10T16:28:56+00:00",
+  "stage": "qc_failed",
+  "title": "Your Brain Is a 20-Watt Bulb That Thinks It's God",
+  "description": "Your brain runs on 20 watts. That's a dim LED. Yet it does 10^15 operations per second that cost a supercomputer 21 megawatts. Professor Croc starts from raw physics - ions, pumps, spikes - and shows why evolution hard-capped you at 20W.",
+  "tags": [
+    "human brain",
+    "neuroscience",
+    "brain power",
+    "bioelectricity",
+    "Kronvex",
+    "Professor Croc",
+    "human body",
+    "science explained"
+  ],
+  "thumb_words": "DIM BULB, GOD MODE",
+  "thumb_kicker": "BRAIN POWER, WATTS",
+  "staircase": [
+    "Your brain burns glucose to run sodium-potassium pumps that hold -70mV across 86 billion neurons.",
+    "That -70mV at 86 billion neurons sits ready to collapse when input pushes it past -55mV threshold.",
+    "That collapse past -55mV fires a 1ms spike to +30mV costing 10^-12 joules and propagates down axons.",
+    "Those 10^-12 joule spikes firing at average 4Hz across 86B neurons sum to about 20 watts total electrical power.",
+    "That 20 watts of electrical power is chemical, from 30 ATP per glucose, enough to drive a small 5mm LED at 20 milliwatts per chip.",
+    "That 20-watt chemical budget consumes 20% of your 2000 kcal per day while being only 2% of mass, enforced by blood-brain barrier limits.",
+    "That 2% mass at 20% energy uses sparse coding where only 1 to 2% of neurons fire at once to achieve 10^15 synaptic ops per second.",
+    "Those 10^15 ops per second from 1 to 2% active neurons let visual cortex predict reality 13ms ahead for 0.5 watts.",
+    "That 13ms prediction for 0.5 watts raises brain temperature 0.5C via potassium clearance, throttling thought when overheated.",
+    "That 0.5C throttling from prediction still loops at 40Hz gamma to bind sparse spikes into continuous consciousness."
+  ],
+  "thumbnail_prompt": "a human brain with a small LED bulb plugged directly into its cortex, side by side with an unimpressed crocodile wearing a professor lab coat looking at it",
+  "verdict": "SLEEPER",
+  "extra_credit": "If you unsealed all 86 billion neurons at max 200Hz, you'd hit 400 watts and cook to 43C in under 10 minutes.",
+  "scenes": [
+    {
+      "act": "HOOK",
+      "heading": "20 WATTS",
+      "text": "20 watts. That's it. Your whole personality, memories, intrusive thoughts at 3am — 20 watts. My cold-blooded brain does more on sunbathing. I tried to outwork you last Tuesday. Crashed by lunch. So how does a dim bulb beat a supercomputer?",
+      "dur": 17.96,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at The Guy at desk with dim bulb over his head in off-white room",
+          "text": "20 WATTS",
+          "value": "20W",
+          "label": "TOTAL",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.66
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "TOTALLY GODLIKE",
+          "counter": "20W!?",
+          "prompt": "giant supercomputer data center with rows of servers",
+          "sfx": "none",
+          "t": 2.66,
+          "end": 5.28
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy frantically pumping a leaky dam wall marked -70mV with tiny bucket in off-white room",
+          "text": "READY TO COLLAPSE",
+          "value": "-70mV",
+          "label": "RESTING",
+          "sfx": "none",
+          "t": 5.28,
+          "end": 11.42
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc counting single glowing joules to power a tiny 5mm LED on desk",
+          "sfx": "none",
+          "t": 11.42,
+          "end": 15.1
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy melted over desk brain steaming, Croc pointing at thermometer, plant wilted, graph flatlined in off-white room",
+          "text": "OVERHEATING THOUGHTS",
+          "value": "0.5C",
+          "label": "HOTTER",
+          "sfx": "none",
+          "t": 12.24,
+          "end": 17.96
+        }
+      ]
+    },
+    {
+      "act": "HOOK",
+      "heading": "THE LIE",
+      "text": "They told you brains are electric magic. They're not. They're salty meat batteries that leak. Evolution capped your raw power so you wouldn't cook yourself. And it worked. You're tired, anxious, and still smarter than every AI that needs a nuclear plant to write poetry.",
+      "dur": 17.46,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy slumped at desk with brain as leaking salty meat battery sparking, Croc pointing",
+          "text": "SALTY BATTERY",
+          "value": "-70mV",
+          "label": "RESTING",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.68
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "POETRY NEEDS NUCLEAR PLANT",
+          "counter": "20W > 1GW!?",
+          "prompt": "aerial view of massive AI data center with cooling towers at night",
+          "sfx": "none",
+          "t": 2.68,
+          "end": 5.2
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "Croc showing The Guy a tiny 5mm LED lit by his head on desk, graph flatlines at 20W",
+          "text": "",
+          "value": "20 watts",
+          "label": "TOTAL POWER",
+          "sfx": "none",
+          "t": 5.2,
+          "end": 11.1
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc as exhausted office manager watching 98% of clones nap while 2% work",
+          "sfx": "none",
+          "t": 11.1,
+          "end": 14.0
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy as dim 20-watt bulb sweating on desk, head steaming, Croc pointing at thermostat graph",
+          "text": "THINKS ITS GOD",
+          "value": "0.5C",
+          "label": "HOTTER",
+          "sfx": "none",
+          "t": 11.66,
+          "end": 17.46
+        }
+      ]
+    },
+    {
+      "act": "PROMISE",
+      "heading": "THE PROMISE",
+      "text": "By the end you'll know exactly how 20 watts becomes thought. Other videos start with neurons are like wires. Wrong. We start from raw physics. Charge, pump, spike, network. No mysticism. Just ions and math.",
+      "dur": 16.56,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc at off-white desk pointing at empty graph, The Guy kneeling worshipfully waiting for brain secret",
+          "text": "",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.3
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "NEURONS ARE WIRES",
+          "counter": "1.2M!?",
+          "prompt": "smiling YouTuber holding tangled christmas lights as neurons",
+          "sfx": "none",
+          "t": 2.3,
+          "end": 4.86
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy head open like bucket leaking ions, Croc bailing with tiny sodium-potassium pump, desk flooded",
+          "text": "",
+          "value": "-70mV",
+          "label": "PUMP LEAK",
+          "sfx": "none",
+          "t": 4.86,
+          "end": 10.14
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc chanting over salt shaker labeled ions while burning math textbook as incense",
+          "sfx": "none",
+          "t": 10.14,
+          "end": 13.64
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy with 20-watt bulb screwed into skull preaching to desk plant, Croc holding meter showing 20",
+          "text": "JUST IONS AND MATH",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 10.72,
+          "end": 16.56
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "STEP 1: THE VOLTAGE",
+      "text": "Let's check the base stats. Every neuron burns ATP to run sodium-potassium pumps, shoving 3 Na+ out and 2 K+ in per cycle, holding -70 millivolts across a 5-nanometer membrane. That's your battery. 86 billion of them.",
+      "dur": 14.36,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at The Guy sweating while shoveling 3 Na+ buckets out and 2 K+ buckets in on desk",
+          "text": "",
+          "value": "-70mV",
+          "label": "BATTERY",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.38
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "YOUR BRAIN BTW",
+          "counter": "86B!?",
+          "prompt": "real photo of warehouse worker pushing pallets of Duracell batteries",
+          "sfx": "none",
+          "t": 2.38,
+          "end": 4.74
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc charging himself like a phone at a 5-nanometer wall outlet",
+          "sfx": "none",
+          "t": 4.74,
+          "end": 10.76
+        },
+        {
+          "i": 3,
+          "kind": "scene",
+          "prompt": "The Guy duct-taped as 86 billion leaking batteries powering one dim desk LED",
+          "text": "YOUR BATTERY",
+          "value": "86B",
+          "label": "BATTERIES",
+          "sfx": "none",
+          "t": 7.16,
+          "end": 14.36
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "STEP 2: THE SPIKE",
+      "text": "That -70mV battery is unstable on purpose. When input hits -55mV threshold, voltage-gated sodium channels snap open, firing an action potential that peaks at +30mV in 1 millisecond and burns about 10^-12 joules per spike. Tiny lightning.",
+      "dur": 14.6,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc presenting wobbly -70mV battery on desk labeled unstable on purpose, The Guy holding it upside down",
+          "text": "UNSTABLE PURPOSE",
+          "value": "-70mV",
+          "label": "BATTERY",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.48
+        },
+        {
+          "i": 1,
+          "kind": "meme",
+          "prompt": "Croc as nightclub bouncer snapping open door at -55mV threshold for sodium ions queuing",
+          "sfx": "none",
+          "t": 2.48,
+          "end": 5.46
+        },
+        {
+          "i": 2,
+          "kind": "photo",
+          "caption": "TINY LIGHTNING",
+          "counter": "10^-12J!?",
+          "prompt": "tiny toy taser spark between fingers in dark",
+          "sfx": "none",
+          "t": 5.46,
+          "end": 10.9
+        },
+        {
+          "i": 3,
+          "kind": "scene",
+          "prompt": "The Guy zapped by minuscule lightning bolt at +30mV peak, hair barely frizzy, Croc timing with stopwatch",
+          "text": "+30MV PEAK",
+          "value": "1ms",
+          "label": "SPIKE",
+          "sfx": "none",
+          "t": 7.2,
+          "end": 14.6
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "STEP 3: THE MATH",
+      "text": "86 billion neurons times average 4 hertz firing equals 340 billion spikes per second across cortex. Each spike dumps that 10^-12 joules. Multiply it. You get roughly 15 to 20 watts of pure electrical work. Measured. Not metaphor.",
+      "dur": 17.6,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy holding giant sack of 86B neurons while Croc checks -70mV meter on desk",
+          "text": "-70MV HOLD",
+          "value": "86B",
+          "label": "NEURONS",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.6
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "4 HERTZ AVERAGE",
+          "counter": "340B!?",
+          "prompt": "massive stadium crowd all raising hands at once",
+          "sfx": "none",
+          "t": 2.6,
+          "end": 5.08
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy getting tiny 1ms zap jumping to +30mV while Croc logs cost on graph",
+          "text": "+30MV SPIKE",
+          "value": "10^-12",
+          "label": "JOULES",
+          "sfx": "none",
+          "t": 5.08,
+          "end": 11.3
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc wiring his own head to power a tiny 5mm LED that barely glows on desk",
+          "sfx": "none",
+          "t": 11.3,
+          "end": 14.18
+        },
+        {
+          "i": 4,
+          "kind": "zoom",
+          "amount": 1.38,
+          "sfx": "none",
+          "t": 11.85,
+          "end": 17.6
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "STEP 4: THE LED",
+      "text": "20 watts is pathetic on paper. A fridge bulb uses 40. But your 20 watts isn't wall power. It's chemical. Glucose oxidation gives 30 ATP per molecule, converted to ion gradients. That will actually light a small LED if you wire a brain slice to electrodes. People did.",
+      "dur": 17.82,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph tiny brain vs huge fridge bulb, The Guy slumped at desk under dim lamp",
+          "text": "PATHETIC ON PAPER",
+          "value": "20",
+          "label": "WATTS",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.54
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "BRIGHTER THAN YOU",
+          "counter": "40W!?",
+          "prompt": "glowing fridge interior with family praying to bright bulb",
+          "sfx": "none",
+          "t": 2.54,
+          "end": 5.22
+        },
+        {
+          "i": 2,
+          "kind": "zoom",
+          "amount": 1.35,
+          "sfx": "none",
+          "t": 5.22,
+          "end": 11.22
+        },
+        {
+          "i": 3,
+          "kind": "scene",
+          "prompt": "The Guy trying to plug head into wall outlet, Croc holding sugar cube as battery",
+          "text": "NOT WALL POWER",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 11.22,
+          "end": 14.38
+        },
+        {
+          "i": 4,
+          "kind": "meme",
+          "prompt": "Croc in lab coat wiring brain slice to tiny 5mm LED that barely glows on desk",
+          "sfx": "none",
+          "t": 11.77,
+          "end": 17.82
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "STEP 5: THE BUDGET",
+      "text": "Here's the hidden ability. Your brain is 2% of body mass but eats 20% of your resting energy, about 400 kilocalories per day, or 20 watts continuous. Evolution hard-capped it at 20, or you'd melt your own proteins at 37C.",
+      "dur": 13.3,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy's head as a dim 20-watt bulb on desk, Croc presenting a massive power bill",
+          "text": "2% = 20%",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.3
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "HOLDING -70MV",
+          "counter": "86B!?",
+          "prompt": "real exhausted dam workers holding back flood with bare hands",
+          "sfx": "none",
+          "t": 2.3,
+          "end": 4.6
+        },
+        {
+          "i": 2,
+          "kind": "zoom",
+          "amount": 1.35,
+          "sfx": "none",
+          "t": 4.6,
+          "end": 10.14
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc melting in sauna with brain thermometer at 37.5C predicting sweat 13ms too late, single LED flickering",
+          "sfx": "none",
+          "t": 6.98,
+          "end": 13.3
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "STEP 6: THE EFFICIENCY",
+      "text": "Two hundred million years of field research. I've seen apex predators waste power roaring. Mammals are worse. Your cortex fires sparse — only 1 to 2% of neurons active at once — so 20 watts does work that costs a supercomputer 21 megawatts. That's Frontier, doing 1 exaflop for 21MW.",
+      "dur": 17.54,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy hand-cranking 86 billion tiny pumps to hold -70mV batteries from collapsing at -55mV threshold while Croc holds clipboard",
+          "text": "-70MV HOLD",
+          "value": "86B",
+          "label": "NEURONS",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.94
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "SAME JOB LOL",
+          "counter": "21MW!?",
+          "prompt": "aerial night shot of Frontier supercomputer data center glowing and burning megawatts",
+          "sfx": "none",
+          "t": 2.94,
+          "end": 4.74
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph where The Guy's 20-watt brain line powers 10^15 ops while Frontier line burns 21MW, The Guy lighting tiny 5mm LED with his head",
+          "text": "20% FOR 2%",
+          "value": "20W",
+          "label": "TOTAL",
+          "sfx": "none",
+          "t": 4.74,
+          "end": 11.12
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc as smug 20-watt bulb god on desk lamp throne while The Guy worships with only 1 percent of his neurons lit",
+          "sfx": "none",
+          "t": 11.12,
+          "end": 13.9
+        },
+        {
+          "i": 4,
+          "kind": "zoom",
+          "amount": 1.38,
+          "sfx": "none",
+          "t": 11.67,
+          "end": 17.54
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "STEP 7: THE CODE",
+      "text": "Sparse means cheap. Each active neuron connects to 7,000 others via synapses that release glutamate, opening AMPA receptors for 2 milliseconds, costing 10^-15 joules per bit transmitted. You get 10^15 synaptic operations per second for 20 watts. That's the exploit.",
+      "dur": 17.78,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at The Guy at desk with only 2% of head bulbs lit",
+          "text": "SPARSE = CHEAP",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.56
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "20 WATTS TOTAL",
+          "counter": "10^15 ops!?",
+          "prompt": "crowd cheering at giant server farm warehouse at night",
+          "sfx": "none",
+          "t": 2.56,
+          "end": 5.14
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy tangled in 7,000 wires from one neuron on desk, AMPA gates blinking",
+          "text": "",
+          "value": "10^-15",
+          "label": "JOULES",
+          "sfx": "none",
+          "t": 5.14,
+          "end": 11.2
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc powering a whole city skyline with one tiny 5mm LED on desk",
+          "sfx": "none",
+          "t": 11.2,
+          "end": 14.08
+        },
+        {
+          "i": 4,
+          "kind": "zoom",
+          "amount": 1.38,
+          "sfx": "none",
+          "t": 12.02,
+          "end": 17.78
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "STEP 8: THE AWAKENING",
+      "text": "That exploit lets 20 watts run predictive simulation. Your brain burns 0.5 watts on visual cortex alone to render reality 13 milliseconds before it happens, so you catch a ball instead of watching it hit your face. Latency hack. Final form is prediction, not reaction.",
+      "dur": 17.48,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy sitting at desk with 5mm LED taped to forehead as brain, Croc pointing at flat wall graph",
+          "text": "20 WATTS GOD",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.16
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "SO POWERFUL",
+          "counter": "20W!?",
+          "prompt": "crowd worshipping giant LED billboard at night like god",
+          "sfx": "none",
+          "t": 2.16,
+          "end": 5.2
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy holding catchers mitt backwards while baseball smacks his face, Croc holding stopwatch",
+          "text": "LATENCY HACK",
+          "value": "0.5W",
+          "label": "VISION",
+          "sfx": "none",
+          "t": 5.2,
+          "end": 11.04
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc wearing laggy VR headset predicting ball after it hits",
+          "sfx": "none",
+          "t": 11.04,
+          "end": 14.08
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy kneeling before tiny LED on desk altar praying to it, Croc deadpan arms crossed",
+          "text": "THINKS ITS GOD",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 11.59,
+          "end": 17.48
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "STEP 9: THE COST",
+      "text": "Prediction costs heat. Those 340 billion spikes dump potassium, which astrocytes mop up using lactate shuttles, raising brain temperature 0.5C during hard thought. That's why you feel stupid when hot. Your 20-watt bulb is throttling itself to avoid cooking its own wiring.",
+      "dur": 18.54,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at The Guy whose head glows like weak desk bulb",
+          "text": "20 WATT BULB",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.36
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "SO SMART NOW",
+          "counter": "340B!?",
+          "prompt": "crowd of sweaty office workers fanning themselves in heatwave",
+          "sfx": "none",
+          "t": 2.36,
+          "end": 4.58
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc in janitor uniform mopping potassium spill with lactate bucket",
+          "sfx": "none",
+          "t": 4.58,
+          "end": 10.34
+        },
+        {
+          "i": 3,
+          "kind": "zoom",
+          "amount": 1.28,
+          "sfx": "none",
+          "t": 10.34,
+          "end": 12.54
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy failing simple puzzle in sauna while Croc holds thermometer",
+          "text": "0.5C HOTTER",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 12.54,
+          "end": 15.34
+        },
+        {
+          "i": 5,
+          "kind": "scene",
+          "prompt": "The Guy's brain as toaster smoking on desk, Croc unplugging it to save wiring",
+          "text": "THROTTLING SELF",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 13.09,
+          "end": 18.54
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "STEP 10: THE LOOP",
+      "text": "So 20 watts of ion leaks loop into thought because feedback beats power. Thalamus pings cortex at 40 hertz gamma, binding those sparse spikes into a story called you. Low wattage. Infinite recursion. You are a self-writing operating system running on salt and regret.",
+      "dur": 21.24,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy hand-cranking 86B sodium-potassium pumps holding -70mV wall chart",
+          "text": "",
+          "value": "-70mV",
+          "label": "PUMPS",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.0
+        },
+        {
+          "i": 1,
+          "kind": "meme",
+          "prompt": "Croc as exhausted pump operator watching -55mV collapse alarm",
+          "sfx": "none",
+          "t": 2.0,
+          "end": 4.16
+        },
+        {
+          "i": 2,
+          "kind": "zoom",
+          "amount": 1.32,
+          "sfx": "none",
+          "t": 4.16,
+          "end": 8.76
+        },
+        {
+          "i": 3,
+          "kind": "scene",
+          "prompt": "The Guy tangled in wires adding 10^-12 joule spikes into 20 watts on desk graph",
+          "text": "",
+          "value": "20W",
+          "label": "TOTAL POWER",
+          "sfx": "none",
+          "t": 8.76,
+          "end": 10.82
+        },
+        {
+          "i": 4,
+          "kind": "photo",
+          "caption": "SUCH POWER",
+          "counter": "20mW!?",
+          "prompt": "smiling family admiring tiny 5mm LED in mansion living room",
+          "sfx": "none",
+          "t": 10.82,
+          "end": 12.56
+        },
+        {
+          "i": 5,
+          "kind": "scene",
+          "prompt": "The Guy overheating as laptop brain throttling 0.5C while predicting 13ms ahead",
+          "text": "SALT AND REGRET",
+          "value": "40Hz",
+          "label": "GAMMA LOOP",
+          "sfx": "none",
+          "t": 12.56,
+          "end": 14.64
+        },
+        {
+          "i": 6,
+          "kind": "meme",
+          "prompt": "Croc as self-writing OS on salt shaker infinitely looping at desk",
+          "sfx": "none",
+          "t": 14.64,
+          "end": 21.24
+        }
+      ]
+    },
+    {
+      "act": "PAYOFF",
+      "heading": "PAYOFF: THE ZOOM-OUT",
+      "text": "Every heartbeat you've had is just your 20-watt meat bulb pretending it's not a bulb. You think you're charging. You're discharging slowly since birth. And yet that dim light built cities, wrote equations, and invented anime power scaling. Sleepers always win late game.",
+      "dur": 15.08,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy at desk with dim bulb screwed into skull, Croc checking voltmeter bored",
+          "text": "MEAT BULB",
+          "value": "20W",
+          "label": "BULB GOD",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.28
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "STILL CHARGING",
+          "counter": "0%!?",
+          "prompt": "exhausted travelers napping on airport floor while phones charge on wall",
+          "sfx": "none",
+          "t": 2.28,
+          "end": 4.42
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc building city skyline from sticky notes and anime power charts in messy room",
+          "sfx": "none",
+          "t": 4.42,
+          "end": 9.5
+        },
+        {
+          "i": 3,
+          "kind": "scene",
+          "prompt": "The Guy drooling asleep at desk, Croc behind him quietly building cities and equations on wall",
+          "text": "SLEEPERS WIN LATE",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 9.5,
+          "end": 12.16
+        },
+        {
+          "i": 4,
+          "kind": "zoom",
+          "amount": 1.38,
+          "sfx": "none",
+          "t": 10.05,
+          "end": 15.08
+        }
+      ]
+    },
+    {
+      "act": "PAYOFF",
+      "heading": "VERDICT",
+      "text": "Verdict: SLEEPER. Base power looks like a fraud — 20 watts can't even toast bread. Mechanism says otherwise: 10^15 ops per second for 400 kcal per day. That's 10,000 times more efficient than silicon. You are underclocked on purpose. And still winning.",
+      "dur": 18.4,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy trying to toast bread with his head as a dim bulb on desk, Croc watching deadpan",
+          "text": "20 WATTS",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.28
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "CANT TOAST BREAD",
+          "counter": "400KCAL!?",
+          "prompt": "cheap toaster failing to brown single slice in luxury kitchen",
+          "sfx": "none",
+          "t": 2.28,
+          "end": 4.72
+        },
+        {
+          "i": 2,
+          "kind": "zoom",
+          "amount": 1.32,
+          "sfx": "none",
+          "t": 4.72,
+          "end": 9.92
+        },
+        {
+          "i": 3,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph where tiny brain line crushes giant server farm, The Guy asleep at desk with 1 percent of lights on",
+          "text": "1% ON",
+          "value": "10^15",
+          "label": "OPS",
+          "sfx": "none",
+          "t": 9.92,
+          "end": 12.36
+        },
+        {
+          "i": 4,
+          "kind": "meme",
+          "prompt": "Croc wearing ice pack on head while winning race asleep",
+          "sfx": "none",
+          "t": 12.36,
+          "end": 15.1
+        },
+        {
+          "i": 5,
+          "kind": "photo",
+          "caption": "40HZ STILL WINNING",
+          "counter": "10,000X!?",
+          "prompt": "crowd cheering The Guy sleeping at desk holding trophy",
+          "sfx": "none",
+          "t": 12.92,
+          "end": 18.4
+        }
+      ]
+    },
+    {
+      "act": "LOOP",
+      "heading": "NEXT LESSONS",
+      "text": "Next time: Why your heart can power a truck for a mile, why your stomach acid melts razor blades, and why your eyes have a built-in blind spot that your brain gaslights you about. Comment your worst brain-fog moment. Class dismissed. Evolution isn't finished with you.",
+      "dur": 19.8,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph flat at -70mV while The Guy pumps a brain like a tire on desk",
+          "text": "",
+          "value": "-70mV",
+          "label": "HOLD",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.52
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "86 BILLION NAPPING",
+          "counter": "86B READY!?",
+          "prompt": "stadium crowd of 86 billion people napping at desks",
+          "sfx": "none",
+          "t": 2.52,
+          "end": 5.04
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy getting zapped by tiny 1ms brain spark to +30mV, hair spiked",
+          "text": "",
+          "value": "+30mV",
+          "label": "1MS POP",
+          "sfx": "none",
+          "t": 5.04,
+          "end": 10.82
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc trying to jumpstart a semi truck with a tiny glowing brain bulb",
+          "sfx": "none",
+          "t": 10.82,
+          "end": 12.36
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy melting at desk with dim 20W brain bulb, Croc holding thermometer showing 0.5C rise and eye chart with blind spot",
+          "text": "",
+          "value": "20W",
+          "label": "GOD BULB",
+          "sfx": "none",
+          "t": 12.36,
+          "end": 17.28
+        },
+        {
+          "i": 5,
+          "kind": "photo",
+          "caption": "WORST BRAIN FOG EVER",
+          "counter": "40Hz LOOP!?",
+          "prompt": "crowded office workers staring blankly at wall with foggy eyes",
+          "sfx": "none",
+          "t": 14.76,
+          "end": 19.8
+        }
+      ]
+    }
+  ],
+  "mp4": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/20260910-your-brain-generates-enough-electricity-to-power.mp4",
+  "upload_started_at": "2026-09-10T19:15:58+00:00",
+  "video_id": null,
+  "thumb": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/20260910-your-brain-generates-enough-electricity-to-power_thumb.jpg",
+  "qc_reasons": [
+    "art coverage 3/73 below 70%"
+  ]
+}
