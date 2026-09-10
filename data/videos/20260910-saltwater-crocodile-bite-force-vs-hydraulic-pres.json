@@ -1,0 +1,958 @@
+{
+  "id": "20260910-saltwater-crocodile-bite-force-vs-hydraulic-pres",
+  "lesson": 9,
+  "topic": "Saltwater Crocodile Bite Force vs. Hydraulic Press: Which Wins?",
+  "lane": "VERSUS",
+  "created": "2026-09-10T04:47:12+00:00",
+  "stage": "qc_failed",
+  "title": "Saltwater Croc vs Hydraulic Press: Who Bites Harder?",
+  "description": "Professor Croc grades the saltwater crocodile's 3,700 PSI bite against a 10-ton hydraulic press at 20,000 PSI. We start from raw muscle physics, lever torque, and pressure math to see why meat beats steel on efficiency. Which one is the real APEX?",
+  "tags": [
+    "saltwater crocodile",
+    "bite force",
+    "hydraulic press",
+    "animal power scaling",
+    "crocodile vs press",
+    "biology explained",
+    "Kronvex",
+    "Professor Croc"
+  ],
+  "thumb_words": "NATURE WINS",
+  "thumb_kicker": "BITE FORCE, PSI",
+  "staircase": [
+    "Your jaw closer muscle is 8 grams of meat trying to crush steak with 700 newtons",
+    "A saltwater croc's jaw adductor is 1,200 grams per side pulling at 90 degrees to generate 16,414 newtons at the molars",
+    "That 16,414 newtons hits a skull truss 4 millimeters thick that wastes only 5 percent as bending, keeping 95 percent as bite",
+    "That preserved bite focuses onto four 1-square-centimeter tooth tips to become 3,700 PSI of cracking pressure",
+    "That 3,700 PSI beats your 150 PSI by 24 times and matches a 1,000 PSI shop press, but it runs on 400 watts not 3,000 watts",
+    "That 400-watt press uses an 8 percent stretch tendon storing 120 joules that snaps in 70 milliseconds for 15 percent free force",
+    "That free force is held by a palatal valve sealing 2 PSI of water out while the nose breathes air in",
+    "That sealed airway lets muscle run anaerobic at 10 millimoles lactate and hold 3,700 PSI for 30 minutes",
+    "That 30-minute hold beats a 10-ton hydraulic press that leaks 2 percent per minute and overheats after 5 minutes at 20,000 PSI",
+    "That overheating gap gives the croc 4.6 times more PSI per watt, proving the meat press wins efficiency even when steel wins peak"
+  ],
+  "thumbnail_prompt": "A large saltwater crocodile head with open jaws clamped around the metal cylinder of a hydraulic press, a round pressure gauge caught between its teeth",
+  "verdict": "APEX",
+  "extra_credit": "Saltwater crocs have 66 teeth and replace each tooth up to 50 times, so their press never dulls, unlike steel dies that wear after 10,000 cycles.",
+  "scenes": [
+    {
+      "act": "HOOK",
+      "heading": "The Number",
+      "text": "3,700 PSI. I bought a bite force sensor to prove humans are underrated. I bit down and got 150 PSI and a cracked filling. A saltwater croc down the river makes 3,700 PSI with a skull that weighs 25 kilograms, and it doesn't even have to try. How is that fair?",
+      "dur": 17.5,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy biting a cheap bite sensor on desk with tooth chip flying, Croc holding 25kg skull with clipboard",
+          "text": "CRACKED FILLING",
+          "value": "3,700 PSI",
+          "label": "CROC BITE",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.64
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "8 GRAMS OF MEAT",
+          "counter": "700N!?",
+          "prompt": "skinny man flexing tiny bicep in gym mirror next to meat slab",
+          "sfx": "none",
+          "t": 2.64,
+          "end": 5.42
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph showing skull truss 4mm thick, The Guy holding wobbly jaw model",
+          "text": "95% BITE",
+          "value": "16,414 N",
+          "label": "MOLARS",
+          "sfx": "none",
+          "t": 5.42,
+          "end": 10.64
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc jogging on tiny 400-watt hamster wheel while giant hydraulic press smokes behind",
+          "sfx": "none",
+          "t": 10.64,
+          "end": 13.78
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy drooling locked on sensor for 30 minutes, Croc sipping coffee next to leaking overheating hydraulic press",
+          "text": "MEAT WINS",
+          "value": "4.6x",
+          "label": "PER WATT",
+          "sfx": "none",
+          "t": 11.22,
+          "end": 17.5
+        }
+      ]
+    },
+    {
+      "act": "HOOK",
+      "heading": "The Betrayal",
+      "text": "My dentist said I have weak enamel. Evolution said I have a weak everything. You have the same jaw design as that croc, just cut down to run a 20-watt speech module. So which wins, the factory press you built, or the meat press that survived the asteroid that killed T-Rex?",
+      "dur": 15.32,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy in dentist chair clutching jaw while Croc lectures with giant croc skull on desk",
+          "text": "WEAK EVERYTHING",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.46
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "SAME JAW DESIGN",
+          "counter": "700N!?",
+          "prompt": "smiling factory workers posing by 10-ton hydraulic press crushing steak",
+          "sfx": "none",
+          "t": 2.46,
+          "end": 4.56
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph spiking from 8 to 1200 while The Guy holds 4mm skull truss leaking 5 percent",
+          "text": "95% BITE",
+          "value": "16,414",
+          "label": "NEWTONS",
+          "sfx": "none",
+          "t": 4.56,
+          "end": 9.58
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc holding breath underwater sealing palatal valve while nose breathes air with 120 joule tendon timer",
+          "sfx": "none",
+          "t": 9.58,
+          "end": 12.26
+        },
+        {
+          "i": 4,
+          "kind": "photo",
+          "caption": "MEAT PRESS WINS",
+          "counter": "4.6x/W!?",
+          "prompt": "overheated smoking hydraulic shop press leaking oil next to croc holding bite for 30 minutes",
+          "sfx": "none",
+          "t": 10.13,
+          "end": 15.32
+        }
+      ]
+    },
+    {
+      "act": "PROMISE",
+      "heading": "The Promise",
+      "text": "By the end you'll know exactly how a crocodile turns muscle into hydraulic-level pressure, why your jaw can't, and where the press actually loses. Other videos start with PSI charts. That's backwards. We start from raw physics, one lever at a time.",
+      "dur": 14.4,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at empty wall, The Guy trying to bite steak with chin on desk",
+          "text": "RAW PHYSICS",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.6
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "OTHER VIDEOS START HERE",
+          "counter": "150 PSI!?",
+          "prompt": "crowd filming hydraulic press crushing chips",
+          "sfx": "none",
+          "t": 2.6,
+          "end": 5.08
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc lifting one tiny lever backwards while press sits unused",
+          "sfx": "none",
+          "t": 5.08,
+          "end": 11.36
+        },
+        {
+          "i": 3,
+          "kind": "scene",
+          "prompt": "The Guy duct-taped as a lever under Croc's desk, Croc sipping coffee",
+          "text": "ONE LEVER",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 8.32,
+          "end": 14.4
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Base Engine",
+      "text": "Let's check the base stats. Your masseter is 8 grams of muscle pulling at 30 degrees on a short mandible, generating 700 newtons at the molars. The saltwater croc's adductor mandibulae is 1,200 grams per side, pulling straight down at 90 degrees, so it starts with 150 times your engine.",
+      "dur": 18.16,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy trying to crush steak with 8 gram jaw weight on desk, Croc deadpan at graph",
+          "text": "8 GRAMS",
+          "value": "700 N",
+          "label": "YOUR BITE",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.28
+        },
+        {
+          "i": 1,
+          "kind": "zoom",
+          "amount": 1.32,
+          "sfx": "none",
+          "t": 2.28,
+          "end": 4.58
+        },
+        {
+          "i": 2,
+          "kind": "photo",
+          "caption": "150X WEAKER ENGINE",
+          "counter": "700N!?",
+          "prompt": "bodybuilder crying over tiny chicken breast in gym mirror",
+          "sfx": "none",
+          "t": 4.58,
+          "end": 9.76
+        },
+        {
+          "i": 3,
+          "kind": "scene",
+          "prompt": "Croc biting 4 millimeter skull truss model labeled 95 percent kept, The Guy holding four 1cm tooth tips",
+          "text": "95% KEPT",
+          "value": "16,414 N",
+          "label": "CROC BITE",
+          "sfx": "none",
+          "t": 9.76,
+          "end": 12.48
+        },
+        {
+          "i": 4,
+          "kind": "meme",
+          "prompt": "Croc wearing snorkel palatal valve while charging tendon battery that stores 120 joules",
+          "sfx": "none",
+          "t": 12.48,
+          "end": 15.24
+        },
+        {
+          "i": 5,
+          "kind": "photo",
+          "caption": "MEAT BEATS STEEL",
+          "counter": "4.6x!?",
+          "prompt": "overheated 10-ton hydraulic press leaking oil with workers fanning it in factory",
+          "sfx": "none",
+          "t": 13.03,
+          "end": 18.16
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "The Truss",
+      "text": "That 1,200-gram engine doesn't attach to your flimsy jaw. Two hundred million years of field research. It bolts to a fused skull roof with a 4-millimeter thick secondary palate that acts as a truss, so 95% of contraction becomes bite instead of bending bone.",
+      "dur": 19.0,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy at desk trying to bite steak with tiny 8 gram weight taped to jaw, Croc watching deadpan",
+          "text": "FLIMSY JAW",
+          "value": "8g",
+          "label": "YOUR JAW",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.5
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "SO STRONG",
+          "counter": "700N!?",
+          "prompt": "gym bro flexing tiny jaw in mirror surrounded by crowd",
+          "sfx": "none",
+          "t": 2.5,
+          "end": 4.96
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall diagram of fused skull roof with 4 millimeter secondary palate truss holding 16,414 newtons",
+          "text": "95% BITE",
+          "value": "4mm",
+          "label": "TRUSS",
+          "sfx": "none",
+          "t": 4.96,
+          "end": 10.26
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc as construction engineer in hard hat inspecting skull truss",
+          "sfx": "none",
+          "t": 10.26,
+          "end": 13.06
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy next to leaking 10-ton hydraulic press overheating after 5 minutes while Croc holds 3,700 PSI bite for 30 minutes breathing through nose valve",
+          "text": "MEAT WINS",
+          "value": "4.6x",
+          "label": "PSI/WATT",
+          "sfx": "none",
+          "t": 13.06,
+          "end": 15.62
+        },
+        {
+          "i": 5,
+          "kind": "zoom",
+          "amount": 1.38,
+          "sfx": "none",
+          "t": 13.61,
+          "end": 19.0
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Lever Math",
+      "text": "That trussed skull gives the muscle a 12-centimeter in-lever behind the joint. Your in-lever is 3 centimeters. Same contraction, 4 times the torque. Torque divided by a 5-centimeter out-lever to the back tooth equals 16,414 newtons at the contact point.",
+      "dur": 15.74,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at 12-centimeter in-lever behind skull joint on wall graph, The Guy holding 3cm ruler to his own jaw on desk",
+          "text": "",
+          "value": "12cm",
+          "label": "IN-LEVER",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.14
+        },
+        {
+          "i": 1,
+          "kind": "meme",
+          "prompt": "Croc measuring The Guy's tiny jaw with calipers on the desk looking deadpan",
+          "sfx": "none",
+          "t": 2.14,
+          "end": 4.66
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy and Croc doing identical muscle flex, Croc's desk torque meter shows 4x higher",
+          "text": "SAME CONTRACTION",
+          "value": "4x",
+          "label": "TORQUE",
+          "sfx": "none",
+          "t": 4.66,
+          "end": 9.88
+        },
+        {
+          "i": 3,
+          "kind": "photo",
+          "caption": "SAME CONTRACTION 4X TORQUE",
+          "counter": "3cm!?",
+          "prompt": "guy failing to loosen bolt with tiny wrench in luxury garage",
+          "sfx": "none",
+          "t": 9.88,
+          "end": 13.4
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "Croc biting hydraulic press gauge that reads 16414 newtons while The Guy's desk collapses under torque, plant knocked over",
+          "text": "AT THE TOOTH",
+          "value": "16,414N",
+          "label": "CONTACT",
+          "sfx": "none",
+          "t": 10.7,
+          "end": 15.74
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Pressure Point",
+      "text": "That 16,414 newtons doesn't stay as force. It funnels into four blunt tooth tips, each 1 square centimeter. Force over area is pressure, so 16,414 newtons over 4 square centimeters becomes 3,700 PSI, with a hidden ability: cone teeth that don't cut, they crack.",
+      "dur": 17.68,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy trying to bite steak with 8 gram jaw muscle, Croc timing with clipboard at desk",
+          "text": "8 GRAMS",
+          "value": "700N",
+          "label": "YOU",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.62
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "SO STRONG",
+          "counter": "700N!?",
+          "prompt": "smiling gym bro flexing jaw in bathroom mirror selfie",
+          "sfx": "none",
+          "t": 2.62,
+          "end": 5.02
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph of skull truss 4mm thick keeping 95 percent as bite, The Guy holding 90 degree protractor to his cheek",
+          "text": "95% BITE",
+          "value": "16,414 N",
+          "label": "MOLARS",
+          "sfx": "none",
+          "t": 5.02,
+          "end": 11.2
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc in shop press uniform crushing steak with four blunt cone tooth tips",
+          "sfx": "none",
+          "t": 11.2,
+          "end": 14.22
+        },
+        {
+          "i": 4,
+          "kind": "photo",
+          "caption": "DOESN'T CUT CRACKS",
+          "counter": "3,700 PSI!?",
+          "prompt": "smiling family posing by cracked driveway slab with four dents",
+          "sfx": "none",
+          "t": 11.75,
+          "end": 17.68
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Steel vs Meat",
+      "text": "That 3,700 PSI is the croc's rated ceiling. My garage hydraulic press hits 10 tons, which is 20,000 PSI over the same area, using 3,000 watts from the wall. The croc does its number on 400 watts of metabolic power. Raw peak goes to steel.",
+      "dur": 14.92,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph flatlining at 3,700 PSI while The Guy gnaws steak weakly at desk",
+          "text": "3,700 PSI",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.64
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "RAW PEAK STEEL",
+          "counter": "20,000 PSI!",
+          "prompt": "real garage hydraulic press crushing steel block with sparks",
+          "sfx": "none",
+          "t": 2.64,
+          "end": 5.14
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc sweating unplugging hydraulic press from wall next to 3,000 watt meter",
+          "sfx": "none",
+          "t": 5.14,
+          "end": 11.34
+        },
+        {
+          "i": 3,
+          "kind": "scene",
+          "prompt": "The Guy crowning hydraulic press on desk while Croc sips coffee powered by tiny battery",
+          "text": "",
+          "value": "400",
+          "label": "WATTS",
+          "sfx": "none",
+          "t": 7.76,
+          "end": 14.92
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "The Crossbow",
+      "text": "That 400-watt efficiency comes from a tendon aponeurosis that stretches 8% before the bite, storing 120 joules like a crossbow. When the jaw snaps shut in 70 milliseconds, that elastic snap adds 15% extra force for free, a trick mammals never evolved.",
+      "dur": 17.94,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc holding a floppy rubber band tendon while The Guy tries to bite steak at the desk",
+          "text": "400 WATTS",
+          "value": "8%",
+          "label": "STRETCH",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.66
+        },
+        {
+          "i": 1,
+          "kind": "meme",
+          "prompt": "Croc loaded into a giant medieval crossbow on the desk aiming at lunch",
+          "sfx": "none",
+          "t": 2.66,
+          "end": 5.36
+        },
+        {
+          "i": 2,
+          "kind": "photo",
+          "caption": "FREE ENERGY STORAGE",
+          "counter": "120J!?",
+          "prompt": "medieval reenactors loading a huge crossbow together",
+          "sfx": "none",
+          "t": 5.36,
+          "end": 11.54
+        },
+        {
+          "i": 3,
+          "kind": "zoom",
+          "amount": 1.38,
+          "sfx": "none",
+          "t": 11.54,
+          "end": 14.16
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy in dentist chair with weak jaw wired open while Croc sips coffee from mug",
+          "text": "FOR FREE",
+          "value": "15%",
+          "label": "FREE FORCE",
+          "sfx": "none",
+          "t": 12.54,
+          "end": 17.94
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Breathe and Crush",
+      "text": "That free boost would be useless if it drowned. The secondary palate is a bony nasal tunnel that seals the airway with a palatal valve holding 2 PSI of water pressure out, so it can keep 3,700 PSI clamped while breathing through nostrils on top of its head.",
+      "dur": 15.78,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at bony throat tunnel diagram while The Guy gargles water trying to clamp desk",
+          "text": "",
+          "value": "2 PSI",
+          "label": "VALVE",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.28
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "TOTALLY BREATHING",
+          "counter": "2 PSI!?",
+          "prompt": "crowded public pool with people choking on snorkels",
+          "sfx": "none",
+          "t": 2.28,
+          "end": 4.64
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc submerged to nostrils in bathtub calmly breathing while biting desk",
+          "sfx": "none",
+          "t": 4.64,
+          "end": 10.0
+        },
+        {
+          "i": 3,
+          "kind": "zoom",
+          "amount": 1.35,
+          "sfx": "none",
+          "t": 10.0,
+          "end": 12.7
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy melted next to smoking hydraulic press while Croc naps still clamped for 30 minutes",
+          "text": "",
+          "value": "4.6X",
+          "label": "PER WATT",
+          "sfx": "none",
+          "t": 10.55,
+          "end": 15.78
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Hold Time",
+      "text": "That sealed airway lets croc muscle lock in tetanus and run anaerobic glycolysis at 10 millimoles of lactate per liter, ten times your 1 millimole limit. It holds full force for 30 minutes while your masseter fails at 60 seconds with 50% force loss.",
+      "dur": 15.06,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy at desk trying to clench a steak with his jaw shaking and drooling",
+          "text": "50% FORCE LOSS",
+          "value": "1 mmol/L",
+          "label": "YOU",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.12
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "TOTALLY HOLDING IT",
+          "counter": "60 sec!?",
+          "prompt": "exhausted man failing with jaw exerciser in gym mirror",
+          "sfx": "none",
+          "t": 2.12,
+          "end": 4.74
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "holding breath underwater while doing taxes calmly",
+          "sfx": "none",
+          "t": 4.74,
+          "end": 9.54
+        },
+        {
+          "i": 3,
+          "kind": "zoom",
+          "amount": 1.32,
+          "sfx": "none",
+          "t": 9.54,
+          "end": 12.16
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy faceplanted on desk jaw hanging open while Croc next to him still locked on press handle breathing through nose",
+          "text": "30 MIN HOLD",
+          "value": "10 mmol/L",
+          "label": "CROC",
+          "sfx": "none",
+          "t": 10.09,
+          "end": 15.06
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Overheat Gap",
+      "text": "That 30-minute hold is where the press finally loses. The hydraulic press leaks 2% pressure per minute and overheats after 5 minutes at full load, needing a 1,500-watt cooling pump. The croc recycles lactate through its liver at 0.8 grams per minute, staying cold-blooded.",
+      "dur": 17.14,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc and The Guy staring at hydraulic press leaking on desk with 30 minute timer",
+          "text": "30 MIN HOLD",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.32
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "STEEL TIRED",
+          "counter": "2%/min!?",
+          "prompt": "smoking hydraulic press overheating in factory",
+          "sfx": "none",
+          "t": 2.32,
+          "end": 5.06
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy sweating hugging giant cooling pump plugged into wall next to press",
+          "text": "NEEDS PUMP",
+          "value": "1,500W",
+          "label": "COOLING PUMP",
+          "sfx": "none",
+          "t": 5.06,
+          "end": 10.72
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc lounging in ice bath recycling lactate with liver diagram",
+          "sfx": "none",
+          "t": 10.72,
+          "end": 13.74
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "Croc cold-blooded reading newspaper on press while The Guy melted on floor",
+          "text": "COLD WINS",
+          "value": "0.8g/min",
+          "label": "LACTATE",
+          "sfx": "none",
+          "t": 11.27,
+          "end": 17.14
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Efficiency Win",
+      "text": "That cold recycling reveals its final form. A 500-kilogram reptile that makes a better press than your 200-kilogram steel machine, at 4.6 times the PSI per watt, because evolution optimized for efficiency, not peak number. Your hydraulic press wins the chart. It loses the engineering.",
+      "dur": 16.62,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy chewing steak with 8 gram jaw muscle straining, Croc deadpan at desk with tiny graph",
+          "text": "8 GRAM JAW",
+          "value": "700N",
+          "label": "YOU",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.1
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "PEAK CHEW POWER",
+          "counter": "700N!?",
+          "prompt": "influencer smiling while failing to chew tough steak in luxury restaurant",
+          "sfx": "none",
+          "t": 2.1,
+          "end": 4.9
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall diagram of 4mm skull truss keeping 95 percent bite, The Guy holding his skull as 16,414 newtons hits molars into 4 tooth tips",
+          "text": "95% KEPT",
+          "value": "16,414N",
+          "label": "MOLARS",
+          "sfx": "none",
+          "t": 4.9,
+          "end": 10.66
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc as 400-watt shop press with 8 percent tendon storing 120 joules snapping in 70ms for free force while palatal valve seals water",
+          "sfx": "none",
+          "t": 10.66,
+          "end": 13.36
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "The Guy hugging smoking 10-ton hydraulic press leaking 2 percent per minute overheating after 5 minutes, Croc calmly holding 3,700 PSI for 30 minutes breathing through nose",
+          "text": "MEAT WINS",
+          "value": "4.6x",
+          "label": "PSI/WATT",
+          "sfx": "none",
+          "t": 11.21,
+          "end": 16.62
+        }
+      ]
+    },
+    {
+      "act": "PAYOFF",
+      "heading": "The Verdict",
+      "text": "Every time you clench your teeth, you're running version 0.1 of that same lever system, just with the power limiter still on. A saltwater croc is what happens when you remove the limiter, add 200 million years, and stop caring about talking. VERDICT: APEX.",
+      "dur": 14.38,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy clenching teeth with tiny 8g weight on jaw, Croc pointing at limiter dial set to 0.1 on desk graph",
+          "text": "LIMITER ON",
+          "value": "700 N",
+          "label": "YOUR JAW",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.36
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "150 PSI TRYHARDS",
+          "counter": "16,414N!?",
+          "prompt": "crowded gym bros flexing tiny biceps in mirror",
+          "sfx": "none",
+          "t": 2.36,
+          "end": 5.06
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "Croc sitting calmly on smoking hydraulic press leaking oil, The Guy holding tiny 400-watt bulb next to roaring 3000-watt factory motor",
+          "text": "400W NOT 3000W",
+          "value": "4.6X",
+          "label": "PER WATT",
+          "sfx": "none",
+          "t": 5.06,
+          "end": 10.96
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc as judge banging gavel on broken hydraulic press, awarding himself APEX trophy while The Guy clutches tiny jaw medal",
+          "sfx": "none",
+          "t": 7.54,
+          "end": 14.38
+        }
+      ]
+    },
+    {
+      "act": "PAYOFF",
+      "heading": "The Cost",
+      "text": "Your jaw could theoretically hit 1,200 PSI if you replaced tendons with aponeurosis and your skull with a truss, but you'd lose speech and your face would weigh 8 kilograms. Evolution cut you to gossip. It built him to crush turtle shells at 2,000 PSI without blinking.",
+      "dur": 15.9,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy trying to crush steak with 8 gram deli meat strapped to his jaw on the desk while Croc weighs it",
+          "text": "8 GRAMS",
+          "value": "700N",
+          "label": "YOUR BITE",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.84
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "PEAK PREDATOR",
+          "counter": "150 PSI!?",
+          "prompt": "crowded mansion BBQ with smiling influencers chewing steak and gossiping",
+          "sfx": "none",
+          "t": 2.84,
+          "end": 4.58
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall diagram of 4mm skull truss, The Guy wearing 8kg concrete block head unable to speak, desk covered in cracked turtle shells",
+          "text": "95% KEPT",
+          "value": "3,700 PSI",
+          "label": "400W PRESS",
+          "sfx": "none",
+          "t": 4.58,
+          "end": 10.2
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc sitting underwater for 30 minutes holding breath with palatal valve sealed while hydraulic shop press next to him leaks oil and overheats after 5 minutes",
+          "sfx": "none",
+          "t": 10.2,
+          "end": 12.82
+        },
+        {
+          "i": 4,
+          "kind": "zoom",
+          "amount": 1.38,
+          "sfx": "none",
+          "t": 10.75,
+          "end": 15.9
+        }
+      ]
+    },
+    {
+      "act": "LOOP",
+      "heading": "Next Up",
+      "text": "Next lessons we grade: The Mantis Shrimp Punch That Boils Water, The Electric Eel That Runs 860 Volts, and Your Heart That Lifts 2 Tons of Blood Daily. Which one is secretly an APEX? Comment your bet. Class dismissed. Evolution isn't finished with you.",
+      "dur": 15.72,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy trying to crush steak with tiny jaw weight while Croc holds clipboard at off-white desk",
+          "text": "",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.24
+        },
+        {
+          "i": 1,
+          "kind": "meme",
+          "prompt": "Croc flexing 1,200 gram jaw adductor at 90 degrees crushing desk press",
+          "sfx": "none",
+          "t": 2.24,
+          "end": 4.64
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "Croc pointing at 4mm skull truss diagram while The Guy holds four tiny 1cm tooth tips",
+          "text": "3700 PSI",
+          "value": "95%",
+          "label": "KEPT BITE",
+          "sfx": "none",
+          "t": 4.64,
+          "end": 10.08
+        },
+        {
+          "i": 3,
+          "kind": "photo",
+          "caption": "STEEL TIRED ALREADY",
+          "counter": "2% LEAK!?",
+          "prompt": "real hydraulic press shop floor leaking oil with bored workers staring",
+          "sfx": "none",
+          "t": 10.08,
+          "end": 12.64
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "Croc holding efficiency trophy while The Guy stares at Next Up board with shrimp eel heart",
+          "text": "MEAT WINS EFFICIENCY",
+          "value": "4.6X",
+          "label": "PER WATT",
+          "sfx": "none",
+          "t": 10.63,
+          "end": 15.72
+        }
+      ]
+    }
+  ],
+  "mp4": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/20260910-saltwater-crocodile-bite-force-vs-hydraulic-pres.mp4",
+  "upload_started_at": "2026-09-10T07:14:01+00:00",
+  "video_id": null,
+  "thumb": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/20260910-saltwater-crocodile-bite-force-vs-hydraulic-pres_thumb.jpg",
+  "qc_reasons": [
+    "art coverage 7/73 below 70%"
+  ]
+}
