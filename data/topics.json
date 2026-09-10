@@ -333,7 +333,7 @@
     "lane": "VERSUS",
     "why": "The mantis shrimp’s strike accelerates at ~10,000 g, far surpassing a boxer’s punch.",
     "score": 9,
-    "used": false
+    "used": true
   },
   {
     "topic": "My Salt Glands Can Excrete Enough Salt to Match Drinking Seawater Every Day",
