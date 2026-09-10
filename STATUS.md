@@ -1,8 +1,8 @@
 # SCALED status
 
-_updated 2026-09-10T19:19:56+00:00_
+_updated 2026-09-10T22:06:58+00:00_
 
-shelf (done, unpublished): 1/5
+shelf (done, unpublished): 2/5
 
 | lesson | stage | title |
 | --- | --- | --- |
@@ -17,5 +17,6 @@ shelf (done, unpublished): 1/5
 | 9 | qc_failed | Saltwater Croc vs Hydraulic Press: Who Bites Harder? |
 | 10 | qc_failed | Mantis Shrimp Punches Faster Than A Heavyweight Boxer |
 | 11 | qc_failed | Your Brain Is a 20-Watt Bulb That Thinks It's God |
+| 12 | done | Platypus Can See Your Muscles Move Before You Do |
 
 providers: {"TABI_KEY": true, "TABI_KEY2": false, "NIM_KEY": true, "GEMINI_KEY": true, "GROQ_KEY": true}

@@ -319,7 +319,7 @@
     "lane": "WEIRD_ANIMAL",
     "why": "The platypus’s bill contains electroreceptors that sense tiny electric fields from prey.",
     "score": 8,
-    "used": false
+    "used": true
   },
   {
     "topic": "Saltwater Crocodile Bite Force vs. Hydraulic Press: Which Wins?",
