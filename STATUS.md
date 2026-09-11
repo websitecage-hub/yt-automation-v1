@@ -1,6 +1,6 @@
 # SCALED status
 
-_updated 2026-09-10T22:06:58+00:00_
+_updated 2026-09-11T06:15:25+00:00_
 
 shelf (done, unpublished): 2/5
 
@@ -18,5 +18,6 @@ shelf (done, unpublished): 2/5
 | 10 | qc_failed | Mantis Shrimp Punches Faster Than A Heavyweight Boxer |
 | 11 | qc_failed | Your Brain Is a 20-Watt Bulb That Thinks It's God |
 | 12 | done | Platypus Can See Your Muscles Move Before You Do |
+| 13 | qc_failed | My Tongue Filters Seawater. Your Kidneys Can't. |
 
 providers: {"TABI_KEY": true, "TABI_KEY2": false, "NIM_KEY": true, "GEMINI_KEY": true, "GROQ_KEY": true}

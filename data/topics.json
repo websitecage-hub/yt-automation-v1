@@ -340,7 +340,7 @@
     "lane": "PROFESSOR",
     "why": "Crocodilian salt glands secrete concentrated saline, allowing them to handle high salt intake.",
     "score": 8,
-    "used": false
+    "used": true
   },
   {
     "topic": "My Heart Can Slow to Just 2‑3 Beats Per Minute While Submerged",

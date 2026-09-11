@@ -1,0 +1,745 @@
+{
+  "id": "20260911-my-salt-glands-can-excrete-enough-salt-to-match-",
+  "lesson": 13,
+  "topic": "My Salt Glands Can Excrete Enough Salt to Match Drinking Seawater Every Day",
+  "lane": "PROFESSOR",
+  "created": "2026-09-11T04:45:04+00:00",
+  "stage": "qc_failed",
+  "title": "My Tongue Filters Seawater. Your Kidneys Can't.",
+  "description": "Your kidneys tap out at 1200 mOsm. My tongue secretes salt at twice the ocean's concentration. Professor Croc breaks down 26 lingual glands, Na+/K+-ATPase pumps, and how to dump 35g of salt a day without losing water.",
+  "tags": [
+    "salt gland",
+    "osmoregulation",
+    "crocodile",
+    "marine iguana",
+    "seawater",
+    "kidney",
+    "evolution",
+    "Kronvex"
+  ],
+  "thumb_words": "DRINKS THE OCEAN",
+  "thumb_kicker": "SALT EXCRETION, GRAMS/DAY",
+  "staircase": [
+    "Seawater packs 35 grams of dissolved NaCl per liter creating 1000 mOsm per liter of osmotic pressure, triple your blood plasma at 300 mOsm per liter.",
+    "That 700 mOsm gradient pulls water out of your cells by osmosis through aquaporins, so drinking seawater dehydrates you.",
+    "Mammal kidneys max out at 1200 mOsm per liter urine via countercurrent multiplication in the Loop of Henle, so dumping 1000 mOsm seawater still costs you half a liter of fresh water.",
+    "Marine reptiles bypass that limit with a hidden ability: 20 to 26 extrarenal lingual glands that excrete salt without losing water.",
+    "Those glands use Na+/K+-ATPase pumps on the basolateral membrane to actively pull sodium from blood at 100.8 micromoles per 100 grams body mass per hour when saltwater-acclimated.",
+    "Inside secretory tubules they concentrate that sodium chloride to 600 to 1200 milliequivalents per liter, roughly twice seawater's salinity.",
+    "Blood flow to the tongue spikes via VIP signaling to deliver more salt, tripling secretion from 31.6 micromoles in freshwater to 100.8 micromoles in saltwater.",
+    "The hyper-concentrated brine at 2000 mOsm per liter drips onto the tongue surface and is sneezed or washed away, removing salt while conserving water.",
+    "Because salt leaves without water, the 35 grams you drank stays outside while the liter of water you drank stays inside you.",
+    "Over 24 hours that loop in its final form can dump enough salt to balance drinking about one liter of seawater per day, achieving full seawater tolerance."
+  ],
+  "thumbnail_prompt": "A saltwater crocodile with its jaws wide open showing its tongue covered in white salt crust next to a clear glass of seawater with salt crystals spilling off the tongue",
+  "verdict": "APEX",
+  "extra_credit": "Marine iguanas sneeze salt so violently they grow white salt wigs — dried secretion at 2x seawater concentration left on the snout.",
+  "scenes": [
+    {
+      "act": "HOOK",
+      "heading": "The Lethal Number",
+      "text": "35 grams of salt per liter of seawater. You drink it, you dehydrate. I drink it, I filter it. My 20 to 26 lingual glands use Na+/K+-ATPase pumps to dump salt at 600 to 1200 milliequivalents per liter, twice as salty as the ocean itself.",
+      "dur": 16.46,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy chugging a giant jug labeled seawater at the desk while Croc watches with clipboard",
+          "text": "",
+          "value": "35 grams",
+          "label": "PER LITER",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.14
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "HUMAN HYDRATION PLAN",
+          "counter": "700 mOsm!?",
+          "prompt": "crowd of tourists desperately drinking seawater on a beach",
+          "sfx": "none",
+          "t": 2.14,
+          "end": 4.66
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy kneeling holding two tiny leaking kidneys over a puddle, Croc pointing at wall graph",
+          "text": "YOU DEHYDRATE",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 4.66,
+          "end": 10.36
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc sneezing a hyper-salty brine puddle onto his tongue in lab goggles",
+          "sfx": "none",
+          "t": 10.36,
+          "end": 13.16
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "Croc sipping seawater like wine at the desk while The Guy shriveled into a raisin next to him",
+          "text": "I FILTER IT",
+          "value": "600-1200 mEq/L",
+          "label": "TWICE SALTY",
+          "sfx": "none",
+          "t": 10.91,
+          "end": 16.46
+        }
+      ]
+    },
+    {
+      "act": "HOOK",
+      "heading": "Mammalian Copium",
+      "text": "I tried to explain this to a mammal once. He drank seawater on a bet, got a headache, then blamed evolution. Two hundred million years of field research. Your kidney tops out at 1200 mOsm per liter via countercurrent multiplication, barely beating seawater's 1000.",
+      "dur": 16.9,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy chugging seawater on a bet at desk while Croc watches with clipboard",
+          "text": "MAMMALIAN COPIUM",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.92
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "HYDRATION GRINDSET",
+          "counter": "700 mOsm!?",
+          "prompt": "smiling influencers toasting with seawater bottles on a yacht",
+          "sfx": "none",
+          "t": 2.92,
+          "end": 4.66
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc with giant swollen tongue hooked to industrial pumps labeled Na pump",
+          "sfx": "none",
+          "t": 4.66,
+          "end": 10.72
+        },
+        {
+          "i": 3,
+          "kind": "zoom",
+          "amount": 1.35,
+          "sfx": "none",
+          "t": 10.72,
+          "end": 13.42
+        },
+        {
+          "i": 4,
+          "kind": "scene",
+          "prompt": "Croc casually drinking seawater liter while The Guy shriveled raisin on desk with empty bottle",
+          "text": "YOUR KIDNEY CAN'T",
+          "value": "1L/day",
+          "label": "MY TONGUE",
+          "sfx": "none",
+          "t": 11.27,
+          "end": 16.9
+        }
+      ]
+    },
+    {
+      "act": "HOOK",
+      "heading": "The Real Question",
+      "text": "So how does a tongue outperform a kidney, and why did evolution give me a desalination plant while you got sweat that wastes salt?",
+      "dur": 8.42,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc with tongue plumbed as desalination plant on desk, The Guy sweating uselessly into a cup",
+          "text": "TONGUE BEATS KIDNEY",
+          "value": "1000 mOsm",
+          "label": "SEAWATER",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 1.84
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "DESALINATION PLANT INCLUDED",
+          "counter": "35g/L!?",
+          "prompt": "smiling family by mansion infinity pool drinking bottled water overlooking ocean",
+          "sfx": "none",
+          "t": 1.84,
+          "end": 3.82
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc sneezing hyper-concentrated brine off tongue onto The Guy holding empty water bottle",
+          "sfx": "none",
+          "t": 3.82,
+          "end": 8.42
+        }
+      ]
+    },
+    {
+      "act": "PROMISE",
+      "heading": "What You Will Know",
+      "text": "By the end you'll know exactly how salt glands turn 300 mOsm blood into brine twice as salty as the sea without losing fresh water. Other videos start with cute iguanas sneezing. We start from raw physics. Let's check the base stats.",
+      "dur": 15.46,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph where seawater bar towers over tiny blood bar, The Guy sipping ocean through straw looking smug at desk",
+          "text": "TRIPLE BLOOD",
+          "value": "1000 mOsm/L",
+          "label": "SEAWATER",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.28
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "STAY HYDRATED",
+          "counter": "700 mOsm!?",
+          "prompt": "crowd of influencers cheering with seawater bottles on a yacht",
+          "sfx": "none",
+          "t": 2.28,
+          "end": 4.5
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy praying to giant kidney toilet that leaks half a liter, Croc lifting The Guy's tongue like trapdoor revealing 26 tiny workers with pumps",
+          "text": "KIDNEYS QUIT",
+          "value": "20-26",
+          "label": "TONGUE GLANDS",
+          "sfx": "none",
+          "t": 4.5,
+          "end": 9.44
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc as exhausted plumber cranking Na+/K+-ATPase valve while tongue sprinkler triples flow",
+          "sfx": "none",
+          "t": 9.44,
+          "end": 11.18
+        },
+        {
+          "i": 4,
+          "kind": "zoom",
+          "amount": 1.38,
+          "sfx": "none",
+          "t": 10.9,
+          "end": 15.46
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Step 1 - The Poison",
+      "text": "Seawater packs 35 grams of dissolved NaCl per liter creating 1000 mOsm per liter of osmotic pressure, triple your blood plasma at 300 mOsm per liter.",
+      "dur": 10.84,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy chugging a giant jug of seawater at the desk while Croc points at wall chart",
+          "text": "35 GRAMS PER LITER",
+          "value": "1000 mOsm",
+          "label": "SEAWATER",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.3
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "STILL THIRSTY THO",
+          "counter": "1000 vs 300!",
+          "prompt": "smiling influencers happily drinking ocean water on a beach",
+          "sfx": "none",
+          "t": 2.3,
+          "end": 4.94
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc watching The Guy shriveled into a raisin on the desk next to triple salt pile",
+          "sfx": "none",
+          "t": 4.94,
+          "end": 10.84
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Step 2 - The Theft",
+      "text": "That 700 mOsm gradient pulls water out of your cells by osmosis through aquaporins, so drinking seawater dehydrates you.",
+      "dur": 8.18,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy chugging seawater from a giant bucket at desk while Croc points at graph going down",
+          "text": "DRINK = DRY",
+          "value": "700 mOsm",
+          "label": "GRADIENT",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 1.86
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "HYDRATION PLAN",
+          "counter": "700 mOsm!?",
+          "prompt": "crowd of influencers toasting with seawater cocktails on a yacht",
+          "sfx": "none",
+          "t": 1.86,
+          "end": 3.58
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc as a shriveled raisin in desk chair being vacuumed through tiny straws labeled aquaporins",
+          "sfx": "none",
+          "t": 3.58,
+          "end": 8.18
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Step 3 - Kidney Nerf",
+      "text": "Mammal kidneys max out at 1200 mOsm per liter urine via countercurrent multiplication in the Loop of Henle, so dumping 1000 mOsm seawater still costs you half a liter of fresh water.",
+      "dur": 10.38,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph flatlining while The Guy clutches half-empty fresh water bottle next to seawater jug",
+          "text": "1200 MAX",
+          "value": "1200",
+          "label": "MOSM",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.32
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "HYDRATION GENIUS",
+          "counter": "-0.5L!?",
+          "prompt": "wellness influencer chugging seawater on beach smiling",
+          "sfx": "none",
+          "t": 2.32,
+          "end": 4.76
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "The Guy paying half his water bottle to a tiny kidney bouncer to pee out seawater",
+          "sfx": "none",
+          "t": 4.76,
+          "end": 10.38
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Step 4 - The Hidden Ability",
+      "text": "Marine reptiles bypass that limit with a hidden ability: 20 to 26 extrarenal lingual glands that excrete salt without losing water.",
+      "dur": 9.92,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc the professor flipping The Guy's tongue up at desk finding hidden glands, The Guy staring dumb",
+          "text": "",
+          "value": "20-26",
+          "label": "GLANDS",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.36
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "FREE DESALINATION",
+          "counter": "26 glands!?",
+          "prompt": "real marine iguana sneezing salty brine explosion on rocks",
+          "sfx": "none",
+          "t": 2.36,
+          "end": 4.56
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc drooling hyper salty brine into The Guy's water glass as free refill",
+          "sfx": "none",
+          "t": 4.56,
+          "end": 9.92
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Step 5 - The Pump",
+      "text": "Those glands use Na+/K+-ATPase pumps on the basolateral membrane to actively pull sodium from blood at 100.8 micromoles per 100 grams body mass per hour when saltwater-acclimated.",
+      "dur": 10.88,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc installing sump pumps on a basement wall while The Guy leaks salt as a blood bag",
+          "text": "",
+          "value": "100.8",
+          "label": "UMOL/HR",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.5
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "SO PASSIVE",
+          "counter": "100.8!?",
+          "prompt": "workers hauling buckets up a hill at an industrial pump farm",
+          "sfx": "none",
+          "t": 2.5,
+          "end": 4.78
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc slurping salt from The Guy's arm with a boba straw while timing it",
+          "sfx": "none",
+          "t": 4.78,
+          "end": 10.88
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Step 6 - Double Salty",
+      "text": "Inside secretory tubules they concentrate that sodium chloride to 600 to 1200 milliequivalents per liter, roughly twice seawater's salinity.",
+      "dur": 10.86,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph comparing seawater to The Guy's tongue tubule, The Guy dumping giant salt bag on desk",
+          "text": "DOUBLE SALTY",
+          "value": "600-1200",
+          "label": "MEQ/L",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.34
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "TWICE AS SALTY",
+          "counter": "2x SALTY!?",
+          "prompt": "industrial desalination plant vats overflowing with white salt crystals",
+          "sfx": "none",
+          "t": 2.34,
+          "end": 4.7
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc using The Guy's tongue as salt faucet filling brine bottles",
+          "sfx": "none",
+          "t": 4.7,
+          "end": 10.86
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Step 7 - Blood Boost",
+      "text": "Blood flow to the tongue spikes via VIP signaling to deliver more salt, tripling secretion from 31.6 micromoles in freshwater to 100.8 micromoles in saltwater.",
+      "dur": 10.86,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at tongue blood flow chart spiking, The Guy holding giant swollen tongue like conveyor belt",
+          "text": "BLOOD BOOST",
+          "value": "31.6->100.8",
+          "label": "SALT",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.26
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "VIP DELIVERY FAILED",
+          "counter": "100.8!?",
+          "prompt": "crowded delivery trucks stuck in traffic jam at port",
+          "sfx": "none",
+          "t": 2.26,
+          "end": 4.62
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc as tongue hooked to VIP IV drip gushing salt, The Guy watching with dry mouth",
+          "sfx": "none",
+          "t": 4.62,
+          "end": 10.86
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Step 8 - The Sneeze",
+      "text": "The hyper-concentrated brine at 2000 mOsm per liter drips onto the tongue surface and is sneezed or washed away, removing salt while conserving water.",
+      "dur": 9.56,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy at desk tongue out dripping brine, Croc holding clipboard disgusted",
+          "text": "",
+          "value": "2000",
+          "label": "MOSM/L",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.06
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "HYDRATED",
+          "counter": "1,000!?",
+          "prompt": "crowd on yacht watching man sneeze violently",
+          "sfx": "none",
+          "t": 2.06,
+          "end": 4.22
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy sneezing salt crystals across room while Croc sips water smugly",
+          "text": "SALT OUT WATER IN",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 4.22,
+          "end": 9.56
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Step 9 - Water Kept",
+      "text": "Because salt leaves without water, the 35 grams you drank stays outside while the liter of water you drank stays inside you.",
+      "dur": 8.18,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy holding salt bucket outside his body and hugging 1L water bottle inside, Croc pointing at graph on wall",
+          "text": "SALT LEAVES WITHOUT WATER",
+          "value": "35g",
+          "label": "STAYS OUT",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 1.56
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "WATER KEPT",
+          "counter": "35g OUT!?",
+          "prompt": "ironic real photo of huge pile of sea salt left on dock next to one glass of fresh water",
+          "sfx": "none",
+          "t": 1.56,
+          "end": 3.74
+        },
+        {
+          "i": 2,
+          "kind": "meme",
+          "prompt": "Croc sneezing thick brine off tongue onto The Guy, The Guy clutching 1L water bottle like treasure",
+          "sfx": "none",
+          "t": 3.74,
+          "end": 8.18
+        }
+      ]
+    },
+    {
+      "act": "STAIRCASE",
+      "heading": "Step 10 - Final Form",
+      "text": "Over 24 hours that loop in its final form can dump enough salt to balance drinking about one liter of seawater per day, achieving full seawater tolerance.",
+      "dur": 10.5,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc timing The Guy chugging a 1 liter bottle of seawater at desk, The Guy smug",
+          "text": "",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.2
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "FULL TOLERANCE",
+          "counter": "1L!?",
+          "prompt": "influencers toasting with tiny water bottles on a beach",
+          "sfx": "none",
+          "t": 2.2,
+          "end": 4.7
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy's tongue dripping brine into bucket while drinking seawater, Croc sweeping massive salt pile off desk",
+          "text": "FINAL FORM",
+          "value": "1L/DAY",
+          "label": "SEAWATER",
+          "sfx": "none",
+          "t": 4.7,
+          "end": 10.5
+        }
+      ]
+    },
+    {
+      "act": "PAYOFF",
+      "heading": "Existential Zoom",
+      "text": "Every sip you've ever taken was your kidney begging for dilution because it can't separate salt without losing water. My tongue does it by pumping 35 grams a day through 26 glands at twice ocean concentration. VERDICT: APEX. Class dismissed. Evolution isn't finished with you.",
+      "dur": 19.18,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "The Guy on knees begging with glass of seawater while Croc deadpans at desk graph 300 vs 1000",
+          "text": "KIDNEY BEGGING",
+          "value": "35g/L",
+          "label": "SEAWATER",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.42
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "STILL DEHYDRATED",
+          "counter": "700 mOsm!?",
+          "prompt": "influencer smiling drinking seawater on crowded beach",
+          "sfx": "none",
+          "t": 2.42,
+          "end": 4.68
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy chained to kidney-shaped toilet with IV losing half liter, Croc pointing at Loop of Henle chart",
+          "text": "CANT SEPARATE SALT",
+          "value": "1200 mOsm/L",
+          "label": "KIDNEY MAX",
+          "sfx": "none",
+          "t": 4.68,
+          "end": 10.38
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc sticking out tongue dripping brine, 26 glands pumping like factory",
+          "sfx": "none",
+          "t": 10.38,
+          "end": 13.8
+        },
+        {
+          "i": 4,
+          "kind": "zoom",
+          "amount": 1.38,
+          "sfx": "none",
+          "t": 13.8,
+          "end": 15.84
+        },
+        {
+          "i": 5,
+          "kind": "scene",
+          "prompt": "Croc stamping VERDICT APEX on The Guy forehead while Guy holds 1L seawater, drip bucket 2000 mOsm on desk",
+          "text": "VERDICT: APEX",
+          "value": "35g/DAY",
+          "label": "26 GLANDS",
+          "sfx": "none",
+          "t": 14.35,
+          "end": 19.18
+        }
+      ]
+    },
+    {
+      "act": "LOOP",
+      "heading": "Next Up",
+      "text": "Next: Why Your Stomach Acid Can Dissolve a Razor Blade, How Your Bones Are Prestressed Concrete That Heals Itself, and The Fish That Breathes Through Its Butt. Which stat check do you want first? Comment.",
+      "dur": 13.38,
+      "beats": [
+        {
+          "i": 0,
+          "kind": "scene",
+          "prompt": "Croc pointing at wall graph 1000 vs 300, The Guy chugging seawater bottle at desk shriveling",
+          "text": "",
+          "value": "1000 mOsm/L",
+          "label": "SEAWATER",
+          "sfx": "none",
+          "t": 0.0,
+          "end": 2.24
+        },
+        {
+          "i": 1,
+          "kind": "photo",
+          "caption": "KIDNEYS MAXED OUT",
+          "counter": "700 mOsm!?",
+          "prompt": "crowded beach tourists clutching bottled water in panic",
+          "sfx": "none",
+          "t": 2.24,
+          "end": 4.7
+        },
+        {
+          "i": 2,
+          "kind": "scene",
+          "prompt": "The Guy with giant tongue dripping brine on desk, Croc counting tiny glands with pointer",
+          "text": "",
+          "value": "",
+          "label": "",
+          "sfx": "none",
+          "t": 4.7,
+          "end": 10.28
+        },
+        {
+          "i": 3,
+          "kind": "meme",
+          "prompt": "Croc sneezing pressurized jet of salty brine onto The Guy sipping seawater like it's fine",
+          "sfx": "none",
+          "t": 7.18,
+          "end": 13.38
+        }
+      ]
+    }
+  ],
+  "mp4": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/20260911-my-salt-glands-can-excrete-enough-salt-to-match-.mp4",
+  "upload_started_at": "2026-09-11T06:11:26+00:00",
+  "video_id": null,
+  "thumb": "/home/runner/work/yt-automation-v1/yt-automation-v1/work/20260911-my-salt-glands-can-excrete-enough-salt-to-match-_thumb.jpg",
+  "qc_reasons": [
+    "art coverage 34/55 below 70%"
+  ]
+}
