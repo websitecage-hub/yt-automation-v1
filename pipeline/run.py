@@ -351,38 +351,111 @@ def _score_take(data, text):
 VOICE_TAKES = 3            # seeds tried per scene; best score wins
 VOICE_SEEDS = (0, 1, 2)    # same voice, different sampling luck
 
+_ref_mean_cache = {"value": "unset"}
+
+
+def _ref_mean_db():
+    """Mean volume (dB) of the configured voice reference clip, cached.
+
+    The monopoly clip measures about -14.9 dB; every take is gained toward
+    whatever this returns, so output loudness always matches the reference
+    family. None when unmeasurable -- takes ship as-is.
+    """
+    if _ref_mean_cache["value"] != "unset":
+        return _ref_mean_cache["value"]
+    mean = None
+    try:
+        from pipeline import adapters
+        cfg = (adapters.CONFIG.get("voice") or {})
+        ref = ((cfg.get("files") or {}).get("voice") or "")
+        if ref and not os.path.isabs(ref):
+            ref = os.path.join(REPO, ref)
+        import shutil
+        import subprocess
+        if ref and os.path.exists(ref) and shutil.which("ffmpeg"):
+            out = subprocess.run(
+                ["ffmpeg", "-nostats", "-i", ref, "-filter_complex", "volumedetect",
+                 "-f", "null", "-"], capture_output=True, text=True, timeout=120)
+            for line in (out.stderr or "").splitlines():
+                if "mean_volume" in line:
+                    try:
+                        mean = float(line.split(":")[1].strip().split()[0])
+                    except (ValueError, IndexError):
+                        pass
+    except Exception:
+        mean = None
+    _ref_mean_cache["value"] = mean
+    return mean
+
+
+def _mean_volume(path):
+    """Mean volume dB of an audio file, or None. Read-only, ffmpeg."""
+    import shutil
+    import subprocess
+    if not shutil.which("ffmpeg"):
+        return None
+    try:
+        out = subprocess.run(
+            ["ffmpeg", "-nostats", "-i", path, "-filter_complex", "volumedetect",
+             "-f", "null", "-"], capture_output=True, text=True, timeout=120)
+        for line in (out.stderr or "").splitlines():
+            if "mean_volume" in line:
+                try:
+                    return float(line.split(":")[1].strip().split()[0])
+                except (ValueError, IndexError):
+                    pass
+    except Exception:
+        pass
+    return None
+
 
 def _finalize_voice(data, fmt):
-    """Trim head/tail silence + delivery pace on a wav take, via ffmpeg.
+    """Make a wav take sound like the reference clip. Via ffmpeg only.
 
-    Endpoints: silenceremove both ends (keeps 0.06s natural pad). Pace: the
-    operator-locked atempo from voice_local.PACE_RATE. wav only -- anything
-    else passes through untouched. Any ffmpeg failure returns the raw take;
-    finishing the episode always beats perfecting one clip.
+    1. Trim head/tail silence (0.06s natural pad kept).
+    2. Delivery pace: the operator-locked atempo from voice_local.PACE_RATE.
+    3. Loudness match: gain toward the reference clip's measured mean volume
+       (clamped to +-12 dB), so every scene sits in the same loudness family.
+    4. Container match: 48 kHz stereo, like the reference.
+    wav only -- anything else passes through untouched. Any failure returns
+    the raw take; finishing the episode always beats perfecting one clip.
     """
     if (fmt or "").lower() != "wav" or not data:
         return data
     try:
         from pipeline import voice_local
-        pace = float(getattr(voice_local, "PACE_RATE", 1.3))
+        pace = float(getattr(voice_local, "PACE_RATE", 1.2))
     except Exception:
-        pace = 1.3
+        pace = 1.2
     import shutil
     import subprocess
     import tempfile
     if not shutil.which("ffmpeg"):
         return data
-    src = dst = None
+    src = mid = dst = None
     try:
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as fh:
             fh.write(data)
             src = fh.name
-        dst = src + ".out.wav"
-        af = ("silenceremove=start_periods=1:start_duration=0.06:start_threshold=-40dB:"
-              "stop_periods=-1:stop_duration=0.06:stop_threshold=-40dB,"
-              "atempo=%.3f" % pace)
+        mid = src + ".mid.wav"
+        af1 = ("silenceremove=start_periods=1:start_duration=0.06:start_threshold=-40dB:"
+               "stop_periods=-1:stop_duration=0.06:stop_threshold=-40dB,"
+               "atempo=%.3f" % pace)
         proc = subprocess.run(["ffmpeg", "-nostats", "-v", "error", "-y", "-i", src,
-                               "-af", af, dst],
+                               "-af", af1, mid],
+                              capture_output=True, timeout=180)
+        if proc.returncode != 0 or not os.path.exists(mid):
+            return data
+        ref_mean = _ref_mean_db()
+        take_mean = _mean_volume(mid)
+        if ref_mean is None or take_mean is None:
+            gain_db = 0.0
+        else:
+            gain_db = max(-12.0, min(12.0, ref_mean - take_mean))
+        dst = src + ".out.wav"
+        af2 = "volume=%.1fdB,aresample=48000,aformat=channel_layouts=stereo" % gain_db
+        proc = subprocess.run(["ffmpeg", "-nostats", "-v", "error", "-y", "-i", mid,
+                               "-af", af2, dst],
                               capture_output=True, timeout=180)
         if proc.returncode == 0 and os.path.exists(dst) and os.path.getsize(dst) > 1000:
             with open(dst, "rb") as fh:
@@ -391,7 +464,7 @@ def _finalize_voice(data, fmt):
     except Exception:
         return data
     finally:
-        for p in (src, dst):
+        for p in (src, mid, dst):
             try:
                 if p:
                     os.unlink(p)

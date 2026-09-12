@@ -19,9 +19,9 @@ DEFAULT_REF = os.path.join(REPO, "assets", "voice", "monopoly_first_8sec.wav")
 
 PIP_HINT = "pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu chatterbox-tts"
 
-# Operator-locked delivery pace: 1.3x tempo (pitch preserved), measured against
-# the reference edit's ~225 wpm. Applied to every clone after trimming.
-PACE_RATE = 1.3
+# Operator-locked delivery pace: 1.2x tempo (pitch preserved), a touch under
+# the reference edit's rush while clearly faster than natural speech.
+PACE_RATE = 1.2
 
 _model = {"instance": None}
 _ref_attrs = {}
