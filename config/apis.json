@@ -11,7 +11,7 @@
       "ttsSeed": 0,
       "threads": 4
     },
-    "files": {"voice": "assets/voice/goku_hope_8sec.mp3"},
+    "files": {"voice": "assets/voice/monopoly_first_8sec.wav"},
     "returns": "json-url",
     "url_field": "url",
     "no_proxy": true

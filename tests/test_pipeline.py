@@ -2315,3 +2315,22 @@ class TestLocalVoice:
         finally:
             voice_local._model["instance"] = None
         assert raised and ("pip install" in raised or "missing" in raised.lower())
+
+    def test_split_chunks_keeps_words_and_caps_size(self):
+        from pipeline import voice_local
+        text = " ".join("w%d" % i for i in range(30))
+        chunks = voice_local._split_chunks(text, max_words=12)
+        assert " ".join(chunks).split() == text.split()
+        assert all(len(c.split()) <= 12 for c in chunks)
+        assert voice_local._split_chunks("short text") == ["short text"]
+
+    def test_trim_silence_cuts_dead_air_keeps_speech(self):
+        import numpy as np
+        from pipeline import voice_local
+        sr = 24000
+        t = np.arange(sr * 2) / sr
+        tone = (np.sin(2 * np.pi * 220 * t) * 0.5).reshape(-1, 1)
+        clip = np.concatenate([np.zeros((sr, 1)), tone, np.zeros((sr, 1))])
+        out = voice_local.trim_silence(clip, sr)
+        assert len(out) < len(clip) - sr // 2  # >0.5s of the 2s padding gone
+        assert len(out) > sr                      # speech survives

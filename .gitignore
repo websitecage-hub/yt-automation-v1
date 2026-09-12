@@ -19,6 +19,7 @@ assets/phrases/
 *.mp3
 *.wav
 !assets/voice/*.mp3
+!assets/voice/*.wav
 !assets/audio/sfx/*.mp3
 !assets/audio/sfx/*.wav
 !assets/audio/lofi/*.mp3

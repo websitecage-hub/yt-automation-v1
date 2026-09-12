@@ -1,0 +1,69 @@
+name: voice-test
+
+# Manual voice lab: clone a sample sentence with the current reference clip
+# and upload the wav as an artifact (browser playable). Heavy work belongs
+# here on free runners -- never on the small dev box.
+# The produce workflow stays paused via data/PAUSE; this runs regardless.
+
+on:
+  workflow_dispatch:
+    inputs:
+      text:
+        description: "Sentence to clone"
+        default: "Three thousand seven hundred pounds of force. That is my bite, measured on a rig, not guessed."
+        required: true
+      exaggeration:
+        description: "Character carrier (0.0 flat - 1.0 wild)"
+        default: "0.3"
+        required: true
+
+concurrency:
+  group: scaled-state
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  clone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pillow numpy soundfile librosa
+      - name: Restore voice model weights
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/huggingface
+          key: chatterbox-weights-v1
+          restore-keys: chatterbox-weights-
+      - name: Install voice stack
+        run: bash tools/setup_voice.sh
+      - name: Save voice model weights
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: ~/.cache/huggingface
+          key: chatterbox-weights-v1-${{ github.run_id }}
+      - name: Clone sample
+        run: |
+          python3 -c "
+          from pipeline import voice_local
+          data, sr = voice_local.clone('''${{ inputs.text }}''', exaggeration=float('${{ inputs.exaggeration }}'))
+          open('voice_sample.wav','wb').write(data)
+          print('SAMPLE_OK', len(data), sr)
+          "
+          python3 -c "
+          import soundfile
+          d, sr = soundfile.read('voice_sample.wav')
+          print('duration %.2fs sr %d' % (len(d)/sr, sr))
+          "
+      - name: Upload sample
+        uses: actions/upload-artifact@v4
+        with:
+          name: voice-sample
+          path: voice_sample.wav
+          retention-days: 7
