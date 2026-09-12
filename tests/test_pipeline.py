@@ -1948,13 +1948,53 @@ class TestStageMachine:
     def test_stage_voice_skips_a_scene_it_already_narrated(self, tmp_path, monkeypatch):
         from pipeline import adapters, run
         calls = []
-        monkeypatch.setattr(adapters, "tts", lambda text: calls.append(text) or b"ID3new")
-        monkeypatch.setattr(adapters, "last_format", lambda kind=None: "mp3")
+
+        def fake_tts(text, seed=0):
+            calls.append((text, seed))
+            import io
+            import wave
+            buf = io.BytesIO()
+            with wave.open(buf, "wb") as w:
+                w.setnchannels(1)
+                w.setsampwidth(2)
+                w.setframerate(24000)
+                w.writeframes(b"\x00\x10" * 24000)  # 1s tone-ish
+            return buf.getvalue()
+
+        monkeypatch.setattr(adapters, "tts", fake_tts)
+        monkeypatch.setattr(adapters, "last_format", lambda kind=None: "wav")
         job = {"id": "j", "scenes": [{"text": "one"}, {"text": "two"}]}
-        (tmp_path / "vj_0.mp3").write_bytes(b"ID3already")
+        (tmp_path / "vj_0.wav").write_bytes(b"ID3already")
         run.stage_voice(job, str(tmp_path))
-        assert calls == ["two"]
-        assert (tmp_path / "vj_0.mp3").read_bytes() == b"ID3already"
+        assert [c[0] for c in calls] == ["two", "two", "two"]  # 3 seeds, best kept
+        assert (tmp_path / "vj_0.wav").read_bytes() == b"ID3already"
+        assert (tmp_path / "vj_1.wav").is_file()
+
+    def test_score_take_rejects_garbage_prefers_speech(self):
+        from pipeline import run
+        assert run._score_take(b"not audio", "hello world") == float("inf")
+        import io
+        import wave
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(24000)
+            w.writeframes(b"\x00\x20" * 24000 * 2)  # 2s @ ~10 chars/sec
+        good = run._score_take(buf.getvalue(), "hello world test text here")
+        buf2 = io.BytesIO()
+        with wave.open(buf2, "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(24000)
+            w.writeframes(b"\x00\x00" * 24000 * 2)  # digital silence
+        bad = run._score_take(buf2.getvalue(), "hello world test text here")
+        assert good < bad
+
+    def test_finalize_returns_raw_without_ffmpeg(self, tmp_path, monkeypatch):
+        from pipeline import run
+        monkeypatch.setattr(__import__("shutil"), "which", lambda *a, **k: None)
+        assert run._finalize_voice(b"ID3raw", "mp3") == b"ID3raw"
 
     def test_save_still_cover_crops_to_1920x1080_without_squashing(self, tmp_path):
         from PIL import Image

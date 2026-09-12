@@ -306,23 +306,134 @@ def stage_idea(jobs):
     print("[run] idea: LESSON #%03d %r (%d scenes)" % (n, job["title"], len(scenes)))
     return job
 
+def _score_take(data, text):
+    """Lower is better. Pure-stdlib measurement of a wav take.
+
+    Penalizes: clipping, dead quiet, rushed/dragging pace (outside 9-22
+    chars/sec human band), long leading silence. A take that fails to decode
+    scores infinite -- never picked, never fatal.
+    """
+    import struct
+    import wave
+    try:
+        with wave.open(__import__("io").BytesIO(data)) as w:
+            n, sr, ch = w.getnframes(), w.getframerate(), w.getnchannels()
+            raw = w.readframes(n)
+        if not n or not sr:
+            return float("inf")
+        fmt = "<%dh" % (len(raw) // 2)
+        import array
+        samples = array.array("h", raw)
+        peak = max([abs(s) for s in samples] + [0]) / 32768.0
+        mean_sq = sum(s * s for s in samples) / max(1, len(samples))
+        rms = (mean_sq ** 0.5) / 32768.0
+        dur = n / float(sr)
+        cps = len(str(text or "")) / dur if dur > 0 else 0
+        # leading silence: fraction of first 0.8s below -40dBFS
+        head_n = min(len(samples), int(sr * 0.8) * ch)
+        head = samples[:head_n] if head_n else samples[:1]
+        quiet = sum(1 for s in head if abs(s) < 328) / max(1, len(head))
+        score = 0.0
+        if peak >= 0.99:
+            score += 50.0
+        if rms < 0.02:
+            score += 50.0 + (0.02 - rms) * 1000.0
+        if cps < 9:
+            score += (9 - cps) * 3.0
+        elif cps > 22:
+            score += (cps - 22) * 3.0
+        score += quiet * 10.0
+        return score
+    except Exception:
+        return float("inf")
+
+
+VOICE_TAKES = 3            # seeds tried per scene; best score wins
+VOICE_SEEDS = (0, 1, 2)    # same voice, different sampling luck
+
+
+def _finalize_voice(data, fmt):
+    """Trim head/tail silence + delivery pace on a wav take, via ffmpeg.
+
+    Endpoints: silenceremove both ends (keeps 0.06s natural pad). Pace: the
+    operator-locked atempo from voice_local.PACE_RATE. wav only -- anything
+    else passes through untouched. Any ffmpeg failure returns the raw take;
+    finishing the episode always beats perfecting one clip.
+    """
+    if (fmt or "").lower() != "wav" or not data:
+        return data
+    try:
+        from pipeline import voice_local
+        pace = float(getattr(voice_local, "PACE_RATE", 1.3))
+    except Exception:
+        pace = 1.3
+    import shutil
+    import subprocess
+    import tempfile
+    if not shutil.which("ffmpeg"):
+        return data
+    src = dst = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as fh:
+            fh.write(data)
+            src = fh.name
+        dst = src + ".out.wav"
+        af = ("silenceremove=start_periods=1:start_duration=0.06:start_threshold=-40dB:"
+              "stop_periods=-1:stop_duration=0.06:stop_threshold=-40dB,"
+              "atempo=%.3f" % pace)
+        proc = subprocess.run(["ffmpeg", "-nostats", "-v", "error", "-y", "-i", src,
+                               "-af", af, dst],
+                              capture_output=True, timeout=180)
+        if proc.returncode == 0 and os.path.exists(dst) and os.path.getsize(dst) > 1000:
+            with open(dst, "rb") as fh:
+                return fh.read()
+        return data
+    except Exception:
+        return data
+    finally:
+        for p in (src, dst):
+            try:
+                if p:
+                    os.unlink(p)
+            except OSError:
+                pass
+
+
 def stage_voice(job, work_dir):
     """One narration clip per scene, in Croc's cloned voice.
 
-    The provider's own container is kept (wav, mp3, ...) instead of transcoding:
-    the browser plays either, the renderer's ffmpeg accepts either, and skipping
-    the convert step removes a whole class of failure from the critical path.
+    Best-of-VOICE_TAKES: sampling luck varies take to take, so each scene is
+    rolled up to 3 seeds and the best-scoring take is kept. The provider's own
+    container is kept (wav, mp3, ...) instead of transcoding.
     """
     for i, scene in enumerate(job.get("scenes") or []):
         if _voice_path(job, work_dir, i):
             continue
-        data = adapters.tts(str(scene.get("text", "")))
+        text = str(scene.get("text", ""))
+        best, best_score = None, float("inf")
+        for take, seed in enumerate(VOICE_SEEDS[:VOICE_TAKES]):
+            try:
+                data = adapters.tts(text, seed=seed)
+                score = _score_take(data, text)
+            except Exception as e:
+                print("[run] voice %d take %d failed (%s)" % (i, take, e))
+                continue
+            print("[run] voice %d take %d (seed %d) score %.1f"
+                  % (i, take, seed, score))
+            if score < best_score:
+                best, best_score = data, score
+            if score == 0.0:
+                break
+        if best is None:
+            raise RuntimeError("voice failed for scene %d after %d takes" % (i, VOICE_TAKES))
         fmt = adapters.last_format("voice") or "mp3"
+        best = _finalize_voice(best, fmt)
         dst = os.path.join(work_dir, "v%s_%d.%s" % (job["id"], i, fmt))
         with open(dst, "wb") as fh:
-            fh.write(data)
-        print("[run] voice %d/%d -> %s (%d bytes)"
-              % (i + 1, len(job.get("scenes") or []), os.path.basename(dst), len(data)))
+            fh.write(best)
+        print("[run] voice %d/%d -> %s (%d bytes, score %.1f)"
+              % (i + 1, len(job.get("scenes") or []), os.path.basename(dst),
+                 len(best), best_score))
     job["stage"] = "srt"
     return job
 

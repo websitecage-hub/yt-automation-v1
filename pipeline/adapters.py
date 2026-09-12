@@ -401,8 +401,12 @@ def _voice_engine():
     return str(cfg.get("engine") or os.getenv("SCALED_VOICE") or "local").strip().lower()
 
 
-def tts(text):
-    """Narration audio for one scene. Bytes; format via last_format('voice')."""
+def tts(text, seed=0):
+    """Narration audio for one scene. Bytes; format via last_format('voice').
+
+    `seed` varies the sampling luck between takes (same voice, different roll);
+    run.py spends up to 3 seeds and keeps the best-scoring take.
+    """
     if _voice_engine() == "local":
         from pipeline import voice_local
         data, _sr = voice_local.clone(text)
@@ -411,7 +415,8 @@ def tts(text):
         print("[adapters] voice ok: %d bytes (wav, local clone)" % len(data))
         return data
     cfg = CONFIG.get("voice") or {}
-    return _call(cfg, {"text": text, "voice_id": cfg.get("voice_id", "")}, kind="voice")
+    return _call(cfg, {"text": text, "voice_id": cfg.get("voice_id", ""),
+                       "tts_seed": seed}, kind="voice")
 
 
 def image(prompt, size="1920x1080"):

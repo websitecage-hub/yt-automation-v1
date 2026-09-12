@@ -1,6 +1,6 @@
 {
   "voice": {
-    "engine": "local",
+    "engine": "api",
     "base": "https://3000-firebase-pro1-1782061938664.cluster-m7dwy2bmizezqukxkuxd55k5ka.cloudworkstations.dev",
     "path": "/api/clone",
     "method": "POST",
@@ -8,7 +8,7 @@
       "text": "{text}",
       "ttsSteps": 10,
       "emotionExaggeration": 0.0,
-      "ttsSeed": 0,
+      "ttsSeed": "{tts_seed}",
       "threads": 4
     },
     "files": {"voice": "assets/voice/monopoly_first_8sec.wav"},
