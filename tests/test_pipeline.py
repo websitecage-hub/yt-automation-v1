@@ -2303,10 +2303,12 @@ class TestLocalVoice:
             assert "empty text" in str(e)
 
     def test_local_clone_needs_packages(self, monkeypatch):
-        # Without torch installed the error must name the fix, not a traceback.
+        # Without audio libs the error must name the unreadable reference loudly,
+        # never silently conform to a dummy signal.
         from pipeline import voice_local
         monkeypatch.setitem(__import__("sys").modules, "chatterbox.tts", None)
         voice_local._model["instance"] = None
+        voice_local._ref_attrs.clear()
         try:
             voice_local.clone("hello", ref="tests/test_pipeline.py")
             raised = None
@@ -2314,7 +2316,8 @@ class TestLocalVoice:
             raised = str(e)
         finally:
             voice_local._model["instance"] = None
-        assert raised and ("pip install" in raised or "missing" in raised.lower())
+            voice_local._ref_attrs.clear()
+        assert raised and "cannot read reference" in raised
 
     def test_split_chunks_keeps_words_and_caps_size(self):
         from pipeline import voice_local

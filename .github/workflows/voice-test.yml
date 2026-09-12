@@ -16,9 +16,15 @@ on:
         description: "Character carrier (0.0 flat - 1.0 wild)"
         default: "0.3"
         required: true
+      pace:
+        description: "Tempo multiplier (1.0 natural)"
+        default: "1.3"
+        required: true
 
 concurrency:
-  group: scaled-state
+  # Own group (NOT scaled-state): voice tests only read the repo and upload
+  # an artifact, so variant runs safely execute in parallel.
+  group: scaled-voice-test
   cancel-in-progress: false
 
 permissions:
@@ -52,7 +58,7 @@ jobs:
         run: |
           python3 -c "
           from pipeline import voice_local
-          data, sr = voice_local.clone('''${{ inputs.text }}''', exaggeration=float('${{ inputs.exaggeration }}'))
+          data, sr = voice_local.clone('''${{ inputs.text }}''', exaggeration=float('${{ inputs.exaggeration }}'), pace=float('${{ inputs.pace }}'))
           open('voice_sample.wav','wb').write(data)
           print('SAMPLE_OK', len(data), sr)
           "

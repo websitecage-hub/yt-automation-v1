@@ -217,11 +217,12 @@ def _generate_one(model, text, ref, exaggeration):
     return np.asarray(data, dtype=np.float64).reshape(-1)
 
 
-def clone(text, ref=DEFAULT_REF, exaggeration=0.3):
+def clone(text, ref=DEFAULT_REF, exaggeration=0.3, pace=None):
     """Narrate `text` in the reference voice. Returns (wav_bytes, sample_rate).
 
     exaggeration 0.3 carries the reference's character; 0.0 flattens it into
-    a generic read (proven dull in listening tests). Raises on empty text.
+    a generic read (proven dull in listening tests). pace overrides PACE_RATE
+    (1.0 = natural speed). Raises on empty text.
     """
     text = str(text or "").strip()
     if not text:
@@ -242,9 +243,10 @@ def clone(text, ref=DEFAULT_REF, exaggeration=0.3):
         import soundfile
         pcm, sr = conform_to_ref(data, int(model.sr), ref)
         pcm = trim_silence(pcm, sr)
-        if abs(PACE_RATE - 1.0) > 0.01:
+        pace = PACE_RATE if pace is None else float(pace)
+        if abs(pace - 1.0) > 0.01:
             import librosa
-            pcm = librosa.effects.time_stretch(pcm.T, rate=float(PACE_RATE)).T
+            pcm = librosa.effects.time_stretch(pcm.T, rate=pace).T
             pcm = trim_silence(np.ascontiguousarray(pcm), sr)
         buf = io.BytesIO()
         soundfile.write(buf, pcm, sr, format="WAV")
