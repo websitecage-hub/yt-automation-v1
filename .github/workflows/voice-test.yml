@@ -13,8 +13,8 @@ on:
         default: "Three thousand seven hundred pounds of force. That is my bite, measured on a rig, not guessed."
         required: true
       exaggeration:
-        description: "Character carrier (0.0 flat - 1.0 wild)"
-        default: "0.3"
+        description: "Character carrier (0.0 pure clone)"
+        default: "0.0"
         required: true
       pace:
         description: "Tempo multiplier (1.0 natural)"

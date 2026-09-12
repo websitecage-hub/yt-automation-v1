@@ -217,12 +217,12 @@ def _generate_one(model, text, ref, exaggeration):
     return np.asarray(data, dtype=np.float64).reshape(-1)
 
 
-def clone(text, ref=DEFAULT_REF, exaggeration=0.3, pace=None):
+def clone(text, ref=DEFAULT_REF, exaggeration=0.0, pace=None):
     """Narrate `text` in the reference voice. Returns (wav_bytes, sample_rate).
 
-    exaggeration 0.3 carries the reference's character; 0.0 flattens it into
-    a generic read (proven dull in listening tests). pace overrides PACE_RATE
-    (1.0 = natural speed). Raises on empty text.
+    exaggeration stays 0.0 (pure clone, zero editorializing -- the operator's
+    rule; higher values were proven to degrade the voice in listening tests).
+    pace overrides PACE_RATE (1.0 = natural speed). Raises on empty text.
     """
     text = str(text or "").strip()
     if not text:
