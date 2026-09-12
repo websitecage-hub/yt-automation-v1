@@ -7,6 +7,10 @@
 #  - antlr4 4.9.x (omegaconf 2.3.x grammar breaks on 4.13).
 set -u
 export PIP_NO_CACHE_DIR=1 TMPDIR=/tmp
+# typing_extensions ships with the runner image as a debian package with no
+# RECORD file, so any upgrade attempt aborts pip. Shadow it first; everything
+# after then resolves normally.
+sudo -H pip install --ignore-installed typing_extensions
 sudo -H pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
 sudo -H pip install --no-deps chatterbox-tts
 sudo -H pip install librosa==0.11.0 soundfile transformers==5.2.0 tokenizers \
