@@ -12,8 +12,10 @@ export PIP_NO_CACHE_DIR=1 TMPDIR=/tmp
 # after then resolves normally.
 sudo -H pip install --ignore-installed typing_extensions
 sudo -H pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu
-sudo -H pip install --no-deps chatterbox-tts
-sudo -H pip install librosa==0.11.0 soundfile transformers==5.2.0 tokenizers \
+# --ignore-installed throughout: more debian packages without RECORD files
+# (rich, ...) lurk in the runner image; shadowing beats uninstalling.
+sudo -H pip install --ignore-installed --no-deps chatterbox-tts
+sudo -H pip install --ignore-installed librosa==0.11.0 soundfile transformers==5.2.0 tokenizers \
   conformer==0.3.2 s3tokenizer resemble-perth diffusers==0.29.0 safetensors==0.5.3 \
   pykakasi==2.3.0 spacy-pkuseg pyloudnorm omegaconf lazy_loader einops onnx pooch \
   numba "antlr4-python3-runtime==4.9.3"
